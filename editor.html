@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<!--
+  ============================================================================
+  HTML PPTX 编辑器 · editor.html
+  版本：v1.2（2026-09-16）
+  实现依据：docs/design-editor.md v0.3（评审修订稿）
+  标记契约：skills/html-pptx/references/editing-contract.md v1（本页是消费侧实现）
+
+  变更记录：
+  - v1.1（e2e 验收修复）：
+    1. 嵌入态保存一律走 postMessage（原条件 embedded && !fsaa 在 FSAA 存在的
+       宿主中失效，保存被静默吞掉，宿主永远收不到 pptx-html:save）；
+    2. commitEdit 增加 normalizeBreaks：Chromium plaintext-only 的 Enter 产生
+       文本 \n 而非 <br>，序列化后换行丢失，提交时归一化为 <br>；
+       编辑期间 .ed-editing 以 white-space:pre-wrap 渲染使换行即时可见；
+    3. pptx-html:load 支持 assetsUrl（§8 已定义但未实现）：注入带
+       data-editor-injected 的 <base>，保存时随净化剔除。
+  - v1.2（批注，设计文档 v0.3 §5.0/§10）：
+    顶栏分段控件切换 文字编辑/批注 模式；批注模式下舞台框选（marquee 注入
+    iframe 文档、宽松相交命中、Esc 取消、零命中静默），弹窗（父页面 DOM，
+    命中清单可勾选剔除 + 必填 textarea）收集批注；批注清单浮动列表支持
+    点击定位（滚动+闪烁）与删除；导出复用意图清单剪贴板通道，嵌入态额外
+    postMessage {type:"pptx-html:annotations", payload}。批注不置脏、
+    不进保存产物（注入节点随 §5.4 净化剔除）。
+
+  架构要点：
+  - 单文件、纯静态、无框架、无构建、无外部依赖；双击或本地静态服务即可运行。
+  - 幻灯片以 iframe.srcdoc 渲染，与编辑器 UI 完全样式/脚本隔离；
+    编辑层注入的样式与节点一律带 data-editor-injected，保存前净化剔除。
+  - 保存序列化净化规则见设计文档 §5.4（五条），由 serializeClean() 实现。
+
+  数据源说明：
+  - 设计面板中的主题数据（PANEL_DATA.questions[0]）由
+    skills/html-pptx/references/themes.md（13 套策展主题）人工整理生成。
+    改主题必须先改 themes.md，再同步本文件中的 PANEL_DATA，禁止单边漂移。
+  ============================================================================
+-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTML PPTX 编辑器</title>
+<style>
+  :root{
+    --bg:#f4f4f2; --bar:#ffffff; --border:#e0e0dc; --text:#1f1f1d;
+    --muted:#6f6f6a; --accent:#2563eb; --accent-soft:#eaf1fe;
+    --ok:#15803d; --warn-bg:#fef3c7; --warn-text:#92400e; --danger:#b91c1c;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei",-apple-system,sans-serif;
+    font-size:13px;color:var(--text);background:var(--bg);
+    display:flex;flex-direction:column;overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  button{
+    font:inherit;color:inherit;background:var(--bar);border:1px solid var(--border);
+    border-radius:6px;padding:5px 12px;cursor:pointer;white-space:nowrap;
+  }
+  button:hover{background:#f0f0ed}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.primary:hover{background:#1d4ed8}
+
+  /* ── 顶栏 ─────────────────────────────────────────────── */
+  header{
+    height:46px;flex:none;display:flex;align-items:center;gap:8px;
+    padding:0 12px;background:var(--bar);border-bottom:1px solid var(--border);
+  }
+  .brand{font-weight:600;font-size:13px;margin-right:8px}
+  .brand small{font-weight:400;color:var(--muted);margin-left:6px}
+  .sep{width:1px;height:20px;background:var(--border);margin:0 4px}
+  .file-name{color:var(--muted);max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .file-name .dirty-dot{color:var(--danger);font-weight:700;margin-left:4px}
+  .spacer{flex:1}
+
+  /* ── 警告条 ───────────────────────────────────────────── */
+  .warn-banner{
+    display:none;flex:none;align-items:center;gap:10px;
+    padding:7px 12px;background:var(--warn-bg);color:var(--warn-text);
+    border-bottom:1px solid #f0dfa8;font-size:12px;
+  }
+  .warn-banner.show{display:flex}
+  .warn-banner button{padding:1px 8px;font-size:12px;background:transparent;border-color:#e2c878;color:inherit}
+
+  /* ── 主区 ─────────────────────────────────────────────── */
+  main{flex:1;display:flex;min-height:0}
+  .stage{flex:1;position:relative;min-width:0;background:var(--bg)}
+  .stage iframe{width:100%;height:100%;border:0;display:block;background:#111}
+  .empty-state{
+    position:absolute;inset:0;display:flex;flex-direction:column;gap:14px;
+    align-items:center;justify-content:center;background:var(--bg);color:var(--muted);
+  }
+  .empty-state h2{font-size:16px;font-weight:600;color:var(--text)}
+  .empty-state p{font-size:12px;line-height:1.9;text-align:center}
+  .empty-state.hidden{display:none}
+
+  /* ── design-system 抽屉 ────────────────────────────────── */
+  .drawer{
+    width:0;flex:none;overflow:hidden;border-left:1px solid transparent;
+    background:var(--bar);transition:width .18s ease;
+    display:flex;flex-direction:column;
+  }
+  .drawer.open{width:360px;border-left-color:var(--border)}
+  .drawer-inner{width:360px;flex:1;overflow-y:auto;padding:14px 16px 80px}
+  .drawer-head{margin-bottom:4px}
+  .drawer-head h2{font-size:14px;font-weight:600}
+  .drawer-head p{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.7}
+  .group{margin-top:18px}
+  .group>h3{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;margin-bottom:8px}
+  .theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .theme-card{
+    border:1px solid var(--border);border-radius:8px;padding:9px;cursor:pointer;background:#fff;
+  }
+  .theme-card:hover{border-color:#b9b9b3}
+  .theme-card.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+  .theme-card .swatches{display:flex;gap:4px;margin-bottom:7px}
+  .theme-card .swatches i{width:22px;height:22px;border-radius:5px;border:1px solid rgba(0,0,0,.12)}
+  .theme-card .sample{line-height:1.35;margin-bottom:5px;overflow:hidden;white-space:nowrap}
+  .theme-card .sample .fd{font-size:15px;font-weight:700}
+  .theme-card .sample .fb{font-size:11px;opacity:.75;margin-left:6px}
+  .theme-card .name{font-size:12px;font-weight:600}
+  .theme-card .desc{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.5;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .opt-row{display:flex;gap:8px}
+  .opt{
+    flex:1;border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;background:#fff;
+  }
+  .opt:hover{border-color:#b9b9b3}
+  .opt.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);background:var(--accent-soft)}
+  .opt .t{font-size:12px;font-weight:600}
+  .opt .d{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.5}
+  .drawer textarea{
+    width:100%;font:inherit;font-size:12px;line-height:1.7;padding:8px;
+    border:1px solid var(--border);border-radius:8px;resize:vertical;min-height:72px;
+  }
+  .drawer-foot{
+    flex:none;padding:12px 16px;border-top:1px solid var(--border);background:var(--bar);
+  }
+  .drawer-foot button{width:100%}
+  .drawer-foot p{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6}
+
+  /* ── 状态栏 ─────────────────────────────────────────────── */
+  footer{
+    height:28px;flex:none;display:flex;align-items:center;gap:18px;
+    padding:0 12px;background:var(--bar);border-top:1px solid var(--border);
+    font-size:12px;color:var(--muted);
+  }
+  footer .grow{flex:1}
+  #sbDirty.dirty{color:var(--danger);font-weight:600}
+
+  /* ── Toast ─────────────────────────────────────────────── */
+  #toast{
+    position:fixed;left:50%;bottom:48px;transform:translateX(-50%) translateY(8px);
+    background:#262624;color:#f5f5f3;font-size:12px;padding:8px 16px;border-radius:8px;
+    opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:99;max-width:70vw;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ── 确认弹窗（切换文件防串味） ─────────────────────────── */
+  .modal-mask{
+    position:fixed;inset:0;background:rgba(20,20,18,.42);display:none;
+    align-items:center;justify-content:center;z-index:100;
+  }
+  .modal-mask.show{display:flex}
+  .modal{background:#fff;border-radius:10px;padding:20px 22px;width:380px;box-shadow:0 12px 40px rgba(0,0,0,.22)}
+  .modal h3{font-size:14px;margin-bottom:8px}
+  .modal p{font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:16px}
+  .modal .btns{display:flex;justify-content:flex-end;gap:8px}
+
+  body.dragging::after{
+    content:"松开以打开文件";position:fixed;inset:0;z-index:90;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(37,99,235,.08);border:3px dashed var(--accent);
+    color:var(--accent);font-size:16px;font-weight:600;pointer-events:none;
+  }
+
+  /* ── 顶栏分段控件（§5.0 模式切换） ─────────────────────── */
+  .seg{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  .seg button{border:0;border-radius:0;padding:5px 12px}
+  .seg button + button{border-left:1px solid var(--border)}
+  .seg button.on{background:var(--accent);color:#fff}
+  .seg button.on:hover{background:#1d4ed8}
+
+  /* ── 批注弹窗（§10.2，父页面 DOM） ─────────────────────── */
+  .anno-modal{width:460px}
+  .anno-hits{max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin:10px 0}
+  .anno-hit-row{display:flex;gap:8px;align-items:center;padding:6px 8px;font-size:12px;border-bottom:1px solid #f0f0ee;cursor:pointer}
+  .anno-hit-row:last-child{border-bottom:0}
+  .anno-hit-row.excluded{opacity:.45}
+  .anno-hit-row .num{font-family:"SF Mono","Menlo",monospace;color:#b45309;font-weight:700;flex:none}
+  .anno-hit-row .slug{color:var(--muted);flex:none}
+  .anno-hit-row .tag{color:var(--muted);flex:none}
+  .anno-hit-row .exc{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #annoText{width:100%;min-height:64px;font:inherit;font-size:12px;line-height:1.7;padding:8px;
+    border:1px solid var(--border);border-radius:8px;resize:vertical}
+  .anno-modal .btns{margin-top:12px;margin-bottom:0}
+
+  /* ── 批注清单浮动列表（§10.2，舞台右下） ────────────────── */
+  .anno-panel{
+    position:absolute;right:16px;bottom:16px;width:300px;max-height:46%;
+    display:none;flex-direction:column;background:var(--bar);
+    border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.14);z-index:20;
+  }
+  .anno-panel.show{display:flex}
+  .anno-head{padding:10px 12px;border-bottom:1px solid var(--border);font-weight:600;
+    display:flex;gap:6px;align-items:baseline;font-size:12px}
+  .anno-head .spacer{flex:1}
+  .anno-unexp{color:var(--warn-text);font-weight:400;font-size:11px}
+  .anno-items{overflow-y:auto;padding:6px}
+  .anno-items .empty{padding:12px 8px;color:var(--muted);font-size:12px;text-align:center}
+  .anno-item{display:flex;gap:8px;align-items:flex-start;padding:7px 8px;border-radius:6px;cursor:pointer}
+  .anno-item:hover{background:#f0f0ed}
+  .anno-item .txt{flex:1;min-width:0;font-size:12px;line-height:1.5;word-break:break-all}
+  .anno-item .meta{color:var(--muted);font-size:11px;margin-top:2px}
+  .anno-item .del{flex:none;border:0;background:transparent;color:var(--muted);padding:0 4px;cursor:pointer;font-size:14px}
+  .anno-item .del:hover{color:var(--danger)}
+  .anno-foot{padding:10px 12px;border-top:1px solid var(--border)}
+  .anno-foot button{width:100%}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">HTML PPTX 编辑器<small>v1.2</small></div>
+  <button id="btnOpen">打开文件</button>
+  <button id="btnSave" class="primary" disabled title="将修改写回原文件">保存 (⌘S)</button>
+  <div class="sep"></div>
+  <div class="seg" id="modeSeg" title="切换交互模式">
+    <button data-mode="edit" class="on">文字编辑</button>
+    <button data-mode="annotate">批注</button>
+  </div>
+  <div class="sep"></div>
+  <div class="file-name" id="fileName">未打开文件</div>
+  <div class="spacer"></div>
+  <button id="btnReplaceImg" disabled title="替换当前选中图片（等价手势：选中图片后再点击一次）">替换图片</button>
+  <button id="btnPanel" aria-pressed="false">设计面板</button>
+</header>
+
+<div class="warn-banner" id="warnBanner">
+  <span id="warnText"></span>
+  <span class="spacer"></span>
+  <button id="warnClose">知道了</button>
+</div>
+
+<main>
+  <div class="stage" id="stage">
+    <iframe id="deckFrame" title="幻灯片预览"></iframe>
+    <div class="empty-state" id="emptyState">
+      <h2>打开一份 HTML 幻灯片开始编辑</h2>
+      <p>支持 html-pptx 技能生成的 .html 文件（带 data-editable 标记）。<br>
+      点击「打开文件」，或把文件拖到本页面。修改后按 Ctrl/⌘+S 写回原文件。</p>
+      <button class="primary" id="btnOpen2">打开文件</button>
+    </div>
+
+    <div class="anno-panel" id="annoPanel">
+      <div class="anno-head">批注清单 <span id="annoCount"></span><span class="spacer"></span><span class="anno-unexp" id="annoUnexp"></span></div>
+      <div class="anno-items" id="annoItems"></div>
+      <div class="anno-foot"><button class="primary" id="btnExportAnno" disabled>导出批注指令</button></div>
+    </div>
+  </div>
+
+  <aside class="drawer" id="drawer">
+    <div class="drawer-inner">
+      <div class="drawer-head">
+        <h2>设计意图面板</h2>
+        <p>这里只收集你的设计意图，不会直接修改幻灯片。生成指令后交给 AI coding agent 落码。</p>
+      </div>
+      <section class="group">
+        <h3>主题配色（13 套预置）</h3>
+        <div class="theme-grid" id="themeGrid"></div>
+      </section>
+      <section class="group">
+        <h3>明暗节奏（hero 暗页频率）</h3>
+        <div class="opt-row" id="rhythmOpts"></div>
+      </section>
+      <section class="group">
+        <h3>动效强度</h3>
+        <div class="opt-row" id="motionOpts"></div>
+      </section>
+      <section class="group">
+        <h3>自由补充</h3>
+        <textarea id="customText" placeholder="例如：封面希望更克制一点；第 3 页图表想突出同比数据……"></textarea>
+      </section>
+    </div>
+    <div class="drawer-foot">
+      <button class="primary" id="btnExport">生成修改指令（复制到剪贴板）</button>
+      <p>输出为自然语言指令 + 结构化 JSON，粘贴给 AI coding agent 即可执行。</p>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  <span id="sbPage">—</span>
+  <span id="sbSel">未选中元素</span>
+  <span class="grow"></span>
+  <span id="sbMsg"></span>
+  <span id="sbDirty">已保存</span>
+</footer>
+
+<div id="toast"></div>
+
+<div class="modal-mask" id="modalMask">
+  <div class="modal">
+    <h3>当前文件有未保存的修改</h3>
+    <p>打开新文件前，请选择如何处理这些修改。</p>
+    <div class="btns">
+      <button id="modalCancel">取消</button>
+      <button id="modalDiscard">放弃修改</button>
+      <button id="modalSave" class="primary">保存并继续</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="annoMask">
+  <div class="modal anno-modal">
+    <h3>新增批注</h3>
+    <div class="anno-hits" id="annoHits"></div>
+    <textarea id="annoText" placeholder="写下批注意见（必填）"></textarea>
+    <div class="btns">
+      <button id="annoCancel">取消</button>
+      <button id="annoSubmit" class="primary" disabled>提交批注</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept=".html,.htm,text/html" hidden>
+
+<script>
+'use strict';
+/* ============================================================
+   PANEL_DATA —— design-system 面板数据源（内置，不运行时 fetch）
+   主题部分由 skills/html-pptx/references/themes.md 整理生成（2026-09-16 同步）。
+   改主题先改 themes.md，再同步此处。Schema 见设计文档 §7.2。
+   ============================================================ */
+var PANEL_DATA = {
+  version: 1,
+  kind: 'design-intent',
+  questions: [
+    {
+      id: 'theme', header: '配色', question: '选择整体主题配色', multi_select: false,
+      options: [
+        { id:'a1', label:'墨水经典', series:'A', description:'通用分享、商业发布的安全选择；纯墨黑 + 暖米白，杂志感最强。',
+          visual:{ paper:'#f1efea', ink:'#0a0a0b', accent:'#0a0a0b', font_display:'serif', font_body:'sans' },
+          tokens:{ '--paper':'#f1efea','--paper-tint':'#e8e5de','--ink':'#0a0a0b','--ink-tint':'#18181a','--accent':'#0a0a0b','--accent-on':'#f1efea',
+            '--font-display':'"Songti SC","Noto Serif SC","STSong",serif','--font-body':'"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
+        { id:'a2', label:'靛蓝瓷', series:'A', description:'科技/研究/数据分享、技术发布会；深靛蓝 + 瓷白，冷静理性。',
+          visual:{ paper:'#f1f3f5', ink:'#0a1f3d', accent:'#0a1f3d', font_display:'serif', font_body:'sans' },
+          tokens:{ '--paper':'#f1f3f5','--paper-tint':'#e4e8ec','--ink':'#0a1f3d','--ink-tint':'#152a4a','--accent':'#0a1f3d','--accent-on':'#f1f3f5',
+            '--font-display':'"Songti SC","Noto Serif SC","STSong",serif','--font-body':'"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
+        { id:'a3', label:'森林墨', series:'A', description:'自然/可持续/文化/非虚构内容；深森林绿 + 象牙，沉稳有呼吸感。',
+          visual:{ paper:'#f5f1e8', ink:'#1a2e1f', accent:'#1a2e1f', font_display:'serif', font_body:'sans' },
+          tokens:{ '--paper':'#f5f1e8','--paper-tint':'#ece7da','--ink':'#1a2e1f','--ink-tint':'#253d2c','--accent':'#1a2e1f','--accent-on':'#f5f1e8',
+            '--font-display':'"Songti SC","Noto Serif SC","STSong",serif','--font-body':'"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
+        { id:'a4', label:'牛皮纸', series:'A', description:'怀旧/人文/阅读/历史/文学；深棕 + 暖米，温暖有年代感。',
+          visual:{ paper:'#eedfc7', ink:'#2a1e13', accent:'#2a1e13', font_display:'serif', font_body:'sans' },
+          tokens:{ '--paper':'#eedfc7','--paper-tint':'#e0d0b6','--ink':'#2a1e13','--ink-tint':'#3a2a1d','--accent':'#2a1e13','--accent-on':'#eedfc7',
+            '--font-display':'"Songti SC","Noto Serif SC","STSong",serif','--font-body':'"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
+        { id:'a5', label:'沙丘', series:'A', description:'艺术/设计/创意/时尚；炭灰 + 沙色，克制高级。',
+          visual:{ paper:'#f0e6d2', ink:'#1f1a14', accent:'#1f1a14', font_display:'serif', font_body:'sans' },
+          tokens:{ '--paper':'#f0e6d2','--paper-tint':'#e3d7bf','--ink':'#1f1a14','--ink-tint':'#2d2620','--accent':'#1f1a14','--accent-on':'#f0e6d2',
+            '--font-display':'"Songti SC","Noto Serif SC","STSong",serif','--font-body':'"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
+        { id:'b1', label:'克莱因蓝（IKB）', series:'B', description:'通用、商业发布、AI/科技、设计领域；最经典的瑞士配色。',
+          visual:{ paper:'#fafaf8', ink:'#0a0a0a', accent:'#002FA7', font_display:'sans', font_body:'sans' },
+          tokens:{ '--paper':'#fafaf8','--paper-tint':'#f0f0ee','--ink':'#0a0a0a','--ink-tint':'#1a1a1a','--accent':'#002FA7','--accent-on':'#ffffff',
+            '--font-display':'"Helvetica Neue","PingFang SC","Noto Sans SC",sans-serif','--font-body':'"Helvetica Neue","PingFang SC","Noto Sans SC",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
+        { id:'b2', label:'柠檬黄', series:'B', description:'年轻、运动、零售、消费品、活力主题；浅色高亮需配深色文字。',
+          visual:{ paper:'#fafaf8', ink:'#0a0a0a', accent:'#FFD500', font_display:'sans', font_body:'sans' },
+          tokens:{ '--paper':'#fafaf8','--paper-tint':'#f0f0ee','--ink':'#0a0a0a','--ink-tint':'#1a1a1a','--accent':'#FFD500','--accent-on':'#0a0a0a',
+            '--font-display':'"Helvetica Neue","PingFang SC","Noto Sans SC",sans-serif','--font-body':'"Helvetica Neue","PingFang SC","Noto Sans SC",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
+        { id:'b3', label:'柠檬绿', series:'B', description:'生态、可持续、健康、新兴科技、Z 世代品牌；荧光感适合屏幕。',
+          visual:{ paper:'#fafaf8', ink:'#0a0a0a', accent:'#C5E803', font_display:'sans', font_body:'sans' },
+          tokens:{ '--paper':'#fafaf8','--paper-tint':'#f0f0ee','--ink':'#0a0a0a','--ink-tint':'#1a1a1a','--accent':'#C5E803','--accent-on':'#0a0a0a',
+            '--font-display':'"Helvetica Neue","PingFang SC","Noto Sans SC",sans-serif','--font-body':'"Helvetica Neue","PingFang SC","Noto Sans SC",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
+        { id:'b4', label:'安全橙', series:'B', description:'工业、运动、技术发布会的警告/转折/重点页；只做局部高亮。',
+          visual:{ paper:'#fafaf8', ink:'#0a0a0a', accent:'#FF6B35', font_display:'sans', font_body:'sans' },
+          tokens:{ '--paper':'#fafaf8','--paper-tint':'#f0f0ee','--ink':'#0a0a0a','--ink-tint':'#1a1a1a','--accent':'#FF6B35','--accent-on':'#ffffff',
+            '--font-display':'"Helvetica Neue","PingFang SC","Noto Sans SC",sans-serif','--font-body':'"Helvetica Neue","PingFang SC","Noto Sans SC",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
+        { id:'c1', label:'信号黑', series:'C', description:'高冲击发布、keynote 开场；深灰底 + 信号橙焦点，默认页即暗页。',
+          visual:{ paper:'#1a1a1a', ink:'#ffffff', accent:'#FF5722', font_display:'sans', font_body:'sans' },
+          tokens:{ '--paper':'#1a1a1a','--paper-tint':'#242424','--ink':'#ffffff','--ink-tint':'#0f0f0f','--accent':'#FF5722','--accent-on':'#1a1a1a',
+            '--font-display':'"Arial Black","PingFang SC","Noto Sans SC",sans-serif','--font-body':'"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
+        { id:'c2', label:'暗夜植物园', series:'C', description:'艺术、品牌、高端私享；墨黑底 + 暖金点缀，每页至多一处。',
+          visual:{ paper:'#0f0f0f', ink:'#e8e4df', accent:'#d4a574', font_display:'serif', font_body:'sans' },
+          tokens:{ '--paper':'#0f0f0f','--paper-tint':'#1a1816','--ink':'#e8e4df','--ink-tint':'#2a2724','--accent':'#d4a574','--accent-on':'#0f0f0f',
+            '--font-display':'"Songti SC","Noto Serif SC","STSong",serif','--font-body':'"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
+        { id:'c3', label:'终端绿', series:'C', description:'开发者、技术布道、黑客美学；全页等宽字体。',
+          visual:{ paper:'#0d1117', ink:'#e6edf3', accent:'#39d353', font_display:'mono', font_body:'mono' },
+          tokens:{ '--paper':'#0d1117','--paper-tint':'#161b22','--ink':'#e6edf3','--ink-tint':'#1c2128','--accent':'#39d353','--accent-on':'#0d1117',
+            '--font-display':'"SF Mono","JetBrains Mono","Menlo",monospace','--font-body':'"SF Mono","JetBrains Mono","Menlo",monospace','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
+        { id:'c4', label:'纸与墨', series:'C', description:'文学、出版、深度长文；暖米 + 炭黑 + 绯红 accent。',
+          visual:{ paper:'#faf9f7', ink:'#1a1a1a', accent:'#c41e3a', font_display:'serif', font_body:'serif' },
+          tokens:{ '--paper':'#faf9f7','--paper-tint':'#efece7','--ink':'#1a1a1a','--ink-tint':'#2b2b2b','--accent':'#c41e3a','--accent-on':'#faf9f7',
+            '--font-display':'"Songti SC","Noto Serif SC","STSong",serif','--font-body':'"Songti SC","Noto Serif SC","STSong",serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } }
+      ]
+    },
+    {
+      id: 'rhythm', header: '明暗节奏', question: 'hero 暗页（.slide.dark）出现频率', multi_select: false,
+      options: [
+        { id:'low',      label:'少',   description:'仅封面/封底用暗页' },
+        { id:'moderate', label:'适中', description:'章节转折处用暗页（默认）' },
+        { id:'high',     label:'多',   description:'频繁明暗交替，节奏感强' }
+      ]
+    },
+    {
+      id: 'motion', header: '动效', question: '动效强度', multi_select: false,
+      options: [
+        { id:'none',   label:'无',   description:'去掉 reveal 入场动效' },
+        { id:'subtle', label:'克制', description:'保留默认 reveal 淡入（默认）' },
+        { id:'strong', label:'强',   description:'更明显的位移与阶梯延迟' }
+      ]
+    },
+    { id:'custom', header:'自由补充', question:'其他想调整的地方', multi_select:false, options:[] }
+  ]
+};
+
+/* ============================================================
+   全局状态
+   ============================================================ */
+var state = {
+  fileHandle: null,      // FileSystemFileHandle（主打开路径才有）
+  assetsHandle: null,    // assets/ 目录句柄（首次换图时引导授权）
+  fileName: '',
+  loaded: false,
+  dirty: false,
+  embedded: window.parent !== window,
+  fsaa: typeof window.showOpenFilePicker === 'function'
+};
+
+var frame = document.getElementById('deckFrame');
+var registry = [];       // {el, slideId, kind, path}
+var selEl = null;        // 当前选中元素
+var editEl = null;       // 编辑中元素
+var editOriginal = '';   // 进入编辑前的 innerHTML（Esc 还原用）
+var pasteHandler = null;
+var hoverEl = null, hoverTimer = null;
+
+/* 批注（§10）：模式 / 会话态（不置脏、不进保存产物） */
+var mode = 'edit';           // 'edit' | 'annotate'
+var annotations = [];        // {num, id, note, created_at, targets:[{el, slide, path, tag, excerpt}]}
+var annoSeq = 0;
+var annoUnexported = false;  // 有未导出的批注变更
+var marquee = null;          // {x0, y0, x1, y1, el, d} 进行中的框选
+var pendingAnno = null;      // {hits:[{el, slide, path, tag, excerpt, checked}]} 弹窗期间
+
+var EDIT_CLASSES = ['ed-hover', 'ed-selected', 'ed-editing', 'anno-hit', 'anno-flash', 'anno-dragging'];
+
+function $(id){ return document.getElementById(id); }
+
+function toast(msg){
+  var t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function(){ t.classList.remove('show'); }, 2600);
+}
+
+function showWarn(msg){ $('warnText').textContent = msg; $('warnBanner').classList.add('show'); }
+function hideWarn(){ $('warnBanner').classList.remove('show'); }
+$('warnClose').addEventListener('click', hideWarn);
+
+/* ============================================================
+   脏状态
+   ============================================================ */
+function setDirty(d){
+  if (state.dirty === d) return;
+  state.dirty = d;
+  renderDirty();
+  if (state.embedded){
+    try { window.parent.postMessage({ type:'pptx-html:dirty', dirty:d }, '*'); } catch(e){}
+  }
+}
+function renderDirty(){
+  $('sbDirty').textContent = state.dirty ? '● 未保存' : '已保存';
+  $('sbDirty').classList.toggle('dirty', state.dirty);
+  $('fileName').innerHTML = '';
+  $('fileName').appendChild(document.createTextNode(state.fileName || '未打开文件'));
+  if (state.dirty){
+    var dot = document.createElement('span');
+    dot.className = 'dirty-dot'; dot.textContent = '●';
+    $('fileName').appendChild(dot);
+  }
+}
+window.addEventListener('beforeunload', function(e){
+  if (state.dirty){ e.preventDefault(); e.returnValue = ''; }
+});
+
+/* ============================================================
+   打开文件（§3.1）
+   ============================================================ */
+async function openViaPicker(){
+  if (state.fsaa){
+    try {
+      var handles = await window.showOpenFilePicker({
+        types: [{ description:'HTML 幻灯片', accept:{ 'text/html': ['.html', '.htm'] } }],
+        multiple: false
+      });
+      var handle = handles[0];
+      var file = await handle.getFile();
+      await ensureSwitchOkAndOpen(await file.text(), file.name, handle);
+    } catch(e){ if (e && e.name !== 'AbortError') toast('打开失败：' + e.message); }
+  } else {
+    $('fileInput').click();
+  }
+}
+$('btnOpen').addEventListener('click', openViaPicker);
+$('btnOpen2').addEventListener('click', openViaPicker);
+$('fileInput').addEventListener('change', async function(){
+  var f = this.files && this.files[0];
+  this.value = '';
+  if (!f) return;
+  await ensureSwitchOkAndOpen(await f.text(), f.name, null);
+});
+
+/* 拖拽打开（无句柄，保存走降级路径） */
+window.addEventListener('dragover', function(e){ e.preventDefault(); document.body.classList.add('dragging'); });
+window.addEventListener('dragleave', function(e){ if (e.target === document.body || !e.relatedTarget) document.body.classList.remove('dragging'); });
+window.addEventListener('drop', async function(e){
+  e.preventDefault(); document.body.classList.remove('dragging');
+  var f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!f) return;
+  if (!/\.html?$/i.test(f.name)){ toast('请拖入 .html 文件'); return; }
+  await ensureSwitchOkAndOpen(await f.text(), f.name, null);
+});
+
+/* 防串味（§3.3）：有脏修改时先确认 保存/放弃/取消 */
+function askUnsaved(){
+  return new Promise(function(resolve){
+    var mask = $('modalMask');
+    mask.classList.add('show');
+    function done(v){ mask.classList.remove('show');
+      $('modalSave').onclick = $('modalDiscard').onclick = $('modalCancel').onclick = null;
+      resolve(v);
+    }
+    $('modalSave').onclick = function(){ done('save'); };
+    $('modalDiscard').onclick = function(){ done('discard'); };
+    $('modalCancel').onclick = function(){ done('cancel'); };
+  });
+}
+async function ensureSwitchOkAndOpen(text, name, handle, assetsUrl){
+  if (state.loaded && state.dirty){
+    var choice = await askUnsaved();
+    if (choice === 'cancel') return;
+    if (choice === 'save'){ var ok = await saveDeck(); if (!ok) return; }
+  }
+  openHtml(text, name, handle, assetsUrl);
+}
+
+function openHtml(text, name, handle, assetsUrl){
+  /* 契约预检：至少有 .slide 和 data-slide-id；不符合仍可打开，仅提示 */
+  var contractOk = false;
+  try {
+    var probe = new DOMParser().parseFromString(text, 'text/html');
+    contractOk = !!(probe.querySelector('.slide') && probe.querySelector('[data-slide-id]'));
+  } catch(e){}
+  if (!contractOk) showWarn('该文件似乎不是 html-pptx 技能产物（缺少 .slide / data-slide-id 标记），仍可打开，但仅带标记的元素可编辑。');
+  else hideWarn();
+
+  /* srcdoc 的 base URL 继承自本页面：deck 的相对路径资源（assets/ 等）会按
+     editor.html 所在目录解析。嵌入态下宿主可用 assetsUrl 指定 deck 的资源基准（§8）。
+     注入的 <base> 带 data-editor-injected，序列化净化时剔除，不进保存产物。 */
+  if (assetsUrl){
+    var baseTag = '<base href="' + assetsUrl + '" data-editor-injected>';
+    text = /<head>/i.test(text) ? text.replace(/<head>/i, '<head>' + baseTag)
+                                : baseTag + text;
+  }
+
+  state.fileHandle = handle || null;
+  state.assetsHandle = null;
+  state.fileName = name || 'untitled.html';
+  selEl = null; editEl = null; hoverEl = null; registry = [];
+  /* 批注仅存会话（§10.5）：换文件即清空 */
+  if (marquee) cancelMarquee();
+  pendingAnno = null;
+  $('annoMask').classList.remove('show');
+  annotations = []; annoSeq = 0; annoUnexported = false;
+  renderAnnoList();
+
+  frame.onload = function(){
+    try { initEditLayer(); }
+    catch(e){ console.error('[editor] 编辑层初始化失败', e); toast('编辑层初始化失败，请查看控制台'); }
+  };
+  frame.srcdoc = text;
+
+  state.loaded = true;
+  setDirty(false); state.dirty = false; renderDirty();
+  $('emptyState').classList.add('hidden');
+  $('btnSave').disabled = false;
+  updateSaveButton();
+  $('sbMsg').textContent = '';
+  updateStatusBar();
+}
+
+/* ============================================================
+   渲染后初始化（§4）：注入编辑层 + 构建注册表
+   ============================================================ */
+function doc(){ return frame.contentDocument; }
+
+var INJECTED_CSS = [
+  '[data-editable],[data-editable-image]{cursor:default}',
+  '[data-editable-image]{cursor:pointer}',
+  '.ed-hover{outline:1.5px dashed #3b82f6 !important;outline-offset:3px}',
+  '.ed-selected{outline:2px solid #2563eb !important;outline-offset:3px}',
+  '.ed-editing{outline:2px solid #16a34a !important;outline-offset:3px;cursor:text;caret-color:auto;white-space:pre-wrap}',
+  /* 批注（§10）：注入的视觉元素按当前 --slide-scale 反缩放补偿（§10.2-1） */
+  '.anno-hit{outline:calc(2.5px/var(--slide-scale,.5)) solid #f59e0b !important;outline-offset:calc(3px/var(--slide-scale,.5))}',
+  '.anno-flash{animation:annoFlash .45s ease 3}',
+  '@keyframes annoFlash{0%,100%{outline-color:#f59e0b}50%{outline-color:transparent}}',
+  '.anno-badge{position:absolute;z-index:50;pointer-events:none;background:#f59e0b;color:#fff;' +
+    'font-family:var(--font-mono,monospace);font-size:calc(13px/var(--slide-scale,.5));line-height:1;' +
+    'padding:calc(3px/var(--slide-scale,.5)) calc(6px/var(--slide-scale,.5));' +
+    'border-radius:calc(3px/var(--slide-scale,.5));box-shadow:0 0 0 calc(1px/var(--slide-scale,.5)) rgba(0,0,0,.25)}',
+  /* 框选选框是视口层 UI，不做画布缩放补偿 */
+  '.anno-marquee{position:fixed;z-index:9999;pointer-events:none;border:1.5px dashed #f59e0b;background:rgba(245,158,11,.12)}',
+  'body.anno-dragging,body.anno-dragging *{user-select:none !important}'
+].join('\n');
+
+function initEditLayer(){
+  var d = doc();
+  if (!d || !d.body) return;
+
+  /* 注入编辑层样式（带 data-editor-injected，保存时剔除） */
+  var style = d.createElement('style');
+  style.setAttribute('data-editor-injected', '');
+  style.textContent = INJECTED_CSS;
+  d.head.appendChild(style);
+
+  buildRegistry(d);
+  wireGestures(d);
+  wireSlideStatus(d);
+  updateStatusBar();
+}
+
+function childIndexPath(el, stop){
+  var parts = [], n = el;
+  while (n && n !== stop && n.parentElement){
+    var p = n.parentElement;
+    var idx = Array.prototype.indexOf.call(p.children, n);
+    parts.unshift(n.tagName.toLowerCase() + '.' + idx);
+    n = p;
+  }
+  return parts.join('/');
+}
+
+function buildRegistry(d){
+  registry = [];
+  var slides = d.querySelectorAll('.slide[data-slide-id]');
+  Array.prototype.forEach.call(slides, function(slide){
+    var sid = slide.getAttribute('data-slide-id');
+    var editables = slide.querySelectorAll('[data-editable],[data-editable-image]');
+    Array.prototype.forEach.call(editables, function(el){
+      if (el.closest('[data-editable-skip]')) return;   /* 装饰元素忽略 */
+      registry.push({
+        el: el,
+        slideId: sid,
+        kind: el.hasAttribute('data-editable-image') ? 'image' : 'text',
+        path: sid + ':' + childIndexPath(el, slide)
+      });
+    });
+  });
+}
+
+/* ============================================================
+   编辑手势（§5）
+   ============================================================ */
+function editableTarget(e){
+  var t = e.target;
+  if (!t || !t.closest) return null;
+  var el = t.closest('[data-editable],[data-editable-image]');
+  if (!el) return null;
+  if (el.closest('[data-editable-skip]')) return null;
+  return el;
+}
+
+function selectEl(el){
+  clearSelection();
+  selEl = el;
+  el.classList.add('ed-selected');
+  updateStatusBar();
+}
+function clearSelection(){
+  if (editEl) commitEdit();
+  if (selEl){ selEl.classList.remove('ed-selected'); selEl = null; }
+  $('btnReplaceImg').disabled = true;
+  updateStatusBar();
+}
+
+function enterEdit(el){
+  editEl = el;
+  editOriginal = el.innerHTML;
+  el.classList.add('ed-editing');
+  el.contentEditable = 'plaintext-only';
+  if (el.contentEditable !== 'plaintext-only'){
+    /* 降级："true" + 拦截粘贴剥成纯文本（§5.2） */
+    el.contentEditable = 'true';
+    pasteHandler = function(ev){
+      ev.preventDefault();
+      var text = (ev.clipboardData || el.ownerDocument.defaultView.clipboardData).getData('text/plain');
+      el.ownerDocument.execCommand('insertText', false, text);
+    };
+    el.addEventListener('paste', pasteHandler);
+  }
+  el.focus();
+  /* 全选原文 */
+  var d = el.ownerDocument, range = d.createRange();
+  range.selectNodeContents(el);
+  var sel = d.defaultView.getSelection();
+  sel.removeAllRanges(); sel.addRange(range);
+  updateStatusBar();
+}
+function exitEditDom(el){
+  el.classList.remove('ed-editing');
+  if (pasteHandler){ el.removeEventListener('paste', pasteHandler); pasteHandler = null; }
+  el.removeAttribute('contenteditable');
+}
+/* plaintext-only 的 Enter 产生文本 \n 而非 <br>（Chromium 实测），
+   直接序列化会在重新解析时被空白折叠吃掉换行——提交前归一化为 <br>。 */
+function normalizeBreaks(el){
+  var d = el.ownerDocument;
+  var walker = d.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  var targets = [], n;
+  while ((n = walker.nextNode())){
+    if (n.nodeValue.indexOf('\n') >= 0) targets.push(n);
+  }
+  targets.forEach(function(t){
+    var frag = d.createDocumentFragment();
+    t.nodeValue.split('\n').forEach(function(part, i){
+      if (i) frag.appendChild(d.createElement('br'));
+      if (part) frag.appendChild(d.createTextNode(part));
+    });
+    t.parentNode.replaceChild(frag, t);
+  });
+}
+function commitEdit(){
+  if (!editEl) return;
+  var el = editEl; editEl = null;
+  /* 仅在内容变化时归一化，避免对未编辑的原文做无谓重写 */
+  if (el.innerHTML !== editOriginal) normalizeBreaks(el);
+  exitEditDom(el);
+  if (el.innerHTML !== editOriginal) setDirty(true);
+  el.classList.add('ed-selected'); selEl = el;
+  updateStatusBar();
+}
+function cancelEdit(){
+  if (!editEl) return;
+  var el = editEl; editEl = null;
+  el.innerHTML = editOriginal;
+  exitEditDom(el);
+  el.classList.add('ed-selected'); selEl = el;
+  el.blur();
+  updateStatusBar();
+}
+
+function wireGestures(d){
+  /* 两段手势（§5.1）：首击选中，二击进入编辑/触发换图。批注模式下整体禁用（§5.0） */
+  d.addEventListener('click', function(e){
+    if (mode !== 'edit') return;
+    if (editEl && editEl.contains(e.target)) return;   /* 编辑中点击内部不动 */
+    var t = editableTarget(e);
+    if (!t){ if (editEl) commitEdit(); else clearSelection(); return; }
+    if (editEl) commitEdit();
+    if (t === selEl){
+      if (t.hasAttribute('data-editable-image')) replaceImage(t);
+      else enterEdit(t);
+    } else {
+      selectEl(t);
+      $('btnReplaceImg').disabled = !t.hasAttribute('data-editable-image') || !state.fsaa;
+    }
+  }, true);
+
+  d.addEventListener('dblclick', function(e){
+    if (mode !== 'edit') return;
+    var t = editableTarget(e);
+    if (!t) return;
+    e.preventDefault();
+    if (editEl) return;
+    if (t !== selEl) selectEl(t);
+    if (t.hasAttribute('data-editable-image')) replaceImage(t);
+    else enterEdit(t);
+  }, true);
+
+  /* hover 高亮（§5.3）：JS mouseover + 延迟隐藏 */
+  d.addEventListener('mouseover', function(e){
+    if (mode !== 'edit') return;
+    var t = editableTarget(e);
+    if (!t || t === editEl) return;
+    clearTimeout(hoverTimer);
+    if (hoverEl && hoverEl !== t) hoverEl.classList.remove('ed-hover');
+    hoverEl = t;
+    t.classList.add('ed-hover');
+  }, true);
+  d.addEventListener('mouseout', function(){
+    if (mode !== 'edit') return;
+    clearTimeout(hoverTimer);
+    hoverTimer = setTimeout(function(){
+      if (hoverEl){ hoverEl.classList.remove('ed-hover'); hoverEl = null; }
+    }, 150);
+  }, true);
+
+  d.addEventListener('keydown', function(e){
+    /* Ctrl/Cmd+S 保存（iframe 内按键也要接住） */
+    if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')){
+      e.preventDefault(); saveDeck(); return;
+    }
+    if (e.key === 'Escape' && marquee){ e.preventDefault(); cancelMarquee(); return; }
+    if (editEl){
+      if (e.key === 'Escape'){ e.preventDefault(); cancelEdit(); }
+      else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); commitEdit(); }
+      return;
+    }
+    if (mode !== 'edit') return;
+    if (selEl && e.key === 'Enter'){
+      e.preventDefault();
+      if (selEl.hasAttribute('data-editable-image')) replaceImage(selEl);
+      else enterEdit(selEl);
+    } else if (selEl && e.key === 'Escape'){
+      clearSelection();
+    }
+  }, true);
+
+  /* 失焦确认（§5.1） */
+  d.addEventListener('blur', function(e){
+    if (editEl && e.target === editEl) commitEdit();
+  }, true);
+
+  wireMarquee(d);
+}
+
+/* 状态栏当前页：复用骨架 chrome 的计数逻辑 */
+function wireSlideStatus(d){
+  var deck = d.querySelector('.deck');
+  if (!deck){ $('sbPage').textContent = '—'; return; }
+  var update = function(){
+    var slots = deck.querySelectorAll('.slide-slot');
+    var n = slots.length || d.querySelectorAll('.slide').length;
+    var top = deck.scrollTop, idx = n - 1;
+    for (var i = 0; i < slots.length; i++){
+      if (slots[i].offsetTop + slots[i].offsetHeight / 2 > top + 8){ idx = i; break; }
+    }
+    $('sbPage').textContent = '第 ' + (idx + 1) + ' / ' + n + ' 页';
+  };
+  deck.addEventListener('scroll', function(){ frame.contentWindow.requestAnimationFrame(update); }, { passive:true });
+  update();
+}
+
+function updateStatusBar(){
+  if (mode === 'annotate' && !editEl){
+    $('sbSel').textContent = '批注模式：在幻灯片上拖拽框选要批注的元素（Esc 取消框选）';
+    $('btnReplaceImg').disabled = true;
+    return;
+  }
+  if (editEl){
+    var r1 = findReg(editEl);
+    $('sbSel').textContent = '编辑中：' + (r1 ? r1.path : editEl.tagName.toLowerCase()) + '（Esc 取消 · 失焦/Ctrl+Enter 确认）';
+  } else if (selEl){
+    var r2 = findReg(selEl);
+    var kind = selEl.hasAttribute('data-editable-image') ? '图片' : '文本';
+    $('sbSel').textContent = '选中：' + (r2 ? r2.path : selEl.tagName.toLowerCase()) + ' · ' + kind +
+      (kind === '图片' ? '（再次点击替换图片）' : '（再次点击进入编辑）');
+    $('btnReplaceImg').disabled = !(kind === '图片' && state.fsaa);
+  } else {
+    $('sbSel').textContent = '未选中元素';
+    $('btnReplaceImg').disabled = true;
+  }
+}
+function findReg(el){
+  for (var i = 0; i < registry.length; i++) if (registry[i].el === el) return registry[i];
+  return null;
+}
+$('btnReplaceImg').addEventListener('click', function(){
+  if (selEl && selEl.hasAttribute('data-editable-image')) replaceImage(selEl);
+});
+
+/* ============================================================
+   批注（§10）：框选 → 批注 → 回传 AI
+   沟通层功能：不修改文档、不置脏、不进保存产物
+   （注入节点带 data-editor-injected，类名入 EDIT_CLASSES，随 §5.4 净化剔除）。
+   ============================================================ */
+
+/* §5.0 模式切换 */
+function setMode(m){
+  if (m === mode) return;
+  if (editEl) commitEdit();          /* 退出进行中的编辑（确认未提交内容） */
+  if (marquee) cancelMarquee();      /* 退出进行中的框选 */
+  clearSelection();
+  mode = m;
+  Array.prototype.forEach.call($('modeSeg').querySelectorAll('button'), function(b){
+    b.classList.toggle('on', b.dataset.mode === m);
+  });
+  $('annoPanel').classList.toggle('show', m === 'annotate');
+  updateStatusBar();
+}
+$('modeSeg').addEventListener('click', function(e){
+  var b = e.target.closest('button[data-mode]');
+  if (b && state.loaded) setMode(b.dataset.mode);
+});
+
+function excerptOf(el){
+  if (el.hasAttribute('data-editable-image'))
+    return (el.getAttribute('src') || '').split('?')[0];
+  return (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+}
+
+/* 批注 path：与编辑注册表同一 child-index 算法，分隔符按 §10.4 schema 用 ">" */
+function annoPathOf(reg){
+  return reg.path.slice(reg.slideId.length + 1).split('/').join('>');
+}
+
+/* 三层引用回解（§10.3）：slide + path 在文档中重新定位元素 */
+function resolveByRef(slideId, path){
+  var d = doc(); if (!d) return null;
+  var slide = d.querySelector('.slide[data-slide-id="' + slideId + '"]');
+  if (!slide) return null;
+  var cur = slide;
+  var parts = path.split('>');
+  for (var i = 0; i < parts.length; i++){
+    var m = /^([a-zA-Z0-9]+)\.(\d+)$/.exec(parts[i]);
+    if (!m) return null;
+    var child = cur.children[+m[2]];
+    if (!child || child.tagName.toLowerCase() !== m[1].toLowerCase()) return null;
+    cur = child;
+  }
+  return cur;
+}
+
+/* ---------- 框选（§10.1）：选框注入 iframe 文档，坐标同在 iframe 坐标系 ---------- */
+function wireMarquee(d){
+  d.addEventListener('mousedown', function(e){
+    if (mode !== 'annotate' || e.button !== 0 || pendingAnno) return;
+    e.preventDefault();   /* 抑制文字选中 / 图片拖拽 / 焦点转移 */
+    var el = d.createElement('div');
+    el.className = 'anno-marquee';
+    el.setAttribute('data-editor-injected', '');
+    d.body.appendChild(el);
+    marquee = { x0: e.clientX, y0: e.clientY, x1: e.clientX, y1: e.clientY, el: el, d: d };
+    d.body.classList.add('anno-dragging');
+    layoutMarquee();
+  }, true);
+  d.addEventListener('mousemove', function(e){
+    if (!marquee) return;
+    marquee.x1 = e.clientX; marquee.y1 = e.clientY;
+    layoutMarquee();
+  }, true);
+  d.addEventListener('mouseup', function(){ if (marquee) finishMarquee(); }, true);
+  d.addEventListener('dragstart', function(e){
+    if (mode === 'annotate') e.preventDefault();   /* 抑制图片原生拖拽 */
+  }, true);
+}
+/* 鼠标在 iframe 外松开也要收尾 */
+window.addEventListener('mouseup', function(){ if (marquee) finishMarquee(); });
+/* Esc 取消框选：iframe 内的监听之外，编辑器侧兜底（焦点落在编辑器 chrome 时） */
+window.addEventListener('keydown', function(e){
+  if (e.key === 'Escape' && marquee){ e.preventDefault(); cancelMarquee(); }
+});
+
+function layoutMarquee(){
+  var m = marquee;
+  var x = Math.min(m.x0, m.x1), y = Math.min(m.y0, m.y1);
+  m.el.style.left = x + 'px'; m.el.style.top = y + 'px';
+  m.el.style.width = Math.abs(m.x1 - m.x0) + 'px';
+  m.el.style.height = Math.abs(m.y1 - m.y0) + 'px';
+}
+function cancelMarquee(){
+  if (!marquee) return;
+  marquee.el.remove();
+  marquee.d.body.classList.remove('anno-dragging');
+  marquee = null;
+}
+function finishMarquee(){
+  var m = marquee;
+  cancelMarquee();
+  var w = Math.abs(m.x1 - m.x0), h = Math.abs(m.y1 - m.y0);
+  if (w < 3 && h < 3) return;      /* 误触点击，静默 */
+  var rect = {
+    left: Math.min(m.x0, m.x1), right: Math.max(m.x0, m.x1),
+    top: Math.min(m.y0, m.y1), bottom: Math.max(m.y0, m.y1)
+  };
+  /* 命中 = 宽松相交（§10.1）；候选 = 注册表（已排除 data-editable-skip 子树） */
+  var hits = [];
+  registry.forEach(function(r){
+    var b = r.el.getBoundingClientRect();
+    if (b.width <= 0 || b.height <= 0) return;
+    if (b.left < rect.right && b.right > rect.left && b.top < rect.bottom && b.bottom > rect.top){
+      hits.push({ el: r.el, slide: r.slideId, path: annoPathOf(r),
+                  tag: r.el.tagName.toLowerCase(), excerpt: excerptOf(r.el), checked: true });
+    }
+  });
+  if (!hits.length) return;        /* 零命中：静默结束，不弹窗（§10.5） */
+  openAnnoModal(hits);
+}
+
+/* ---------- 高亮描边 + 编号角标（注入节点，净化剔除） ---------- */
+function rebuildAnnoMarks(){
+  var d = doc(); if (!d || !d.body) return;
+  Array.prototype.forEach.call(d.querySelectorAll('.anno-badge'), function(b){ b.remove(); });
+  Array.prototype.forEach.call(d.querySelectorAll('.anno-hit'), function(el){ el.classList.remove('anno-hit'); });
+  var mark = function(el, num){
+    if (!el.isConnected) return;
+    el.classList.add('anno-hit');
+    var slide = el.closest('.slide');
+    if (!slide) return;
+    var x = 0, y = 0, n = el;
+    while (n && n !== slide){ x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; }
+    /* 同一元素属于多条批注时角标堆叠（§10.2-1）：统计本元素已画角标数向右错开 */
+    var stacked = 0;
+    Array.prototype.forEach.call(slide.querySelectorAll('.anno-badge'), function(b){
+      if (b.__forEl === el) stacked++;
+    });
+    var badge = d.createElement('span');
+    badge.className = 'anno-badge';
+    badge.setAttribute('data-editor-injected', '');
+    badge.textContent = num;
+    badge.__forEl = el;
+    badge.style.top = y + 'px';
+    badge.style.left = 'calc(' + x + 'px + ' + (stacked * 16) + 'px/var(--slide-scale,.5))';
+    slide.appendChild(badge);
+  };
+  annotations.forEach(function(a){
+    a.targets.forEach(function(t){ mark(t.el, a.num); });
+  });
+  if (pendingAnno){
+    pendingAnno.hits.forEach(function(h){ if (h.checked) mark(h.el, annoSeq + 1); });
+  }
+}
+
+/* ---------- 批注弹窗（§10.2，父页面 DOM） ---------- */
+function openAnnoModal(hits){
+  pendingAnno = { hits: hits };
+  var box = $('annoHits');
+  box.innerHTML = '';
+  hits.forEach(function(h, i){
+    var row = document.createElement('label');
+    row.className = 'anno-hit-row';
+    var cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = true;
+    cb.addEventListener('change', function(){
+      h.checked = cb.checked;
+      row.classList.toggle('excluded', !cb.checked);
+      rebuildAnnoMarks();
+      updateAnnoSubmit();
+    });
+    var num = document.createElement('span'); num.className = 'num'; num.textContent = '#' + (i + 1);
+    var slug = document.createElement('span'); slug.className = 'slug'; slug.textContent = h.slide;
+    var tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = '<' + h.tag + '>';
+    var exc = document.createElement('span'); exc.className = 'exc'; exc.textContent = h.excerpt;
+    row.appendChild(cb); row.appendChild(num); row.appendChild(slug);
+    row.appendChild(tag); row.appendChild(exc);
+    box.appendChild(row);
+  });
+  $('annoText').value = '';
+  updateAnnoSubmit();
+  rebuildAnnoMarks();
+  $('annoMask').classList.add('show');
+  $('annoText').focus();
+}
+function updateAnnoSubmit(){
+  var anyChecked = pendingAnno && pendingAnno.hits.some(function(h){ return h.checked; });
+  $('annoSubmit').disabled = !(anyChecked && $('annoText').value.trim());
+}
+function closeAnnoModal(){
+  $('annoMask').classList.remove('show');
+}
+$('annoText').addEventListener('input', updateAnnoSubmit);
+$('annoCancel').addEventListener('click', function(){
+  pendingAnno = null;             /* 取消：清除高亮角标，不留痕（§10.2-2） */
+  rebuildAnnoMarks();
+  closeAnnoModal();
+});
+$('annoSubmit').addEventListener('click', function(){
+  if (!pendingAnno) return;
+  var note = $('annoText').value.trim();
+  var targets = pendingAnno.hits.filter(function(h){ return h.checked; });
+  if (!note || !targets.length) return;   /* 空批注禁止提交（§10.5） */
+  annoSeq++;
+  annotations.push({
+    num: annoSeq, id: 'anno-' + annoSeq, note: note, created_at: localIso(),
+    targets: targets.map(function(h){
+      return { el: h.el, slide: h.slide, path: h.path, tag: h.tag, excerpt: h.excerpt };
+    })
+  });
+  pendingAnno = null;
+  annoUnexported = true;
+  closeAnnoModal();
+  rebuildAnnoMarks();
+  renderAnnoList();
+});
+/* Esc 关闭弹窗 = 取消 */
+window.addEventListener('keydown', function(e){
+  if (e.key === 'Escape' && pendingAnno && $('annoMask').classList.contains('show')){
+    pendingAnno = null;
+    rebuildAnnoMarks();
+    closeAnnoModal();
+  }
+});
+
+/* ---------- 批注清单（§10.2-3：定位 + 删除 + 导出） ---------- */
+function renderAnnoList(){
+  var box = $('annoItems');
+  box.innerHTML = '';
+  $('annoCount').textContent = annotations.length ? '（' + annotations.length + '）' : '';
+  $('annoUnexp').textContent = annoUnexported && annotations.length ? '未导出' : '';
+  $('btnExportAnno').disabled = !annotations.length;
+  if (!annotations.length){
+    var empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = '在幻灯片上拖拽框选元素，写下批注';
+    box.appendChild(empty);
+    return;
+  }
+  annotations.forEach(function(a){
+    var item = document.createElement('div');
+    item.className = 'anno-item';
+    var txt = document.createElement('div');
+    txt.className = 'txt';
+    var note = document.createElement('div'); note.textContent = a.note;
+    var meta = document.createElement('div'); meta.className = 'meta';
+    var slides = [];
+    a.targets.forEach(function(t){ if (slides.indexOf(t.slide) < 0) slides.push(t.slide); });
+    meta.textContent = '#' + a.num + ' · 页 ' + slides.join('、') + ' · ' + a.targets.length + ' 个元素';
+    txt.appendChild(note); txt.appendChild(meta);
+    var del = document.createElement('button');
+    del.className = 'del'; del.textContent = '×'; del.title = '删除该条批注';
+    del.addEventListener('click', function(e){
+      e.stopPropagation();
+      annotations.splice(annotations.indexOf(a), 1);
+      annoUnexported = true;
+      rebuildAnnoMarks();
+      renderAnnoList();
+    });
+    txt.addEventListener('click', function(){ locateAnnotation(a); });
+    item.appendChild(txt); item.appendChild(del);
+    box.appendChild(item);
+  });
+}
+function locateAnnotation(a){
+  var d = doc(); if (!d) return;
+  var first = a.targets.filter(function(t){ return t.el.isConnected; })[0];
+  if (!first) return;
+  var slot = first.el.closest('.slide-slot');
+  var deck = d.querySelector('.deck');
+  if (slot && deck) deck.scrollTo({ top: slot.offsetTop, behavior: 'auto' });
+  a.targets.forEach(function(t){
+    if (!t.el.isConnected) return;
+    t.el.classList.remove('anno-flash');
+    void t.el.offsetWidth;   /* 重启动画 */
+    t.el.classList.add('anno-flash');
+    setTimeout(function(){ t.el.classList.remove('anno-flash'); }, 1500);
+  });
+}
+
+/* ---------- 导出（§10.4）：自然语言 + JSON，剪贴板 + 嵌入 postMessage ---------- */
+function localIso(){
+  var d = new Date();
+  var p = function(n){ return String(n).padStart(2, '0'); };
+  var off = -d.getTimezoneOffset(), sign = off >= 0 ? '+' : '-', ao = Math.abs(off);
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' +
+    p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) +
+    sign + p(ao / 60 | 0) + ':' + p(ao % 60);
+}
+function buildAnnoExport(){
+  var payload = { version: 1, kind: 'annotation', deck: state.fileName || 'index.html', annotations: [] };
+  annotations.forEach(function(a){
+    var targets = a.targets.map(function(t){
+      /* excerpt 以导出时刻重新抓取为准（§10.5）；抓不到/已变更则标注 */
+      var cur = t.el.isConnected ? t.el : resolveByRef(t.slide, t.path);
+      var excerpt = cur ? excerptOf(cur) : t.excerpt;
+      var out = { slide: t.slide, path: t.path, tag: t.tag, excerpt: excerpt };
+      if (!cur) out.target_missing = true;
+      else if (excerpt !== t.excerpt) out.excerpt_changed = true;
+      return out;
+    });
+    payload.annotations.push({ id: a.id, targets: targets, note: a.note, created_at: a.created_at });
+  });
+  var lines = [];
+  lines.push('请按以下批注修改 ' + payload.deck + '（技能：skills/html-pptx）。共 ' +
+    payload.annotations.length + ' 条批注，每条按 slide + path 定位元素，用 excerpt 校验；对不上时按 excerpt 检索。');
+  payload.annotations.forEach(function(a, i){
+    var slides = [];
+    a.targets.forEach(function(t){ if (slides.indexOf(t.slide) < 0) slides.push(t.slide); });
+    var tgtDesc = a.targets.map(function(t){ return t.path + '「' + t.excerpt + '」'; }).join('、');
+    lines.push('批注 ' + (i + 1) + '（页 ' + slides.join('、') + '，' + a.targets.length + ' 个元素）：' +
+      a.note.replace(/。$/, '') + '。目标：' + tgtDesc + '。');
+  });
+  lines.push('');
+  lines.push('结构化批注：');
+  lines.push('```json');
+  lines.push(JSON.stringify(payload, null, 2));
+  lines.push('```');
+  return { text: lines.join('\n'), payload: payload };
+}
+$('btnExportAnno').addEventListener('click', async function(){
+  if (!annotations.length) return;
+  var out = buildAnnoExport();
+  var ok = await copyText(out.text);
+  if (state.embedded){
+    try { window.parent.postMessage({ type: 'pptx-html:annotations', payload: out.payload }, '*'); }
+    catch(e){}
+  }
+  annoUnexported = false;
+  renderAnnoList();
+  toast(ok ? '批注指令已复制到剪贴板' + (state.embedded ? '，并已发送宿主' : '')
+           : '复制失败，请检查剪贴板权限');
+});
+
+async function writeFileToHandle(handle, content){
+  var w = await handle.createWritable();
+  await w.write(content);
+  await w.close();
+}
+
+async function replaceImage(img){
+  if (!state.fsaa){
+    toast('当前浏览器不支持文件系统访问（需要 Chrome / Edge），无法替换图片。');
+    return;
+  }
+  var picked;
+  try {
+    var handles = await window.showOpenFilePicker({
+      types: [{ description:'图片文件', accept:{ 'image/*': ['.png','.jpg','.jpeg','.gif','.webp','.svg','.avif'] } }],
+      multiple: false
+    });
+    picked = handles[0];
+  } catch(e){ return; }   /* 用户取消 */
+
+  /* assets/ 目录句柄：首次替换时引导授权；拒绝则中止，绝不退化 base64（契约硬规则） */
+  if (!state.assetsHandle){
+    toast('请选择该幻灯片的 assets 目录，用于写入新图片');
+    try {
+      state.assetsHandle = await window.showDirectoryPicker({ mode:'readwrite' });
+    } catch(e){
+      toast('未获得 assets 目录授权，已取消本次图片替换。');
+      return;
+    }
+    try {
+      if (await state.assetsHandle.requestPermission({ mode:'readwrite' }) !== 'granted'){
+        state.assetsHandle = null;
+        toast('assets 目录未授予写入权限，已取消本次图片替换。');
+        return;
+      }
+    } catch(e){ /* 部分环境不支持再询问，选择目录时已授权，忽略 */ }
+  }
+
+  var file;
+  try { file = await picked.getFile(); }
+  catch(e){ toast('读取图片失败：' + e.message); return; }
+
+  var curSrc = (img.getAttribute('src') || '').split('?')[0];
+  var dir = curSrc.indexOf('/') >= 0 ? curSrc.slice(0, curSrc.lastIndexOf('/') + 1) : 'assets/';
+  var curName = curSrc.split('/').pop() || 'image.png';
+  var dot = curName.lastIndexOf('.');
+  var base = dot > 0 ? curName.slice(0, dot) : curName;
+  var curExt = dot > 0 ? curName.slice(dot + 1).toLowerCase() : '';
+  var newExt = (file.name.split('.').pop() || '').toLowerCase();
+
+  try {
+    if (newExt === curExt){
+      /* 同名覆盖优先：src 不变，会话内用 ?v= 破缓存（序列化时剥离） */
+      var h1 = await state.assetsHandle.getFileHandle(curName, { create:true });
+      await writeFileToHandle(h1, file);
+      img.setAttribute('src', curSrc + '?v=' + Date.now());
+      toast('已覆盖 assets/' + curName + '，保存后生效');
+    } else {
+      var newName = base + '.' + newExt;
+      var h2 = await state.assetsHandle.getFileHandle(newName, { create:true });
+      await writeFileToHandle(h2, file);
+      img.setAttribute('src', dir + newName);
+      toast('已写入 assets/' + newName + ' 并更新引用，保存后生效');
+    }
+    setDirty(true);
+    $('sbMsg').textContent = '有未保存的图片引用变更';
+  } catch(e){
+    toast('写入图片失败：' + e.message);
+  }
+}
+
+/* ============================================================
+   序列化净化（§5.4，五条）与保存（§3.2）
+   ============================================================ */
+function serializeClean(){
+  var d = doc();
+  var clone = d.documentElement.cloneNode(true);
+
+  /* 1. 移除编辑器注入节点（统一带 data-editor-injected） */
+  Array.prototype.forEach.call(clone.querySelectorAll('[data-editor-injected]'), function(n){
+    n.parentNode.removeChild(n);
+  });
+
+  /* 2. 移除 contenteditable 属性与编辑态 class */
+  Array.prototype.forEach.call(clone.querySelectorAll('[contenteditable]'), function(n){
+    n.removeAttribute('contenteditable');
+  });
+  EDIT_CLASSES.forEach(function(c){
+    Array.prototype.forEach.call(clone.querySelectorAll('.' + c), function(n){ n.classList.remove(c); });
+  });
+  Array.prototype.forEach.call(clone.querySelectorAll('[class=""]'), function(n){
+    n.removeAttribute('class');
+  });
+
+  /* 3. 框架运行时状态归位：html 上的 --slide-scale、.in-view、chrome 页码重置 "1 / N" */
+  clone.removeAttribute('style');
+  Array.prototype.forEach.call(clone.querySelectorAll('.in-view'), function(n){
+    n.classList.remove('in-view');
+    if (!n.getAttribute('class')) n.removeAttribute('class');
+  });
+  var chrome = clone.querySelector('.deck-chrome');
+  if (chrome){
+    var total = clone.querySelectorAll('.slide-slot').length || clone.querySelectorAll('.slide').length || 1;
+    chrome.textContent = '1 / ' + total;
+  }
+
+  /* 4. 剥离图片 src 上的 ?v= 查询串 */
+  Array.prototype.forEach.call(clone.querySelectorAll('img[src]'), function(img){
+    var src = img.getAttribute('src');
+    var q = src.indexOf('?v=');
+    if (q >= 0) img.setAttribute('src', src.slice(0, q));
+  });
+
+  /* 5. 输出带 DOCTYPE 的完整文档 */
+  return '<!DOCTYPE html>\n' + clone.outerHTML;
+}
+
+function updateSaveButton(){
+  var btn = $('btnSave');
+  if (!state.fsaa && !state.embedded){
+    btn.textContent = '导出下载';
+    btn.title = '当前浏览器不支持文件系统访问，保存将以下载方式导出';
+  } else {
+    btn.textContent = '保存 (⌘S)';
+    btn.title = '将修改写回原文件';
+  }
+}
+
+async function saveDeck(){
+  if (!state.loaded) return false;
+  if (editEl) commitEdit();
+  var text;
+  try { text = serializeClean(); }
+  catch(e){ toast('序列化失败：' + e.message); return false; }
+
+  /* 嵌入态：保存一律交给宿主 postMessage（§8）。嵌入加载没有文件句柄，
+     FSAA 在此语境只能另存/下载；且宿主权限策略拦截时 FSAA 会被静默吞掉，
+     宿主永远收不到保存结果。因此 embedded 时不探测 FSAA，直接走 postMessage。 */
+  if (state.embedded){
+    try {
+      window.parent.postMessage({ type:'pptx-html:save', html:text, name:state.fileName }, '*');
+      setDirty(false);
+      toast('已发送保存请求到宿主页面');
+      return true;
+    } catch(e){ toast('与宿主通信失败：' + e.message); return false; }
+  }
+
+  /* 主路径：原文件句柄直写 */
+  if (state.fileHandle){
+    try {
+      if (state.fileHandle.queryPermission &&
+          await state.fileHandle.queryPermission({ mode:'readwrite' }) !== 'granted'){
+        if (await state.fileHandle.requestPermission({ mode:'readwrite' }) !== 'granted')
+          throw new Error('未授予文件写入权限');
+      }
+      await writeFileToHandle(state.fileHandle, text);
+      setDirty(false); $('sbMsg').textContent = '';
+      toast('已保存到 ' + state.fileName);
+      return true;
+    } catch(e){
+      toast('直写失败（' + e.message + '），转为另存为');
+      /* 落入下一条路径 */
+    }
+  }
+
+  /* 无句柄：showSaveFilePicker 让用户指一次 */
+  if (typeof window.showSaveFilePicker === 'function'){
+    try {
+      var h = await window.showSaveFilePicker({
+        suggestedName: state.fileName || 'deck.html',
+        types: [{ description:'HTML 幻灯片', accept:{ 'text/html': ['.html'] } }]
+      });
+      await writeFileToHandle(h, text);
+      state.fileHandle = h;
+      state.fileName = h.name;
+      setDirty(false); $('sbMsg').textContent = '';
+      toast('已保存到 ' + h.name);
+      return true;
+    } catch(e){
+      if (e && e.name === 'AbortError') return false;
+      toast('另存失败（' + e.message + '），转为下载导出');
+    }
+  }
+
+  /* 最终降级：Blob 下载 */
+  try {
+    var blob = new Blob([text], { type:'text/html;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = state.fileName || 'deck.html';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 5000);
+    setDirty(false); $('sbMsg').textContent = '';
+    toast('已导出下载');
+    return true;
+  } catch(e){ toast('导出失败：' + e.message); return false; }
+}
+$('btnSave').addEventListener('click', saveDeck);
+window.addEventListener('keydown', function(e){
+  if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')){ e.preventDefault(); saveDeck(); }
+});
+
+/* ============================================================
+   Design-System 面板（§7）：渲染 + 意图清单导出
+   ============================================================ */
+var answers = { theme:null, rhythm:'moderate', motion:'subtle', custom:'' };
+var FONT_PREVIEW = { serif:'serif', sans:'sans-serif', mono:'monospace' };
+
+function renderPanel(){
+  var themeQ = PANEL_DATA.questions[0];
+  var grid = $('themeGrid');
+  themeQ.options.forEach(function(opt){
+    var card = document.createElement('div');
+    card.className = 'theme-card';
+    card.dataset.id = opt.id;
+    var v = opt.visual;
+    card.innerHTML =
+      '<div class="swatches">' +
+        '<i style="background:' + v.paper + '" title="paper ' + v.paper + '"></i>' +
+        '<i style="background:' + v.ink + '" title="ink ' + v.ink + '"></i>' +
+        '<i style="background:' + v.accent + '" title="accent ' + v.accent + '"></i>' +
+      '</div>' +
+      '<div class="sample" style="background:' + v.paper + ';color:' + v.ink + ';border-radius:5px;padding:4px 6px">' +
+        '<span class="fd" style="font-family:' + FONT_PREVIEW[v.font_display] + '">Aa 标题</span>' +
+        '<span class="fb" style="font-family:' + FONT_PREVIEW[v.font_body] + '">正文字体</span>' +
+      '</div>' +
+      '<div class="name">' + opt.id.toUpperCase() + ' · ' + opt.label + '</div>' +
+      '<div class="desc">' + opt.description + '</div>';
+    card.addEventListener('click', function(){
+      answers.theme = (answers.theme === opt.id) ? null : opt.id;
+      Array.prototype.forEach.call(grid.children, function(c){
+        c.classList.toggle('selected', c.dataset.id === answers.theme);
+      });
+    });
+    grid.appendChild(card);
+  });
+
+  buildOptRow('rhythmOpts', PANEL_DATA.questions[1], 'rhythm');
+  buildOptRow('motionOpts', PANEL_DATA.questions[2], 'motion');
+
+  $('customText').addEventListener('input', function(){ answers.custom = this.value; });
+}
+function buildOptRow(elId, q, key){
+  var row = $(elId);
+  q.options.forEach(function(opt){
+    var div = document.createElement('div');
+    div.className = 'opt' + (answers[key] === opt.id ? ' selected' : '');
+    div.dataset.id = opt.id;
+    div.innerHTML = '<div class="t">' + opt.label + '</div><div class="d">' + opt.description + '</div>';
+    div.addEventListener('click', function(){
+      answers[key] = opt.id;
+      Array.prototype.forEach.call(row.children, function(c){
+        c.classList.toggle('selected', c.dataset.id === opt.id);
+      });
+    });
+    row.appendChild(div);
+  });
+}
+
+/* "生成修改指令"（§7.3）：自然语言 + JSON，复制到剪贴板 */
+function buildIntentExport(){
+  var themeQ = PANEL_DATA.questions[0];
+  var theme = null;
+  if (answers.theme){
+    for (var i = 0; i < themeQ.options.length; i++)
+      if (themeQ.options[i].id === answers.theme) theme = themeQ.options[i];
+  }
+  var rhythmQ = PANEL_DATA.questions[1], motionQ = PANEL_DATA.questions[2];
+  var rhythm = rhythmQ.options.filter(function(o){ return o.id === answers.rhythm; })[0];
+  var motion = motionQ.options.filter(function(o){ return o.id === answers.motion; })[0];
+  var deck = state.fileName || 'index.html';
+
+  var intentAnswers = {
+    theme:  theme ? { choice: theme.id, label: theme.label, tokens: theme.tokens } : { choice: null },
+    rhythm: { choice: answers.rhythm },
+    motion: { choice: answers.motion }
+  };
+  if (answers.custom.trim()) intentAnswers.custom = { text: answers.custom.trim() };
+
+  var json = {
+    version: 1,
+    kind: 'design-intent',
+    deck: deck,
+    answers: intentAnswers
+  };
+
+  var lines = [];
+  lines.push('请按以下设计意图修改 ' + deck + '（技能：skills/html-pptx）：');
+  if (theme){
+    lines.push('1. 主题配色：切换为 ' + theme.id.toUpperCase() + ' ' + theme.label +
+      '。请用下方 JSON 中 answers.theme.tokens 整套替换骨架的 SLOT: theme tokens，禁止混搭、禁止修改色值（规则见 skills/html-pptx/references/themes.md）。');
+  } else {
+    lines.push('1. 主题配色：保持现状，不修改。');
+  }
+  lines.push('2. 明暗节奏：' + rhythm.label + '（' + rhythm.description + '），对应调整 hero 暗页（.slide.dark）的出现频率。');
+  lines.push('3. 动效强度：' + motion.label + '（' + motion.description + '）。');
+  if (answers.custom.trim()) lines.push('4. 用户补充：' + answers.custom.trim());
+  lines.push('');
+  lines.push('结构化意图（JSON）：');
+  lines.push('```json');
+  lines.push(JSON.stringify(json, null, 2));
+  lines.push('```');
+  return lines.join('\n');
+}
+
+/* 剪贴板通道：意图清单（§7.3）与批注导出（§10.4）共用 */
+async function copyText(text){
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch(e){
+    var ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch(e2){}
+    ta.remove();
+    return ok;
+  }
+}
+
+$('btnExport').addEventListener('click', async function(){
+  var ok = await copyText(buildIntentExport());
+  toast(ok ? '修改指令已复制到剪贴板' : '复制失败，请检查浏览器剪贴板权限');
+});
+
+$('btnPanel').addEventListener('click', function(){
+  var drawer = $('drawer');
+  drawer.classList.toggle('open');
+  this.setAttribute('aria-pressed', drawer.classList.contains('open') ? 'true' : 'false');
+});
+
+/* ============================================================
+   嵌入预留（§8）：postMessage 协议形状
+   入：{type:"pptx-html:load", html, name?, assetsUrl?}
+   出：{type:"pptx-html:save", html, name} / {type:"pptx-html:dirty", dirty}
+       / {type:"pptx-html:annotations", payload}（批注导出，§10.4）
+   ============================================================ */
+window.addEventListener('message', async function(e){
+  var d = e.data;
+  if (!d || typeof d !== 'object' || typeof d.type !== 'string') return;
+  if (d.type === 'pptx-html:load' && typeof d.html === 'string'){
+    await ensureSwitchOkAndOpen(d.html, d.name || 'embedded-deck.html', null,
+                                typeof d.assetsUrl === 'string' ? d.assetsUrl : null);
+  }
+});
+
+/* ============================================================
+   启动
+   ============================================================ */
+renderPanel();
+updateSaveButton();
+renderDirty();
+if (!state.fsaa && !state.embedded){
+  showWarn('当前浏览器不支持文件系统访问（File System Access API）：文字编辑可用，保存将降级为下载导出，图片替换不可用。推荐使用 Chrome / Edge。');
+}
+</script>
+</body>
+</html>
