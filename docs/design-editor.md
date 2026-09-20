@@ -119,7 +119,7 @@ iframe 尺寸变化（面板抽屉开合、窗口缩放）时不需要通知幻�
 
 1. 移除编辑器注入的 `<style data-editor-injected>` 与选中框等节点（全部带 `data-editor-injected` 属性，一处登记）；
 2. 移除所有 `contenteditable` 属性、选中态 class；
-3. **框架运行时状态归位**：移除 `<html>` 上的 inline `style`（`--slide-scale`）、移除所有 `.in-view` class、chrome 页码文本重置为 `1 / N`——这些是骨架 JS 的运行时产物，不属于文件；
+3. **框架运行时状态归位**：移除 `<html>` 上的 inline `style`（`--slide-scale`）、移除骨架 v2 动效门槛在 `<html>` 上添加的 `js` class、移除所有 `.in-view` class、移除框架 JS 为 `[data-anim]` 分配的 `--i` 内联自定义属性（style 因 CSSOM 重序列化产生的格式差异属一次性规范化差异）、chrome 页码文本重置为 `1 / N`——这些是骨架 JS 的运行时产物，不属于文件；
 4. 剥离图片 `src` 上的 `?v=` 查询串（§6 的会话内缓存刷新）；
 5. 输出 `"<!DOCTYPE html>\n" + clone.outerHTML`。
 
@@ -187,7 +187,7 @@ iframe 尺寸变化（面板抽屉开合、窗口缩放）时不需要通知幻�
 
 ### 7.4 主题数据源
 
-`themes.md` 是契约级数据源，但 editor.html 不运行时 fetch 它（`file://` 下不可靠）——**面板内置一份从 themes.md 生成的 JSON**，文件头注明"由 themes.md 生成，改主题先改 themes.md 再同步"。（后续可提供小脚本做同步校验。）
+`themes.md` 是契约级数据源，但 editor.html 不运行时 fetch 它（`file://` 下不可靠）——**面板内置一份由脚本从 themes.md 生成的 JSON**：`skills/html-pptx/scripts/sync-themes.mjs`（Node ≥20、零依赖）解析 themes.md 的 13 套主题条目（名称 / 适合+调性 / ```css token 块），生成面板卡片 JSON（id、label、description、visual、tokens），幂等写回 editor.html 的 `/*__THEMES_JSON_BEGIN__*/ … /*__THEMES_JSON_END__*/` 标记区间。改主题必须先改 themes.md，再跑 `node skills/html-pptx/scripts/sync-themes.mjs`；标记区间内禁止手工编辑，脚本自检失败（主题数 ≠ 13、必填字段缺失、标记异常）会以非零退出。
 
 ## 8. 嵌入预留（不实现，只定形状）
 

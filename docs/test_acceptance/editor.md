@@ -1,7 +1,7 @@
 # 编辑器验收文档（test_acceptance）
 
 > 对应模块：`editor.html` · 设计文档 `docs/design-editor.md` §11 · 自动化 harness `tests/harness/run_e2e.py`
-> 最近全量执行：2026-09-16，13/13 PASS（Chromium 145 headless）
+> 最近全量执行：2026-09-19（G/H 期），40/40 PASS（Chromium 145 headless；含更新后 T9 变体切换断言与 T18 33 页画廊）
 
 ## P0（核心路径，失败即功能不可用）
 
@@ -24,6 +24,18 @@
 | P1-4 | 图片替换（FSAA 写 assets/、同名覆盖、换扩展名） | 人工（headless 不可交互） | ⏳ 待人工 |
 | P1-5 | Firefox 降级（编辑可用、保存降级下载、plaintext-only fallback） | 人工 | ⏳ 待人工 |
 | P1-6 | 意图清单导出指令人工走查（粘贴给 coding agent 可执行） | 人工 | ⏳ 待人工 |
+| P1-7 | 密度双档：同一内容源低档页数 > 高档；可编辑元素无一超槽位预算 | 脚本（已内联核验） | ✅ 2026-09-16 |
+| P1-8 | density-low / density-high 加入 harness 回归（往返幂等） | harness T1 ×2 | ✅ |
+| P1-9 | 信息图组件 deck（infographic-b2）：11 类组件标记合规、零溢出 | harness T1 + Playwright | ✅ 2026-09-16 |
+| P1-10 | 图表 deck（charts-a3）：五图表几何与数值比例一致、契约分层 | harness T1 + Playwright 抽查 | ✅ 2026-09-16 |
+| P1-11 | 骨架 v2 动效：data-anim 阶梯、.js 门槛、reduced-motion 静态可读 | harness T1-charts-a3 + 生成侧自验 | ✅ 2026-09-16 |
+| P1-12 | 主题数据单源：sync-themes.mjs 幂等 + 13 主题自检 + 面板导出 | node 脚本 + harness T9 | ✅ 2026-09-16 |
+| P1-13 | 骨架 v5 动效 8 族全生命周期：enter/text/data/link 终态与精确还原、scroll 族滚动驱动（read-progress/scrub-draw/parallax/sticky）、ptr 族程序化指针写入与 freeze、reduced-motion 全静态 | harness T19（motion-v5 deck） | ✅ 2026-09-19 |
+| P1-14 | v5 deck 编辑侧：交互层冻结、mask-lines 行叶子编辑、gradient-flow 编辑态还原本色、pointer/scroll 运行时变量净化、产物内容（--val/--pin-i 等）保留、重载幂等 | harness T20 | ✅ 2026-09-19 |
+| P1-15 | G 期主题库：9 重主题 × ≥3 配色变体 Schema 校验（G0 三必填/变体字段集/G9 css 白名单/.mt-* 全库唯一/两两七层 diff ≥3/分化声明逐层核验） | sync-themes.mjs（含否定测试） | ✅ 2026-09-19 |
+| P1-16 | G 期面板：主题卡变体色点切换、装饰主导分组、导出意图含变体合并 tokens + theme_css + 双 SLOT 文案 | harness T9 | ✅ 2026-09-19 |
+| P1-17 | G 期画廊主题样张：9 页同内容不同主题渲染，零溢出零重叠、编辑器往返幂等 | harness T18 + T1-components-gallery | ✅ 2026-09-19 |
+| P1-18 | G 期样张肉眼验收：9 主题同一封面内容一眼可辨（装饰/容器/质感/字体分化） | 人工 | ⏳ 待人工 |
 
 ## 已知限制（非缺陷）
 

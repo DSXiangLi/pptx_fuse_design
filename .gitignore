@@ -3,3 +3,7 @@ source/
 
 # 测试运行产物（截图/diff/报告，可由 tests/harness/run_e2e.py 重新生成）
 tests/harness/results/
+tests/harness/__pycache__/
+
+# IDE
+.idea/

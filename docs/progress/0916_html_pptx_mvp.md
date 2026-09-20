@@ -36,3 +36,23 @@
 - 图片替换（FSAA 交互）与 Firefox 降级路径未经真实浏览器人工验收；
 - 独立模式跨目录打开时编辑器内图片预览坏（产物正确，预览层待 blob URL 方案）；
 - 意图清单导出指令未经人工走查。
+
+## 同日追加：技能 v1.1（密度与字排）
+
+- 新增 `skills/html-pptx/references/typography.md`：中文标题分档（vw/vh→px 换算，含封面特档 144-160px）、字重阶梯、槽位字数预算（全角 1/半角 0.5）、密度双档规则；
+- SKILL.md：Step 0 展开 pptx 转换子流程（内容重组非逐页复刻）、Step 1 密度冻结、Step 4 容量核对硬规则、占位图规格；
+- editor.html 面板加 `density` 选项（low/high），导出的意图指令含密度条目并提示 AI 按工作流重组而非只改字号；
+- 验证：同一内容源（远程办公报告）生成 density-low（10 页）/ density-high（9 页）双 deck；harness 回归 15/15 PASS（含新 deck 往返幂等）；独立脚本复核无元素超预算；
+- 校准记录：low deck 封面标题 160px 超出原分档表 120px 档 → 修订 typography.md 增加 hero 特档（文档向已验证的实践对齐）。
+
+## 同日追加：技能 v1.2–v1.4（按 skill-roadmap 实施）
+
+**v1.2 信息图组件层**：新增 references/components.md（12 个组件配方，三件套格式，内容类型匹配硬规则：无真实数据禁用量化组件）；验证 deck tests/decks/infographic-b2（11 页，11 类组件全覆盖，Playwright 零溢出）。
+
+**v1.3 图表**：新增 references/charts.md（H-Bar/Column/Line/Donut/Progress 五配方，calc 几何，零 JS）；themes.md 加图表 token 统一推导（color-mix 派生，解决 A 系 accent==ink 撞色）；契约加图表可编辑分层（几何 skip/标签 editable/数值走 AI）；sync-themes.mjs 单源化提前到本期（editor.html 面板数据改为脚本生成 + 幂等写回 + 13 主题自检）；验证 deck tests/decks/charts-a3（10 页，五图表全覆盖，数值-几何比例抽查精确吻合，数据跨页自洽）。
+
+**v1.4 动效语义层**：骨架升 v2（skeleton-version meta、data-animate 页面配方 × data-anim 元素角色、--i 自动阶梯、.js 无脚本门槛、reduced-motion/打印降级）；references/motion.md（决策树 + 六感气质表 + 拆字禁令）；契约加"动效与编辑互斥"条款；编辑器净化扩展（js class、--i 剥离）；已知限制：scaleY 柱体生长不在 v2，记录待评估。
+
+**v1.5 评估结论**：sync 脚本已完成；WebGL 背景推迟（形态不匹配+克制原则）；宿主嵌入深化推迟（等真实宿主）。
+
+**累计验证**：8 个测试 deck；harness 18/18 PASS（T1 往返幂等 ×8、编辑、渲染一致性、批注、面板导出）。

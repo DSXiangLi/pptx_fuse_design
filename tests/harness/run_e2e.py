@@ -15,12 +15,16 @@ editor.html 端到端验收（嵌入模式 postMessage 协议）
 import difflib
 import io
 import json
+import math
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
+import urllib.error
+import urllib.request
 
 from PIL import Image, ImageChops
 from playwright.sync_api import sync_playwright
@@ -31,7 +35,7 @@ PORT = 8925
 BASE = 'http://127.0.0.1:%d' % PORT
 RESULTS = os.path.join(ROOT, 'tests/harness/results')
 
-DECKS = ['tech-ikb', 'culture-kraft', 'launch-mono', 'art-botanical']
+DECKS = ['tech-ikb', 'culture-kraft', 'launch-mono', 'art-botanical', 'density-low', 'density-high', 'infographic-b2', 'charts-a3', 'motion-d2', 'motion-v5', 'infographic-d1', 'tech-ikb-v2', 'culture-kraft-v2', 'launch-mono-v2', 'components-gallery', 'tech-ikb-v3', 'culture-kraft-v3', 'launch-mono-v3']
 VIEW_W, VIEW_H = 1440, 900          # harness 视口
 
 RESULTS_LIST = []
@@ -121,17 +125,55 @@ def dirty_events(page):
 
 # ---------- 往返 diff 白名单（§5.4 + 实测的一次性解析/序列化规范化） ----------
 
-BOOLEAN_ATTRS = ['data-editable', 'data-editable-image', 'data-editable-skip']
+BOOLEAN_ATTRS = ['data-editable', 'data-editable-image', 'data-editable-skip', 'data-anim', 'data-ig-item']
 SVG_VOID = 'circle|ellipse|line|path|polygon|polyline|rect|stop|use'
+
+def _canon_style(m):
+    """style 属性规范化（skeleton v2：框架 JS 给 [data-anim] setProperty('--i') 会触发
+    CSSOM 整体重序列化该属性——冒号后空格、0.x 前导零、追加 --i、末尾分号）。
+    双侧规范化后比较：剥离 --i，声明按 'name:value' 紧排。
+    v3 补充（CSSOM 等价简写展开，均双向一致）：flex 简写展开（flex:1 == 1 1 0%、
+    flex:none == 0 0 auto）、零值单位（0 == 0px == 0%）、盒简写去重（56px 56px == 56px）、
+    函数参数逗号后空格、属性值内单引号被 outerHTML 转义为 &quot;。"""
+    decls = []
+    raw = m.group(1).replace('&quot;', "'")   # 先还原实体再按 ; 切分（&quot; 自身含分号）
+    for d in raw.split(';'):
+        d = d.strip()
+        if not d or ':' not in d:
+            continue
+        name, val = d.split(':', 1)
+        name = name.strip()
+        if name == '--i':
+            continue
+        val = ' '.join(val.split())
+        val = re.sub(r'(?<![\d.])0\.(\d)', r'.\1', val)   # 0.55 -> .55
+        val = re.sub(r',\s+', ',', val)                    # repeat(3, 1fr) -> repeat(3,1fr)
+        val = re.sub(r'\b0(?:px|%)(?![\w%])', '0', val)    # 0px/0% -> 0（\b 对 % 不成立，用后环视）
+        if name == 'flex':
+            val = re.sub(r'^(\S+) 1 0$', r'\1', val)       # flex:1 == flex:1 1 0(%)
+            if val == '0 0 auto':
+                val = 'none'                               # flex:none == 0 0 auto
+        if name in ('padding', 'margin'):
+            parts = val.split(' ')
+            if len(parts) == 4 and parts[0] == parts[2] and parts[1] == parts[3]:
+                parts = parts[:2]
+            if len(parts) == 2 and parts[0] == parts[1]:
+                parts = parts[:1]
+            val = ' '.join(parts)
+        decls.append('%s:%s' % (name, val))
+    return 'style="' + ';'.join(decls) + '"'
 
 def whitelist_norm(t):
     """白名单：布尔属性 ="" 化；chrome 页码重置；HTML parser 对 <head> 前空白的丢弃；
-    SVG 自闭合写法展开；</body></html> 周边空白被 parser 移位的规范化。"""
+    SVG 自闭合写法展开；</body></html> 周边空白被 parser 移位的规范化；
+    skeleton v2 运行时残留（<html> 的 js class、style 属性 CSSOM 重序列化）。"""
     for a in BOOLEAN_ATTRS:
         t = t.replace(' %s=""' % a, ' ' + a)
     t = re.sub(r'(<div class="deck-chrome" id="chrome">)[^<]*(</div>)', r'\1@@\2', t)
     t = t.replace('>\n<head>', '><head>')
+    t = t.replace(' class="js"', '')
     t = re.sub(r'<(%s)((?:"[^"]*"|[^">])*?)\s*/>' % SVG_VOID, r'<\1\2></\1>', t)
+    t = re.sub(r'style="([^"]*)"', _canon_style, t)
     t = re.sub(r'\s*</body>\s*</html>\s*$', '</body></html>', t)
     return t
 
@@ -848,7 +890,1498 @@ def test_annotation_edges(browser):
     finally:
         ctx.close()
 
-# ---------- 主流程 ----------
+# ---------- 测试 9：面板意图导出（§7.3，主题单源化联动回归） ----------
+
+def test_panel_export(browser):
+    """打开面板 → 选主题 B1 + 变体柠檬黄 + 密度 high → 导出指令；断言文本含主题、
+    变体与密度条目；主题卡数与 sync-themes.mjs 注入的 JSON 一致（G 期起为 9 个
+    七层重主题 + 变体，不硬编码数量）。"""
+    deck = 'tech-ikb'
+    point_assets(deck)
+    src = read_deck(deck)
+    ctx = browser.new_context(viewport={'width': VIEW_W, 'height': VIEW_H},
+                              permissions=['clipboard-read', 'clipboard-write'])
+    page = ctx.new_page()
+    problems = []
+    try:
+        page.goto(BASE + '/harness.html')
+        wait_editor_ready(page)
+        load_deck(page, src, deck + '/index.html')
+        page.frame_locator('#ed').locator('#btnPanel').click()
+        n_cards = page.frame_locator('#ed').locator('.theme-card').count()
+        ed_frame = next(f for f in page.frames if f.name == 'ed')
+        expected = ed_frame.evaluate('PANEL_DATA.questions[0].options.length')
+        if n_cards != expected:
+            problems.append('主题卡片数=%d，期望 %d（PANEL_DATA 注入值）' % (n_cards, expected))
+        n_groups = page.frame_locator('#ed').locator('.theme-group').count()
+        if n_groups < 3:
+            problems.append('主题分组数=%d，期望 ≥3（focus 分组展示）' % n_groups)
+        page.frame_locator('#ed').locator('.theme-card[data-id="b1"]').click()
+        # G 期：点击 B1 卡的第一个变体色点（柠檬黄）——选中变体即选中主题
+        page.frame_locator('#ed').locator('.theme-card[data-id="b1"] .variants i').first.click()
+        page.frame_locator('#ed').locator('#densityOpts .opt[data-id="high"]').click()
+        page.frame_locator('#ed').locator('#btnExport').click()
+        page.wait_for_timeout(400)
+        clip = page.evaluate('navigator.clipboard.readText()')
+        for expect in ['B1', '瑞士国际主义', '变体：柠檬黄', '#FFD500',
+                       'SLOT: theme tokens', 'SLOT: theme css',
+                       '内容密度', '高密度', 'design-intent']:
+            if expect not in clip:
+                problems.append('导出指令缺少 %r' % expect)
+        report('T9-panel-export', '面板意图导出', not problems,
+               '；'.join(problems) if problems else
+               '%d 张主题卡渲染（与注入 JSON 一致）；变体切换与双 SLOT 导出口径生效' % n_cards)
+    finally:
+        ctx.close()
+
+# ---------- 测试 10：文字样式编辑持久化（v1.6 §1 / editor-v2.md §4） ----------
+
+def test_style_editing(browser):
+    """选中文字元素 → 样式控件组出现 → 改四属性即时生效且置脏 →
+    保存 → 重载断言 inline style 仍在；图片元素选中时控件组隐藏；
+    字号低于 18px 警告不禁止。"""
+    deck = 'tech-ikb'
+    point_assets(deck)
+    src = read_deck(deck)
+    ctx, page = fresh_page(browser)
+    problems = []
+    try:
+        page.goto(BASE + '/harness.html')
+        wait_editor_ready(page)
+        load_deck(page, src, deck + '/index.html')
+        ef = editor_frame(page)
+        ed = page.frame_locator('#ed')
+        bar_shown = "() => document.getElementById('styleBar').classList.contains('show')"
+
+        if ef.evaluate(bar_shown):
+            problems.append('未选中时样式控件组未隐藏')
+
+        # 选中封面 h1 → 控件组出现，字号回填为画布坐标（computed 不受 transform 影响）
+        h1 = deck_loc(page, '[data-slide-id="cover"] h1[data-editable]')
+        h1.click()
+        page.wait_for_timeout(200)
+        if not ef.evaluate(bar_shown):
+            problems.append('选中文字元素后样式控件组未出现')
+        fs0 = ef.evaluate("document.getElementById('stSize').value")
+        if fs0 != '128':
+            problems.append('字号回填=%s，期望 128（画布坐标）' % fs0)
+
+        # 字号 < 18：警告但不禁止
+        ed.locator('#stSize').fill('12')
+        ed.locator('#stSize').press('Enter')
+        page.wait_for_timeout(150)
+        warn = ef.evaluate("!document.getElementById('stSizeWarn').hidden")
+        fs12 = deck_frame(page).evaluate(
+            "document.querySelector('[data-slide-id=\"cover\"] h1[data-editable]').style.fontSize")
+        if not warn or fs12 != '12px':
+            problems.append('18px 下限警告/应用异常：warn=%s fs=%r' % (warn, fs12))
+        ed.locator('#stSize').fill('72')
+        ed.locator('#stSize').press('Enter')
+        page.wait_for_timeout(150)
+
+        # 字体写 var() 引用（换主题跟随）；色板写 var()；自定义色写字面量；对齐按钮
+        ed.locator('#stFont').select_option('var(--font-body)')
+        ed.locator('#stSwatches .st-swatch[data-token="--accent"]').click()
+        ed.locator('#stAlign button[data-align="center"]').click()
+        page.wait_for_timeout(150)
+        ef.evaluate("""() => {
+          const c = document.getElementById('stColor');
+          c.value = '#ff0000';
+          c.dispatchEvent(new Event('input', { bubbles: true }));
+        }""")
+        page.wait_for_timeout(150)
+        applied = deck_frame(page).evaluate("""() => {
+          const el = document.querySelector('[data-slide-id="cover"] h1[data-editable]');
+          return {ff: el.style.getPropertyValue('font-family'), fs: el.style.fontSize,
+                  color: el.style.getPropertyValue('color'), ta: el.style.textAlign};
+        }""")
+        # CSSOM 会把 #ff0000 规范化为 rgb(255, 0, 0)，两种写法都算对
+        color_ok = applied['color'] in ('#ff0000', 'rgb(255, 0, 0)')
+        if not (applied['ff'] == 'var(--font-body)' and applied['fs'] == '72px'
+                and color_ok and applied['ta'] == 'center'):
+            problems.append('iframe 内联样式不符：%r' % applied)
+        if ef.evaluate('window.state.dirty') is not True:
+            problems.append('样式修改未置脏')
+
+        # 图片元素选中：样式控件组隐藏，"替换图片"按钮逻辑不变
+        img = deck_loc(page, '[data-slide-id="monolith-origin"] img[data-editable-image]')
+        img.scroll_into_view_if_needed()
+        img.click()
+        page.wait_for_timeout(200)
+        if ef.evaluate(bar_shown):
+            problems.append('选中图片时样式控件组未隐藏')
+        if ef.evaluate("document.getElementById('btnReplaceImg').disabled"):
+            problems.append('选中图片后替换按钮应可用')
+
+        # 保存 → 重载 → inline style 持久化（白名单四属性随序列化保留）
+        saved = save_and_capture(page)
+        load_deck(page, saved, deck + '/index.html')
+        attr = deck_frame(page).evaluate(
+            "document.querySelector('[data-slide-id=\"cover\"] h1[data-editable]').getAttribute('style')")
+        for label, cond in [
+            ('字号未持久化', '72px' in attr),
+            ('字体未持久化', 'var(--font-body)' in attr),
+            ('字色未持久化', 'rgb(255, 0, 0)' in attr or '#ff0000' in attr),
+            ('对齐未持久化', 'center' in attr),
+            ('白名单外属性混入', 'background' not in attr),
+        ]:
+            if not cond:
+                problems.append('%s：style=%r' % (label, attr))
+        # 重载后选中同一元素：字体下拉应回显 var(--font-body)
+        deck_loc(page, '[data-slide-id="cover"] h1[data-editable]').click()
+        page.wait_for_timeout(200)
+        fv = ef.evaluate("document.getElementById('stFont').value")
+        if fv != 'var(--font-body)':
+            problems.append('重载后字体下拉回显=%r' % fv)
+
+        report('T10-style', '文字样式编辑持久化', not problems,
+               '；'.join(problems) if problems else
+               '四属性即时生效+置脏；<18px 警告不禁止；图片选中隐藏控件组；保存重载后 inline style 完整回显')
+    finally:
+        ctx.close()
+
+# ---------- 测试 11：目录侧栏（v1.6 §2） ----------
+
+def test_toc_nav(browser):
+    """嵌入态默认收起 → 按钮展开 → N 页渲染 N 卡 → 懒渲染滚到底全部出图 →
+    点击第 3 卡 iframe 滚到第 3 页且卡片高亮、页码同步 → 克隆体无 id、动效终态。"""
+    deck = 'tech-ikb'
+    point_assets(deck)
+    src = read_deck(deck)
+    ctx, page = fresh_page(browser)
+    problems = []
+    try:
+        page.goto(BASE + '/harness.html')
+        wait_editor_ready(page)
+        load_deck(page, src, deck + '/index.html')
+        ef = editor_frame(page)
+        ed = page.frame_locator('#ed')
+        n_slides = src.count('data-slide-id="')
+
+        if ef.evaluate("document.getElementById('toc').classList.contains('open')"):
+            problems.append('嵌入态侧栏应默认收起')
+        ed.locator('#btnToc').click()
+        page.wait_for_timeout(300)
+        if not ef.evaluate("document.getElementById('toc').classList.contains('open')"):
+            problems.append('目录按钮未展开侧栏')
+        n_cards = ed.locator('.toc-card').count()
+        if n_cards != n_slides:
+            problems.append('缩略卡片数=%d，期望 %d' % (n_cards, n_slides))
+
+        rendered_js = ("Array.from(document.querySelectorAll('.toc-thumb'))"
+                       ".filter(t => t.shadowRoot && t.shadowRoot.querySelector('.slide')).length")
+        page.wait_for_timeout(400)
+        first_rendered = ef.evaluate(rendered_js)
+        if first_rendered < 1:
+            problems.append('侧栏展开后无可视缩略图渲染')
+        # 懒渲染：滚动到底触发 IntersectionObserver
+        ef.evaluate("document.getElementById('tocList').scrollTop = 999999")
+        page.wait_for_timeout(600)
+        rendered = ef.evaluate(rendered_js)
+        if rendered != n_slides:
+            problems.append('滚到底后渲染缩略图=%d，期望 %d' % (rendered, n_slides))
+        if ef.evaluate("!!document.querySelector('.toc-thumb').shadowRoot.querySelector('[id]')"):
+            problems.append('克隆体残留 id（页面出现重复 id）')
+        op = ef.evaluate("""() => {
+          const t = document.querySelector('.toc-thumb');
+          const r = t.shadowRoot.querySelector('.reveal,[data-anim]');
+          return r ? getComputedStyle(r).opacity : 'none';
+        }""")
+        if op != '1':
+            problems.append('克隆动效未强制终态 opacity=%r' % op)
+
+        # 点击第 3 张卡 → iframe 滚到第 3 页 + 高亮 + 页码同步
+        ef.evaluate("document.getElementById('tocList').scrollTop = 0")
+        page.wait_for_timeout(300)
+        ed.locator('.toc-card').nth(2).click()
+        page.wait_for_timeout(500)
+        df = deck_frame(page)
+        st = df.evaluate("document.querySelector('.deck').scrollTop")
+        exp = df.evaluate("document.querySelectorAll('.slide-slot')[2].offsetTop")
+        if abs(st - exp) > 4:
+            problems.append('点击导航滚动位置=%s，期望 %s' % (st, exp))
+        cur = ef.evaluate("Array.from(document.querySelectorAll('.toc-card'))"
+                          ".findIndex(c => c.classList.contains('cur'))")
+        if cur != 2:
+            problems.append('高亮卡片=%d，期望 2' % cur)
+        sb = ef.evaluate("document.getElementById('sbPage').textContent")
+        if '第 3 /' not in sb:
+            problems.append('页码未同步：%r' % sb)
+
+        # 编辑后对应卡片失效重克隆（导航件按需刷新，不实时同步）
+        h1 = deck_loc(page, '[data-slide-id="cover"] h1[data-editable]')
+        h1.click(); h1.click()
+        page.keyboard.type('侧栏失效验证')
+        page.keyboard.press('Control+Enter')
+        page.wait_for_timeout(300)
+        thumb_text = ef.evaluate("""() => {
+          const cards = Array.from(document.querySelectorAll('.toc-card'));
+          const t = cards[0].querySelector('.toc-thumb');
+          return t.shadowRoot ? t.shadowRoot.textContent : '';
+        }""")
+        if '侧栏失效验证' not in thumb_text:
+            problems.append('编辑后封面卡片未重克隆')
+
+        report('T11-toc', '目录侧栏导航', not problems,
+               '；'.join(problems) if problems else
+               '嵌入默认收起；%d 卡懒渲染齐全；点击导航+高亮+页码同步；克隆无 id、动效终态；编辑后失效重克隆' % n_slides)
+    finally:
+        ctx.close()
+
+# ---------- 测试 12：伴随服务 git 版本（v1.6 §3） ----------
+
+GIT_PORT = PORT + 2
+
+def api_post(base, path, body):
+    req = urllib.request.Request(base + path, data=json.dumps(body).encode('utf-8'),
+                                 headers={'Content-Type': 'application/json'})
+    return json.loads(urllib.request.urlopen(req, timeout=10).read().decode('utf-8'))
+
+def git_log(workdir):
+    r = subprocess.run(['git', 'log', '--format=%H%x1f%s'], cwd=workdir,
+                       capture_output=True, text=True)
+    return [l.split('\x1f') for l in r.stdout.splitlines() if l.strip()]
+
+def test_git_versions(browser):
+    """harness 自 spawn tools/edit.py（临时目录隔离，结束后清理）：
+    无后端时历史置灰；路径穿越拒绝；非仓库保存不提交、init 确认后提交；
+    UI 保存两次 → git 两条提交；磁盘制造未提交改动后回滚到第一版 →
+    文件还原 + pre-rollback 保护提交。"""
+    problems = []
+    tmp = tempfile.mkdtemp(prefix='pptx-e2e-git-')
+    srv = None
+    base = 'http://127.0.0.1:%d' % GIT_PORT
+    try:
+        # (a) 无后端：历史按钮置灰 + tooltip 提示启动方式
+        ctx0, page0 = fresh_page(browser)
+        try:
+            page0.goto(BASE + '/editor.html')
+            page0.wait_for_function('() => window.state !== undefined')
+            page0.wait_for_timeout(800)   # 等 /api/health 探测落定（404）
+            hb = page0.evaluate("""({
+              dis: document.getElementById('btnHistory').disabled,
+              title: document.getElementById('btnHistory').title,
+              backend: window.state.backend })""")
+            if not (hb['dis'] and hb['backend'] is None and 'tools/edit.py' in hb['title']):
+                problems.append('无后端时历史按钮状态异常：%r' % hb)
+        finally:
+            ctx0.close()
+
+        # (b) 起伴随服务：工作目录 = 临时目录（deck 拷入，非 git 仓库）
+        shutil.copy(os.path.join(ROOT, 'tests/decks/tech-ikb/index.html'),
+                    os.path.join(tmp, 'index.html'))
+        shutil.copytree(os.path.join(ROOT, 'tests/decks/tech-ikb/assets'),
+                        os.path.join(tmp, 'assets'))
+        srv = subprocess.Popen([sys.executable, os.path.join(ROOT, 'tools/edit.py'), tmp,
+                                '--port', str(GIT_PORT), '--no-browser'],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        health = None
+        for _ in range(50):
+            try:
+                health = json.loads(urllib.request.urlopen(base + '/api/health', timeout=1).read())
+                break
+            except Exception:
+                time.sleep(0.2)
+        if not health or not health.get('ok'):
+            report('T12-git', '伴随服务 git 版本', False, '伴随服务未就绪')
+            return
+        if health.get('gitReady'):
+            problems.append('临时目录不应是 git 仓库，gitReady=%r' % health.get('gitReady'))
+
+        # (c) 路径穿越必须被拒绝
+        for bad in ['../evil.html', '/etc/passwd', 'a/../../evil.html']:
+            try:
+                api_post(base, '/api/save', {'path': bad, 'html': 'x'})
+                problems.append('路径穿越未被拒绝：%s' % bad)
+            except urllib.error.HTTPError as e:
+                if e.code != 400:
+                    problems.append('穿越路径 %r 响应码=%d，期望 400' % (bad, e.code))
+
+        # (d) 非仓库保存：只写文件不提交；init:true（模拟 UI 确认）后提交
+        src = open(os.path.join(tmp, 'index.html'), encoding='utf-8').read()
+        r1 = api_post(base, '/api/save', {'path': 'index.html', 'html': src})
+        if not r1.get('ok') or r1.get('committed'):
+            problems.append('非仓库保存应只写文件不提交：%r' % r1)
+        r2 = api_post(base, '/api/save', {'path': 'index.html', 'html': src, 'init': True})
+        if not r2.get('committed') or not r2.get('hash'):
+            problems.append('init 后保存未产生提交：%r' % r2)
+        if len(git_log(tmp)) != 1:
+            problems.append('init 后提交数=%d，期望 1' % len(git_log(tmp)))
+
+        # (e) UI 端到端：?deck= 打开 → 编辑保存两次 → 各产生一个版本
+        ctx, page = fresh_page(browser)
+        try:
+            page.goto(base + '/editor.html?deck=index.html')
+            page.wait_for_function(
+                '() => window.state && window.state.loaded && window.registry.length > 0',
+                timeout=10000)
+            page.wait_for_timeout(400)
+            if page.evaluate('!!(window.state.backend && window.state.backend.gitReady)') is not True:
+                problems.append('编辑器未探测到后端 gitReady')
+            if page.evaluate("document.getElementById('btnHistory').disabled"):
+                problems.append('后端模式下历史按钮仍置灰')
+
+            def edit_h1_and_save(text):
+                # 保存后 selEl 仍是 h1：此时单击即进编辑，再单击会把光标收拢到
+                # 点击位置（typing 变成插入而非替换）。先点 deck 空白处清选中态。
+                page.frame_locator('#deckFrame').locator('body').click(position={'x': 8, 'y': 6})
+                page.wait_for_timeout(150)
+                h1 = page.frame_locator('#deckFrame').locator(
+                    '[data-slide-id="cover"] h1[data-editable]')
+                h1.click(); h1.click()
+                page.keyboard.type(text)
+                page.keyboard.press('Control+Enter')
+                page.locator('#btnSave').click()
+                page.wait_for_function('() => window.state.dirty === false', timeout=8000)
+
+            edit_h1_and_save('版本一标题')
+            edit_h1_and_save('版本二标题')
+            log = git_log(tmp)
+            if len(log) != 3:
+                problems.append('两次保存后提交数=%d，期望 3（含 init 首存）' % len(log))
+            if not all(m.startswith('edit: ') for _, m in log):
+                problems.append('提交 message 异常：%r' % [m for _, m in log])
+
+            # (f) 磁盘制造未提交改动 → UI 回滚到"版本一" → 文件还原 + pre-rollback 保护
+            with open(os.path.join(tmp, 'index.html'), 'a', encoding='utf-8') as f:
+                f.write('\n<!-- unsaved-change -->\n')
+            versions = json.loads(urllib.request.urlopen(
+                base + '/api/versions?path=index.html', timeout=5).read().decode('utf-8'))
+            vlist = versions.get('versions', [])
+            if len(vlist) != 3:
+                problems.append('版本列表=%d，期望 3' % len(vlist))
+            target = vlist[1]['hash']   # 时间倒序：[版本二, 版本一, init 首存]
+
+            page.locator('#btnHistory').click()
+            page.wait_for_selector('.ver-item', timeout=5000)
+            if page.locator('.ver-item').count() != 3:
+                problems.append('历史面板行数=%d，期望 3' % page.locator('.ver-item').count())
+            page.locator('.ver-item[data-hash="%s"] .ver-rollback' % target).click()
+            page.locator('#confirmOk').click()
+            page.wait_for_function("""() => window.state.loaded && window.frame.contentDocument &&
+              !!window.frame.contentDocument.querySelector('[data-slide-id="cover"] h1') &&
+              window.frame.contentDocument.querySelector('[data-slide-id="cover"] h1')
+                .textContent.includes('版本一标题')""", timeout=10000)
+            disk = open(os.path.join(tmp, 'index.html'), encoding='utf-8').read()
+            if '版本一标题' not in disk or '版本二标题' in disk:
+                problems.append('回滚后文件内容未还原到版本一')
+            if 'unsaved-change' in disk:
+                problems.append('回滚后磁盘残留未提交改动（应被版本内容覆盖）')
+            msgs = [m for _, m in git_log(tmp)]
+            if not any(m.startswith('pre-rollback: ') for m in msgs):
+                problems.append('缺少 pre-rollback 保护提交：%r' % msgs)
+            if len(msgs) != 4:
+                problems.append('回滚后提交数=%d，期望 4（3 + pre-rollback）' % len(msgs))
+        finally:
+            ctx.close()
+
+        report('T12-git', '伴随服务 git 版本', not problems,
+               '；'.join(problems) if problems else
+               '无后端历史置灰；穿越拒绝；init 确认后提交；两次保存两版本；回滚还原+pre-rollback 保护')
+    finally:
+        if srv:
+            srv.terminate()
+            try:
+                srv.wait(timeout=5)
+            except Exception:
+                srv.kill()
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ---------- 测试 13：skeleton v3 运行时动效（迭代 C / motion-system.md） ----------
+
+def goto_slide(page, i):
+    page.evaluate("""(i) => {
+      const deck = document.querySelector('.deck');
+      deck.scrollTop = document.querySelectorAll('.slide-slot')[i].offsetTop;
+    }""", i)
+
+def test_motion_v3(browser):
+    """(a) 入场拆字 spans → 完成后还原纯文本节点（无残留）；(b) count-up 精确还原
+    终值（含 data-from 分支）；(c) draw-line 描边归零；(d) fill-bar 到终态；
+    (e) 质感槽位 --texture-scope:cover（封面有质感层、普通页没有）；
+    (f) reduced-motion：引擎不启动、全文完整可读。"""
+    deck = 'motion-d2'
+    problems = []
+    ctx, page = fresh_page(browser)
+    try:
+        page.goto('%s/decks/%s/index.html' % (BASE, deck))
+
+        # (a) chars：入场即拆字（spans 出现）→ 完成后还原
+        page.wait_for_selector('[data-slide-id="cover"] [data-anim="chars"] .sp-unit', timeout=5000)
+        page.wait_for_timeout(2400)
+        st = page.evaluate("""() => {
+          const h1 = document.querySelector('[data-slide-id="cover"] [data-anim="chars"]');
+          return { spans: document.querySelectorAll('.sp-unit').length,
+                   text: h1.textContent, kids: h1.childNodes.length,
+                   isText: h1.childNodes[0] && h1.childNodes[0].nodeType === 3,
+                   cls: h1.className };
+        }""")
+        if st['spans'] != 0:
+            problems.append('chars 完成后残留 sp-unit ×%d' % st['spans'])
+        if not (st['text'] == '柔光暗房' and st['kids'] == 1 and st['isText']):
+            problems.append('chars 未还原为纯文本节点：%r kids=%d' % (st['text'], st['kids']))
+        if 'split-anim' in st['cls']:
+            problems.append('split-anim class 未清除')
+
+        # (a2) words：空白以文本节点保留，还原后文本精确
+        goto_slide(page, 1)
+        page.wait_for_selector('[data-slide-id="chapter-words"] [data-anim="words"] .sp-unit', timeout=5000)
+        page.wait_for_timeout(2400)
+        w = page.evaluate("""() => {
+          const h2 = document.querySelector('[data-slide-id="chapter-words"] [data-anim="words"]');
+          return { text: h2.textContent, spans: h2.querySelectorAll('.sp-unit').length,
+                   kids: h2.childNodes.length };
+        }""")
+        if not (w['text'] == 'From darkness to light' and w['spans'] == 0 and w['kids'] == 1):
+            problems.append('words 还原异常：%r spans=%d kids=%d' % (w['text'], w['spans'], w['kids']))
+
+        # (b) count-up：进行中是滚动值，结束后精确还原终值文本
+        goto_slide(page, 2)
+        page.wait_for_timeout(300)
+        mid = page.evaluate("""() => {
+          const els = document.querySelectorAll('[data-slide-id="metrics"] [data-anim="count-up"]');
+          return Array.from(els).map(e => e.textContent);
+        }""")
+        page.wait_for_timeout(2200)
+        fin = page.evaluate("""() => {
+          const els = document.querySelectorAll('[data-slide-id="metrics"] [data-anim="count-up"]');
+          return Array.from(els).map(e => ({ t: e.textContent,
+            kids: e.childNodes.length, spans: e.querySelectorAll('.sp-unit').length }));
+        }""")
+        if mid[0] == '87.5%' or mid[1] == '128':
+            problems.append('count-up 未见滚动中间态：%r' % mid)
+        if not (fin[0]['t'] == '87.5%' and fin[1]['t'] == '128'):
+            problems.append('count-up 终值未精确还原：%r' % [f['t'] for f in fin])
+        if any(f['kids'] != 1 or f['spans'] != 0 for f in fin):
+            problems.append('count-up 结束态非纯文本：%r' % fin)
+
+        # (c) draw-line：加载时藏线（dasharray 就位），入场后归零
+        goto_slide(page, 3)
+        page.wait_for_timeout(1600)
+        dl = page.evaluate("""() => {
+          const p = document.querySelector('[data-slide-id="flow"] [data-anim="draw-line"]');
+          return { arr: p.style.strokeDasharray, off: p.style.strokeDashoffset };
+        }""")
+        if not dl['arr'] or dl['off'] != '0':
+            problems.append('draw-line 描边未就位/未归零：%r' % dl)
+
+        # (d) fill-bar：终态 transform none、opacity 1
+        goto_slide(page, 4)
+        page.wait_for_timeout(1500)
+        fb = page.evaluate("""() => {
+          const b = document.querySelector('[data-slide-id="bars"] [data-anim="fill-bar"]');
+          const cs = getComputedStyle(b);
+          return { tf: cs.transform, op: cs.opacity };
+        }""")
+        if not (fb['tf'] == 'none' and fb['op'] == '1'):
+            problems.append('fill-bar 终态异常：%r' % fb)
+
+        # (e) 质感槽位：scope=cover → 封面/章节页有质感层，普通页没有
+        tx = page.evaluate("""() => ({
+          cover: getComputedStyle(document.querySelector('[data-slide-id="cover"]'), '::before').backgroundImage,
+          plain: getComputedStyle(document.querySelector('[data-slide-id="metrics"]'), '::before').backgroundImage,
+          htmlCls: document.documentElement.className })""")
+        if 'radial-gradient' not in tx['cover']:
+            problems.append('封面质感层缺失：%r' % tx['cover'][:80])
+        if tx['plain'] != 'none':
+            problems.append('普通页不应有质感层（scope=cover）：%r' % tx['plain'][:80])
+        if 'texture-cover' not in tx['htmlCls']:
+            problems.append('html 缺少 texture-cover class：%r' % tx['htmlCls'])
+    finally:
+        ctx.close()
+
+    # (f) reduced-motion：引擎不启动，全文完整可读
+    ctx3 = browser.new_context(viewport={'width': VIEW_W, 'height': VIEW_H},
+                               reduced_motion='reduce')
+    pg = ctx3.new_page()
+    pg.on('pageerror', lambda e: print('[pageerror]', e))
+    try:
+        pg.goto('%s/decks/%s/index.html' % (BASE, deck))
+        pg.wait_for_timeout(800)
+        rm = pg.evaluate("""() => {
+          const h1 = document.querySelector('[data-slide-id="cover"] [data-anim="chars"]');
+          const cu = document.querySelector('[data-slide-id="metrics"] [data-anim="count-up"]');
+          const p = document.querySelector('[data-slide-id="flow"] [data-anim="draw-line"]');
+          return { spans: document.querySelectorAll('.sp-unit').length,
+                   h1: h1.textContent, h1op: getComputedStyle(h1).opacity,
+                   cu: cu.textContent, cuop: getComputedStyle(cu).opacity,
+                   dash: p.style.strokeDasharray };
+        }""")
+        if rm['spans'] != 0:
+            problems.append('reduced-motion 下出现拆字 span ×%d' % rm['spans'])
+        if rm['h1'] != '柔光暗房' or rm['h1op'] != '1':
+            problems.append('reduced-motion 下标题不可读：%r op=%s' % (rm['h1'], rm['h1op']))
+        if rm['cu'] != '87.5%' or rm['cuop'] != '1':
+            problems.append('reduced-motion 下 count-up 非终值：%r op=%s' % (rm['cu'], rm['cuop']))
+        if rm['dash'] != '':
+            problems.append('reduced-motion 下 draw-line 被藏线：%r' % rm['dash'])
+    finally:
+        ctx3.close()
+
+    report('T13-motion-v3', '骨架 v3 运行时动效', not problems,
+           '；'.join(problems) if problems else
+           'chars/words 拆字后还原纯文本；count-up 终值精确（含 data-from）；draw-line 归零；fill-bar 终态；'
+           '质感层仅封面页；reduced-motion 全文可读零拆字')
+
+# ---------- 测试 14：编辑拆字元素（契约 v3：编辑前强制还原 + 保存净化） ----------
+
+def test_edit_chars_v3(browser):
+    """动画进行中两段手势进入编辑 → 元素先强制还原为纯文本 → 编辑 →
+    保存产物：无拆字 span、无 split-anim、无 draw-line 运行时 style、
+    html 无运行时 class、data-from 保留 → 重载再保存逐字节幂等。"""
+    deck = 'motion-d2'
+    point_assets(deck)
+    src = read_deck(deck)
+    ctx, page = fresh_page(browser)
+    problems = []
+    try:
+        page.goto(BASE + '/harness.html')
+        wait_editor_ready(page)
+        load_deck(page, src, deck + '/index.html')   # 加载即触发封面 chars 拆字动画
+
+        # 动画进行中：两段手势进入编辑
+        h1 = deck_loc(page, '[data-slide-id="cover"] h1[data-editable]')
+        h1.click()
+        h1.click()
+        ce = h1.get_attribute('contenteditable')
+        st = deck_frame(page).evaluate("""() => {
+          const h1 = document.querySelector('[data-slide-id="cover"] h1[data-editable]');
+          return { spans: h1.querySelectorAll('.sp-unit').length, text: h1.textContent };
+        }""")
+        if ce != 'plaintext-only':
+            problems.append('未进入编辑态 ce=%r' % ce)
+        if st['spans'] != 0 or st['text'] != '柔光暗房':
+            problems.append('进入编辑前未强制还原：spans=%d text=%r' % (st['spans'], st['text']))
+        page.keyboard.type('柔光实验室')
+        page.keyboard.press('Control+Enter')
+
+        saved = save_and_capture(page)
+        with open(os.path.join(RESULTS, deck + '.edited.html'), 'w', encoding='utf-8') as f:
+            f.write(saved)
+        problems += assert_clean_output(deck, saved, [
+            ('编辑未生效', '柔光实验室' in saved),
+            ('拆字 span 进入产物', '<span class="sp-unit"' not in saved),
+            ('split-anim class 进入产物', 'class="split-anim"' not in saved),
+            ('draw-line 运行时 style 进入产物',
+             not re.search(r'style="[^"]*stroke-dash', saved)),
+            ('html 残留运行时 class', not re.search(r'<html[^>]*\sclass=', saved)),
+            ('data-from 丢失', 'data-from="12"' in saved),
+        ])
+
+        # 重载 → 再保存：逐字节幂等且无 span 污染
+        load_deck(page, saved, deck + '/index.html')
+        saved2 = save_and_capture(page)
+        if saved2 != saved:
+            problems.append('重载再保存不幂等')
+        if '<span class="sp-unit"' in saved2:
+            problems.append('重载保存产物出现拆字 span')
+
+        report('T14-edit-chars', '编辑拆字元素（v3 契约）', not problems,
+               '；'.join(problems) if problems else
+               '动画中点击进入编辑已强制还原纯文本；产物零 span/style/class 污染；重载幂等')
+    finally:
+        ctx.close()
+
+
+# ---------- 测试 19：skeleton v5 动效词汇库 8 族（迭代 F4 / visual-depth.md §三） ----------
+
+def test_motion_v5(browser):
+    """(a) enter 族终态（blur-in/scale-pop/wipe-clip/rise-in/persp-in 归位）；
+    (b) text 族：mask-lines 行结构终态 + typewriter 中间态截获与精确还原 +
+        scramble 精确还原 + gradient-flow 循环在跑；
+    (c) data 族：fill-bar-y 终态、ring dashoffset==100-val（纯 CSS）；
+    (d) link 族：dash-flow / flow-dot 循环动画在跑；
+    (e) scroll 族：read-progress 随滚动 scaleX 0→1、scrub-draw dashoffset 随滚动
+        变化、parallax transform 随滚动变化、sticky 槽位就位（cover/stack）；
+    (f) ptr 族：程序化 pointermove → slide 写 --mx/--my、tilt 写 --rx/--ry、
+        magnetic 写 --mgx；__pptxMotion.freeze() 后变量清空且不再写入；
+    (g) reduced-motion：全静态可读（引擎与 tracker 不启动、循环动画全停）。"""
+    deck = 'motion-v5'
+    problems = []
+    ctx, page = fresh_page(browser)
+    try:
+        page.goto('%s/decks/%s/index.html' % (BASE, deck))
+        v = page.evaluate("document.querySelector('meta[name=skeleton-version]').content")
+        if v != '5.1':
+            problems.append('skeleton-version=%r，期望 5.1（v5.1 patch）' % v)
+
+        # (a) enter 族终态
+        goto_slide(page, 1)
+        page.wait_for_timeout(2200)
+        en = page.evaluate("""() => ({
+          blur: getComputedStyle(document.querySelector('[data-anim="blur-in"]')).filter,
+          wipe: getComputedStyle(document.querySelector('[data-anim="wipe-clip"]')).clipPath,
+          pop: getComputedStyle(document.querySelector('[data-anim="scale-pop"]')).transform,
+          persp: getComputedStyle(document.querySelector('[data-anim="persp-in"]')).transform,
+          rise: getComputedStyle(document.querySelector('[data-slide-id="enter-lab"] [data-anim="rise-in"]')).transform,
+          op: getComputedStyle(document.querySelector('[data-anim="blur-in"]')).opacity })""")
+        if en['blur'] not in ('none', 'blur(0px)', 'blur(0)'):
+            problems.append('blur-in 终态 filter=%r' % en['blur'])
+        if not (en['wipe'] in ('none', 'inset(0px)')):
+            problems.append('wipe-clip 终态 clip-path=%r' % en['wipe'])
+        for k in ('pop', 'persp', 'rise'):
+            if en[k] != 'none':
+                problems.append('%s 终态 transform=%r' % (k, en[k]))
+        if en['op'] != '1':
+            problems.append('enter 族终态 opacity=%r' % en['op'])
+
+        # (b) text 族
+        goto_slide(page, 2)
+        page.wait_for_timeout(320)   # typewriter 中间态截获
+        mid = page.evaluate("""() => ({
+          tw: document.querySelector('[data-anim="typewriter"]').textContent,
+          live: document.querySelector('[data-anim="typewriter"]').classList.contains('tw-live') })""")
+        page.wait_for_timeout(2600)
+        tx = page.evaluate("""() => {
+          const ml = document.querySelector('[data-anim="mask-lines"]');
+          const inners = Array.from(ml.querySelectorAll('.ml-inner'));
+          const tw = document.querySelector('[data-anim="typewriter"]');
+          const sc = document.querySelector('[data-anim="scramble"]');
+          const gf = document.querySelector('[data-slide-id="text-lab"] [data-anim="gradient-flow"]');
+          return { mlText: ml.textContent, spans: ml.querySelectorAll('.sp-unit').length,
+                   innerTf: inners.map(i => getComputedStyle(i).transform),
+                   tw: tw.textContent, twLive: tw.classList.contains('tw-live'),
+                   sc: sc.textContent,
+                   gfAnim: getComputedStyle(gf).animationName,
+                   gfFill: getComputedStyle(gf).webkitTextFillColor };
+        }""")
+        if not (0 < len(mid['tw']) < 40 and mid['live']):
+            problems.append('typewriter 中间态异常：%r' % mid)
+        if tx['mlText'] != '逐行遮罩显影，行与行之间有先后。' or tx['spans'] != 0:
+            problems.append('mask-lines 文本/结构异常：%r spans=%d' % (tx['mlText'], tx['spans']))
+        if any(t != 'none' for t in tx['innerTf']):
+            problems.append('mask-lines 行终态未归位：%r' % tx['innerTf'])
+        if tx['tw'] != '$ render --family=text --mode=typewriter' or tx['twLive']:
+            problems.append('typewriter 还原异常：%r live=%s' % (tx['tw'], tx['twLive']))
+        if tx['sc'] != 'SIGNAL-LOCKED-0942':
+            problems.append('scramble 还原异常：%r' % tx['sc'])
+        if tx['gfAnim'] != 'gradient-flow':
+            problems.append('gradient-flow 动画未运行：%r' % tx['gfAnim'])
+        if tx['gfFill'] != 'rgba(0, 0, 0, 0)':
+            problems.append('gradient-flow 未走透明填充：%r' % tx['gfFill'])
+
+        # (c) data 族
+        goto_slide(page, 3)
+        page.wait_for_timeout(2400)
+        da = page.evaluate("""() => ({
+          bars: Array.from(document.querySelectorAll('[data-anim="fill-bar-y"]'))
+                     .map(b => getComputedStyle(b).transform),
+          ring: parseFloat(getComputedStyle(document.querySelector('[data-anim="ring"]')).strokeDashoffset.replace(/[^0-9.]/g, '')) })""")
+        if any(t != 'none' for t in da['bars']):
+            problems.append('fill-bar-y 终态异常：%r' % da['bars'])
+        if abs(da['ring'] - 28) > 1:
+            problems.append('ring 终态 dashoffset=%s，期望 28（100-72）' % da['ring'])
+
+        # (d) link 族
+        goto_slide(page, 4)
+        page.wait_for_timeout(400)
+        li = page.evaluate("""() => ({
+          dash: getComputedStyle(document.querySelector('.dash-flow')).animationName,
+          dot: getComputedStyle(document.querySelector('.flow-dot')).animationName,
+          dotOp: getComputedStyle(document.querySelector('.flow-dot')).opacity })""")
+        if li['dash'] != 'dash-flow':
+            problems.append('dash-flow 动画未运行：%r' % li['dash'])
+        if li['dot'] != 'flow-dot' or li['dotOp'] != '1':
+            problems.append('flow-dot 异常：%r op=%s' % (li['dot'], li['dotOp']))
+
+        # (e) scroll 族（滚动驱动断言；先关 scroll-snap 防止吸附把两个采样位并到一起）
+        page.evaluate("document.querySelector('.deck').style.scrollSnapType = 'none'")
+        page.evaluate("document.querySelector('.deck').scrollTop = 0")
+        page.wait_for_timeout(500)
+        sc0 = page.evaluate(
+            "getComputedStyle(document.querySelector('.read-progress')).transform")
+        page.evaluate("""() => {
+          const deck = document.querySelector('.deck');
+          deck.scrollTop = deck.scrollHeight - deck.clientHeight;
+        }""")
+        page.wait_for_timeout(600)
+        sc1 = page.evaluate("""() => {
+          const m = getComputedStyle(document.querySelector('.read-progress')).transform;
+          return { m, display: getComputedStyle(document.querySelector('.read-progress')).display };
+        }""")
+        def scalex(m):
+            mm = re.match(r'matrix\(([\d.e-]+)', m or '')
+            return float(mm.group(1)) if mm else None
+        sx0, sx1 = scalex(sc0), scalex(sc1['m'])
+        if sc1['display'] != 'block' or sx0 is None or sx1 is None or not (sx0 < 0.05 and sx1 > 0.95):
+            problems.append('read-progress 滚动驱动异常：top=%r bottom=%r' % (sc0, sc1))
+
+        # scrub-draw：两个滚动位置的 dashoffset 不同且都在 [0,100]
+        page.evaluate("""() => {
+          const deck = document.querySelector('.deck');
+          deck.scrollTop = document.querySelectorAll('.slide-slot')[5].offsetTop - deck.clientHeight * 0.5;
+        }""")
+        page.wait_for_timeout(500)
+        sd_mid = page.evaluate("parseFloat(getComputedStyle(document.querySelector('[data-scroll=\\'scrub-draw\\']')).strokeDashoffset.replace(/[^0-9.]/g, ''))")
+        goto_slide(page, 5)
+        page.wait_for_timeout(600)
+        sd_in = page.evaluate("parseFloat(getComputedStyle(document.querySelector('[data-scroll=\\'scrub-draw\\']')).strokeDashoffset.replace(/[^0-9.]/g, ''))")
+        if not (0 <= sd_mid <= 100 and 0 <= sd_in <= 100):
+            problems.append('scrub-draw dashoffset 越界：%s / %s' % (sd_mid, sd_in))
+        if abs(sd_mid - sd_in) < 5:
+            problems.append('scrub-draw 未随滚动变化：%s vs %s' % (sd_mid, sd_in))
+
+        # parallax：两个滚动位置 transform 不同
+        plx0 = page.evaluate("getComputedStyle(document.querySelector('[data-scroll=\\'parallax\\']')).transform")
+        page.evaluate("document.querySelector('.deck').scrollTop += 200")
+        page.wait_for_timeout(500)
+        plx1 = page.evaluate("getComputedStyle(document.querySelector('[data-scroll=\\'parallax\\']')).transform")
+        if plx0 == plx1:
+            problems.append('scroll-parallax 未随滚动变化：%r' % plx0)
+
+        # sticky 页间效果就位
+        sticky = page.evaluate("""() => ({
+          cover: getComputedStyle(document.querySelector('.slide-slot[data-scroll="cover"]')).position,
+          stack: getComputedStyle(document.querySelector('.slide-slot[data-scroll="stack"]')).position })""")
+        if sticky['cover'] != 'sticky' or sticky['stack'] != 'sticky':
+            problems.append('sticky 槽位异常：%r' % sticky)
+
+        # (f) ptr 族：程序化指针模拟
+        goto_slide(page, 6)
+        page.wait_for_timeout(500)
+        box = page.evaluate("""() => {
+          const r = document.querySelector('[data-ptr="tilt"]').getBoundingClientRect();
+          return { x: r.x, y: r.y, w: r.width, h: r.height };
+        }""")
+        page.mouse.move(box['x'] + box['w'] * 0.25, box['y'] + box['h'] * 0.3, steps=4)
+        page.wait_for_timeout(300)
+        pt = page.evaluate("""() => {
+          const slide = document.querySelector('[data-slide-id="ptr-lab"]');
+          const tilt = document.querySelector('[data-ptr="tilt"]');
+          const mag = document.querySelector('[data-ptr="magnetic"]');
+          return { mx: slide.style.getPropertyValue('--mx'), myr: slide.style.getPropertyValue('--myr'),
+                   rx: tilt.style.getPropertyValue('--rx'), ry: tilt.style.getPropertyValue('--ry') };
+        }""")
+        magc = page.evaluate("""() => {
+          const r = document.querySelector('[data-ptr="magnetic"]').getBoundingClientRect();
+          return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+        }""")
+        page.mouse.move(magc['x'], magc['y'], steps=3)
+        page.wait_for_timeout(300)
+        pt['mgx'] = page.evaluate("document.querySelector('[data-ptr=\\'magnetic\\']').style.getPropertyValue('--mgx')")
+        if not pt['mx'] or not pt['myr']:
+            problems.append('slide 级 pointer 变量未写入：%r' % pt)
+        if not pt['rx'] or not pt['ry']:
+            problems.append('tilt 变量未写入：%r' % pt)
+        if not pt['mgx']:
+            problems.append('magnetic 变量未写入：%r' % pt)
+
+        # freeze：变量清空且指针不再驱动
+        page.evaluate('window.__pptxMotion.freeze()')
+        fz = page.evaluate("""() => {
+          const slide = document.querySelector('[data-slide-id="ptr-lab"]');
+          const tilt = document.querySelector('[data-ptr="tilt"]');
+          return { mx: slide.style.getPropertyValue('--mx'), rx: tilt.style.getPropertyValue('--rx') };
+        }""")
+        page.mouse.move(box['x'] + box['w'] * 0.7, box['y'] + box['h'] * 0.6, steps=3)
+        page.wait_for_timeout(300)
+        fz2 = page.evaluate("""() => ({
+          mx: document.querySelector('[data-slide-id="ptr-lab"]').style.getPropertyValue('--mx'),
+          rx: document.querySelector('[data-ptr="tilt"]').style.getPropertyValue('--rx') })""")
+        if fz['mx'] or fz['rx'] or fz2['mx'] or fz2['rx']:
+            problems.append('freeze 后变量未清空/仍写入：%r -> %r' % (fz, fz2))
+    finally:
+        ctx.close()
+
+    # (g) reduced-motion：全静态可读
+    ctx3 = browser.new_context(viewport={'width': VIEW_W, 'height': VIEW_H},
+                               reduced_motion='reduce')
+    pg = ctx3.new_page()
+    pg.on('pageerror', lambda e: print('[pageerror]', e))
+    try:
+        pg.goto('%s/decks/%s/index.html' % (BASE, deck))
+        pg.wait_for_timeout(900)
+        rm = pg.evaluate("""() => ({
+          h1: document.querySelector('[data-slide-id="cover"] [data-anim="chars"]').textContent,
+          spans: document.querySelectorAll('.sp-unit').length,
+          tw: document.querySelector('[data-anim="typewriter"]').textContent,
+          sc: document.querySelector('[data-anim="scramble"]').textContent,
+          mlTf: getComputedStyle(document.querySelector('.ml-inner')).transform,
+          dash: getComputedStyle(document.querySelector('.dash-flow')).animationName,
+          blob: getComputedStyle(document.querySelector('.amb-gradient-blob')).animationName,
+          sweep: getComputedStyle(document.querySelector('.light-sweep'), '::after').animationName,
+          rp: getComputedStyle(document.querySelector('.read-progress')).display,
+          ring: parseFloat(getComputedStyle(document.querySelector('[data-anim="ring"]')).strokeDashoffset.replace(/[^0-9.]/g, '')) })""")
+        if rm['h1'] != '终端即诗' or rm['spans'] != 0:
+            problems.append('RM 下封面标题异常：%r spans=%d' % (rm['h1'], rm['spans']))
+        if rm['tw'] != '$ render --family=text --mode=typewriter':
+            problems.append('RM 下 typewriter 非全文：%r' % rm['tw'])
+        if rm['sc'] != 'SIGNAL-LOCKED-0942':
+            problems.append('RM 下 scramble 非全文：%r' % rm['sc'])
+        if rm['mlTf'] != 'none':
+            problems.append('RM 下 mask-lines 未归位：%r' % rm['mlTf'])
+        if rm['dash'] != 'none' or rm['blob'] != 'none' or rm['sweep'] != 'none':
+            problems.append('RM 下循环动画未停：%r' % rm)
+        if rm['rp'] != 'none':
+            problems.append('RM 下 read-progress 未隐藏：%r' % rm['rp'])
+        if abs(rm['ring'] - 28) > 1:
+            problems.append('RM 下 ring 非终态：%s' % rm['ring'])
+        tb = pg.evaluate("""() => {
+          const r = document.querySelector('[data-ptr="tilt"]').getBoundingClientRect();
+          return { x: r.x, y: r.y };
+        }""")
+        pg.mouse.move(tb['x'] + 30, tb['y'] + 30, steps=3)
+        pg.wait_for_timeout(300)
+        rmv = pg.evaluate("""() => ({
+          mx: document.querySelector('[data-slide-id="ptr-lab"]').style.getPropertyValue('--mx'),
+          rx: document.querySelector('[data-ptr="tilt"]').style.getPropertyValue('--rx') })""")
+        if rmv['mx'] or rmv['rx']:
+            problems.append('RM 下 tracker 仍在写变量：%r' % rmv)
+    finally:
+        ctx3.close()
+
+    report('T19-motion-v5', '骨架 v5 动效 8 族', not problems,
+           '；'.join(problems) if problems else
+           'enter/text/data/link 族终态与精确还原全过；scroll 族滚动驱动断言全过（read-progress/scrub-draw/parallax/sticky）；'
+           'ptr 族程序化指针写入与 freeze 清空全过；reduced-motion 全静态可读')
+
+
+def test_edit_motion_v5(browser):
+    """F4 编辑侧（契约 v6）：编辑器加载即冻结交互层；编辑 mask-lines 行叶子与
+    gradient-flow（编辑态还原本色）；手工注入 pointer 运行时变量后保存——
+    净化清单移除全部 v5 运行时残留、保留产物结构（.ml-line/--val/--pin-i/
+    pathLength）；重载再保存逐字节幂等。"""
+    deck = 'motion-v5'
+    point_assets(deck)
+    src = read_deck(deck)
+    ctx, page = fresh_page(browser)
+    problems = []
+    try:
+        page.goto(BASE + '/harness.html')
+        wait_editor_ready(page)
+        load_deck(page, src, deck + '/index.html')
+
+        # 编辑态冻结交互动效层（契约 v6）：注入样式已生效
+        fz = deck_frame(page).evaluate("""() => ({
+          rp: getComputedStyle(document.querySelector('.read-progress')).display,
+          spot: getComputedStyle(document.querySelector('.spotlight')).display })""")
+        if fz['rp'] != 'none' or fz['spot'] != 'none':
+            problems.append('编辑态未冻结 spotlight/read-progress：%r' % fz)
+
+        # 手工注入 v5 运行时残留（等价于 tracker 写过一轮）
+        deck_frame(page).evaluate("""() => {
+          const slide = document.querySelector('[data-slide-id="ptr-lab"]');
+          slide.style.setProperty('--mx', '50%'); slide.style.setProperty('--my', '30%');
+          slide.style.setProperty('--mxr', '0.1'); slide.style.setProperty('--myr', '-0.2');
+          const tilt = document.querySelector('[data-ptr="tilt"]');
+          tilt.style.setProperty('--rx', '3deg'); tilt.style.setProperty('--ry', '-2deg');
+          const mag = document.querySelector('[data-ptr="magnetic"]');
+          mag.style.setProperty('--mgx', '8px'); mag.style.setProperty('--mgy', '-6px');
+        }""")
+
+        # 编辑 mask-lines 行叶子（产物结构必须保留）
+        line = deck_loc(page, '[data-slide-id="text-lab"] .ml-inner[data-editable]:has-text("行与行之间")')
+        line.scroll_into_view_if_needed()
+        page.wait_for_timeout(300)
+        line.click(); line.click()
+        ce = line.get_attribute('contenteditable')
+        if ce != 'plaintext-only':
+            problems.append('mask-lines 行叶子未进入编辑态 ce=%r' % ce)
+        page.keyboard.type('每行都有自己的时刻。')
+        page.keyboard.press('Control+Enter')
+
+        # gradient-flow：编辑态强制还原本色（契约 v6 透明填充条款）
+        gf = deck_loc(page, '[data-slide-id="text-lab"] [data-anim="gradient-flow"]')
+        gf.scroll_into_view_if_needed()
+        gf.click(); gf.click()
+        fill = deck_frame(page).evaluate(
+            "getComputedStyle(document.querySelector('[data-slide-id=\"text-lab\"] [data-anim=\"gradient-flow\"]')).webkitTextFillColor")
+        if fill == 'rgba(0, 0, 0, 0)':
+            problems.append('gradient-flow 编辑态未还原本色：%r' % fill)
+        page.keyboard.press('Escape')   # 不留修改
+
+        saved = save_and_capture(page)
+        with open(os.path.join(RESULTS, deck + '.edited.html'), 'w', encoding='utf-8') as f:
+            f.write(saved)
+        problems += assert_clean_output(deck, saved, [
+            ('mask-lines 行编辑未生效', '每行都有自己的时刻。' in saved),
+            ('mask-lines 产物结构丢失', 'class="ml-line"' in saved and 'class="ml-inner"' in saved),
+            ('pointer 运行时变量残留（--mx 等）',
+             not re.search(r'style="[^"]*--m[xyr]', saved)),
+            ('tilt/magnetic 运行时变量残留（--rx/--ry/--mgx/--mgy）',
+             not re.search(r'style="[^"]*--(rx|ry|mgx|mgy)', saved)),
+            ('--i 阶梯序号残留', not re.search(r'style="[^"]*--i\s*:', saved)),
+            ('tw-live class 残留', re.search(r'class="[^"]*tw-live', saved) is None),
+            ('--val 产物内容被误删', re.search(r'--val\s*:\s*72', saved) is not None),
+            ('--pin-i 产物内容被误删', re.search(r'--pin-i\s*:\s*0', saved) is not None),
+            ('--depth 产物内容被误删', re.search(r'--depth\s*:\s*\.35', saved) is not None),
+            ('--flow-path 产物内容被误删', '--flow-path' in saved),
+            ('pathLength 被误删',
+             len(re.findall(r'<(?:circle|path)[^>]*\bpathLength="100"', saved)) == 2),
+            ('拆字 span 进入产物', '<span class="sp-unit"' not in saved),
+        ])
+
+        load_deck(page, saved, deck + '/index.html')
+        saved2 = save_and_capture(page)
+        if saved2 != saved:
+            problems.append('重载再保存不幂等')
+
+        report('T20-edit-motion-v5', '编辑 v5 动效 deck（契约 v6）', not problems,
+               '；'.join(problems) if problems else
+               '编辑态交互层冻结；mask-lines 行叶子可编辑且结构保留；gradient-flow 编辑态还原本色；'
+               'pointer 变量/tw-live/--i 全净化、产物内容（--val/--pin-i/--depth/--flow-path/pathLength）全保留；重载幂等')
+    finally:
+        ctx.close()
+
+
+# ---------- 测试 21：skeleton v5.1 canvas FX 仪式层（迭代 F5 / visual-depth.md §四） ----------
+
+def test_fx_v51(browser):
+    """(a) 视口内启动：封面 constellation 入视口即配位图尺寸（width 属性就位）
+       且逐帧推进（两次像素快照不同）；从未入视口的 closing ascii-field 连
+       width 属性都没有（零残留）；(b) 滚到 closing：ascii-field 启动并推进；
+       (c) 离屏停帧：滚走后 closing 快照冻结（封面槽位是 data-scroll="cover"
+       的 sticky 钉住页，几何上始终在视口内——离屏停帧用普通槽位的 closing
+       验证）；(d) freeze()：全部停帧 + 清屏 + 摘除 width/height，fxFrozen 后
+       回滚到封面也不再重启；(e) reduced-motion：零 canvas 活动；
+       (f) 编辑器路径：加载即冻结（canvas 从未配尺寸），序列化产物 canvas 无
+       width/height、往返幂等（全量往返另由 T1-motion-v5 覆盖）。"""
+    deck = 'motion-v5'
+    problems = []
+    CV = "document.querySelector('[data-slide-id=\"%s\"] canvas[data-fx]')"
+    ctx, page = fresh_page(browser)
+    try:
+        page.goto('%s/decks/%s/index.html' % (BASE, deck))
+        page.wait_for_timeout(900)
+
+        # (a) 封面 constellation 启动
+        cov = page.evaluate("""() => { const c = %s;
+          return { hasW: c.hasAttribute('width'), w: c.width, h: c.height }; }""" % CV % 'cover')
+        if not cov['hasW'] or cov['w'] < 100:
+            problems.append('封面 fx 未配位图尺寸：%r' % cov)
+        page.evaluate("window.__snap = %s.toDataURL()" % CV % 'cover')
+        page.wait_for_timeout(500)
+        if page.evaluate("window.__snap === %s.toDataURL()" % CV % 'cover'):
+            problems.append('封面 fx 画面未逐帧推进')
+
+        # 从未入视口的 closing：零残留
+        if page.evaluate("%s.hasAttribute('width')" % CV % 'closing'):
+            problems.append('未入视口的 closing fx 已有 width 属性（应零初始化）')
+
+        # (b) closing ascii-field 启动
+        goto_slide(page, 9)
+        page.wait_for_timeout(900)
+        clo = page.evaluate("""() => { const c = %s;
+          return { hasW: c.hasAttribute('width'), w: c.width }; }""" % CV % 'closing')
+        if not clo['hasW']:
+            problems.append('closing fx 入视口未启动：%r' % clo)
+        page.evaluate("window.__snap3 = %s.toDataURL()" % CV % 'closing')
+        page.wait_for_timeout(500)
+        if page.evaluate("window.__snap3 === %s.toDataURL()" % CV % 'closing'):
+            problems.append('closing fx 画面未逐帧推进')
+
+        # (c) 离屏停帧：滚回普通内容页后 closing 完全离屏 → 停帧
+        goto_slide(page, 3)
+        page.wait_for_timeout(600)
+        page.evaluate("window.__snap2 = %s.toDataURL()" % CV % 'closing')
+        page.wait_for_timeout(500)
+        if page.evaluate("window.__snap2 !== %s.toDataURL()" % CV % 'closing'):
+            problems.append('离屏后 closing fx 仍在绘制（未停帧）')
+
+        # (d) freeze：停帧 + 清屏 + 摘除 width/height，且不再重启
+        page.evaluate('window.__pptxMotion.freeze()')
+        page.wait_for_timeout(400)
+        fz = page.evaluate("""() => Array.from(document.querySelectorAll('canvas[data-fx]'))
+          .map(c => ({ w: c.hasAttribute('width'), h: c.hasAttribute('height'),
+                       blank: c.toDataURL().length }))""")
+        if any(f['w'] or f['h'] for f in fz):
+            problems.append('freeze 后 canvas 残留 width/height：%r' % fz)
+        goto_slide(page, 0)
+        page.wait_for_timeout(600)
+        if page.evaluate("%s.hasAttribute('width')" % CV % 'cover'):
+            problems.append('freeze 后回滚封面 fx 被重启')
+    finally:
+        ctx.close()
+
+    # (e) reduced-motion：零 canvas 活动
+    ctx3 = browser.new_context(viewport={'width': VIEW_W, 'height': VIEW_H},
+                               reduced_motion='reduce')
+    pg = ctx3.new_page()
+    pg.on('pageerror', lambda e: print('[pageerror]', e))
+    try:
+        pg.goto('%s/decks/%s/index.html' % (BASE, deck))
+        pg.wait_for_timeout(900)
+        rm = pg.evaluate("""() => Array.from(document.querySelectorAll('canvas[data-fx]'))
+          .map(c => c.hasAttribute('width'))""")
+        if any(rm):
+            problems.append('reduced-motion 下 fx 被初始化：%r' % rm)
+        goto_slide(pg, 9)
+        pg.wait_for_timeout(600)
+        rm2 = pg.evaluate("""() => Array.from(document.querySelectorAll('canvas[data-fx]'))
+          .map(c => c.hasAttribute('width'))""")
+        if any(rm2):
+            problems.append('reduced-motion 滚动后 fx 被初始化：%r' % rm2)
+    finally:
+        ctx3.close()
+
+    # (f) 编辑器路径：加载即冻结，序列化产物 canvas 无 width/height
+    point_assets(deck)
+    src = read_deck(deck)
+    ctx4, page4 = fresh_page(browser)
+    try:
+        page4.goto(BASE + '/harness.html')
+        wait_editor_ready(page4)
+        load_deck(page4, src, deck + '/index.html')
+        ed = deck_frame(page4).evaluate("""() => Array.from(document.querySelectorAll('canvas[data-fx]'))
+          .map(c => c.hasAttribute('width'))""")
+        if any(ed):
+            problems.append('编辑器内 fx 未被冻结：%r' % ed)
+        saved = save_and_capture(page4)
+        if re.search(r'<canvas[^>]*\s(?:width|height)=', saved):
+            problems.append('保存产物 canvas 残留 width/height')
+        n_fx = len(re.findall(r'<canvas data-fx="(?:constellation|starfield|particle-drift|ascii-field)"', saved))
+        if n_fx != 2:
+            problems.append('保存产物 fx 实例数异常：%d' % n_fx)
+        load_deck(page4, saved, deck + '/index.html')
+        saved2 = save_and_capture(page4)
+        if saved2 != saved:
+            problems.append('fx deck 编辑器往返不幂等')
+    finally:
+        ctx4.close()
+
+    report('T21-fx-v51', 'canvas FX 仪式层（F5）', not problems,
+           '；'.join(problems) if problems else
+           '视口内启动/离屏停帧/回屏续播全过；未入视口零初始化；freeze 停帧+摘除尺寸且不重启；'
+           'reduced-motion 零 canvas 活动；编辑器加载即冻结、产物无 width/height、往返幂等')
+
+
+# ---------- 测试 15：信息图系统 v2 组件标记合规（迭代 D / infographic-system.md） ----------
+
+# components.md §1 合法项数区间 + §3 适配矩阵白名单（✓/△ 均算允许，✗ 禁止）的镜像。
+# v2 → v3（F2）：新增构图谱系（§11）与容器规格（§12）均为叙述/纪律层，未改族、骨架、
+# 皮肤与项数区间，故本镜像表语义不变。新增族/骨架/皮肤时两端必须同步——这是
+# "适配矩阵静态可验"的落点。
+IG_RANGES = {
+    'list-row': (3, 5), 'list-grid': (4, 6), 'list-zigzag': (3, 6),
+    'list-waterfall': (3, 5), 'list-pyramid': (3, 5),
+    'sequence-steps': (3, 5), 'sequence-timeline': (3, 5), 'sequence-stairs': (3, 5),
+    'sequence-funnel': (3, 6), 'sequence-snake': (5, 8),
+    'compare-binary-cols': (2, 2), 'compare-quadrant': (4, 4),
+    'compare-swot': (4, 4), 'compare-vs-overlay': (2, 2),
+    'hierarchy-concentric': (2, 4),
+    'relation-flow': (3, 6), 'relation-network': (4, 8), 'relation-circle-loop': (3, 5),
+}
+IG_ALLOWED = {   # 族 × 皮肤白名单（chart 族不参与矩阵，跳过）
+    'list': {'bare', 'card', 'badge', 'ribbon', 'stat', 'icon-line'},
+    'sequence': {'bare', 'card', 'badge', 'ribbon', 'stat', 'icon-line'},
+    'compare': {'bare', 'card', 'badge', 'ribbon', 'stat', 'icon-line'},
+    'hierarchy': {'bare', 'card', 'badge', 'icon-line'},
+    'relation': {'bare', 'card', 'badge', 'icon-line'},
+}
+
+def test_infographic_v2(browser):
+    """infographic-d1（skeleton v3，5 结构族 × 4 皮肤 + 嵌套 chart + 标注修饰件）：
+    (a) 族×皮肤组合在白名单内、项数 ∈ 合法区间（binary 恰好 2 项等硬断言）；
+    (b) 每个 Item 含可编辑文字；容器不带 data-editable；装饰元素 skip；
+    (c) 嵌套 chart 小图按图表分层（几何 skip、标签/数值 editable）；
+    (d) 标注修饰件：旗标文字 editable、引线 skip；
+    (e) 编辑 Item 文字 → 保存 → 辅助标记保留、产物净化 → 重载再保存逐字节幂等。"""
+    deck = 'infographic-d1'
+    point_assets(deck)
+    src = read_deck(deck)
+    ctx, page = fresh_page(browser)
+    problems = []
+    try:
+        page.goto(BASE + '/harness.html')
+        wait_editor_ready(page)
+        load_deck(page, src, deck + '/index.html')
+        df = deck_frame(page)
+
+        # (a)+(b) 结构族根：项数区间、白名单、Item 可编辑文字、容器不带 data-editable
+        roots = df.evaluate("""() => Array.from(document.querySelectorAll('[data-ig]')).map(r => ({
+          ig: r.getAttribute('data-ig'), skin: r.getAttribute('data-ig-skin'),
+          items: r.querySelectorAll(':scope [data-ig-item]').length,
+          rootEditable: r.hasAttribute('data-editable'),
+          itemsNoText: Array.from(r.querySelectorAll(':scope [data-ig-item]'))
+            .filter(i => !i.querySelector('[data-editable]')).length,
+          nested: !!r.querySelector('[data-ig]') }))""")
+        n_struct = 0
+        for r in roots:
+            if r['ig'].startswith('chart-'):
+                if r['skin'] is not None:
+                    problems.append('chart 族不参与皮肤矩阵，不应带 data-ig-skin：%r' % r['ig'])
+                continue
+            n_struct += 1
+            fam = r['ig'].split('-')[0]
+            if r['skin'] not in IG_ALLOWED.get(fam, set()):
+                problems.append('族×皮肤禁止组合：%s × %s' % (r['ig'], r['skin']))
+            lo, hi = IG_RANGES.get(r['ig'], (None, None))
+            if lo is None:
+                problems.append('未知骨架（IG_RANGES 未收录）：%s' % r['ig'])
+            elif not (lo <= r['items'] <= hi):
+                problems.append('%s 项数=%d，超出区间 [%d,%d]' % (r['ig'], r['items'], lo, hi))
+            if r['rootEditable']:
+                problems.append('%s 容器误标 data-editable' % r['ig'])
+            if r['itemsNoText']:
+                problems.append('%s 有 %d 个 Item 不含可编辑文字' % (r['ig'], r['itemsNoText']))
+        if n_struct != 5:
+            problems.append('结构族主体数=%d，期望 5（list/sequence/compare/hierarchy/relation）' % n_struct)
+        nested_roots = [r['ig'] for r in roots if r['nested']]
+        if nested_roots != ['sequence-steps']:
+            problems.append('嵌套位置异常：%r（期望仅 sequence-steps 内嵌 chart）' % nested_roots)
+
+        # (c) 嵌套 chart：几何 skip、标签/数值 editable
+        nest = df.evaluate("""() => {
+          const c = document.querySelector('[data-ig="chart-progress"]');
+          if (!c) return null;
+          return { inItem: !!c.closest('[data-ig-item]'),
+                   skips: c.querySelectorAll('[data-editable-skip]').length,
+                   edits: c.querySelectorAll('[data-editable]').length,
+                   fills: c.querySelectorAll('[data-anim="fill-bar"]').length };
+        }""")
+        if not nest or not nest['inItem']:
+            problems.append('嵌套 chart 不在 Item 内：%r' % nest)
+        elif not (nest['skips'] == 2 and nest['edits'] == 4 and nest['fills'] == 2):
+            problems.append('嵌套 chart 分层异常：%r（期望 skip=2 轨道、editable=2 标签+2 数值、fill-bar=2）' % nest)
+
+        # (d) 标注修饰件：旗标文字 editable、引线（draw-line 在 skip 容器内）
+        anno = df.evaluate("""() => {
+          const slide = document.querySelector('[data-slide-id="member-loop"]');
+          const flag = Array.from(slide.querySelectorAll('[data-editable]'))
+            .find(e => e.textContent.includes('会员贡献营收'));
+          const path = slide.querySelector('path[data-anim="draw-line"]');
+          return { flag: !!flag,
+                   lead: !!(path && path.closest('[data-editable-skip]')) };
+        }""")
+        if not anno['flag']:
+            problems.append('标注旗标文字不可编辑')
+        if not anno['lead']:
+            problems.append('标注引线未标 data-editable-skip')
+
+        # (b2) 结构装饰抽查：steps 连接线、VS 徽章、同心圆环、闭环箭头
+        deco = df.evaluate("""() => ({
+          stepsLine: !!document.querySelector('[data-slide-id="launch-pipeline"] [data-ig] > [data-editable-skip]'),
+          vs: !!document.querySelector('[data-slide-id="channel-compare"] [data-ig] > [data-editable-skip]'),
+          rings: document.querySelectorAll('[data-slide-id="brand-system"] [data-ig] > [data-editable-skip]').length,
+          arrows: document.querySelectorAll('[data-slide-id="member-loop"] [data-ig] > [data-editable-skip]').length,
+          stylize: document.querySelectorAll('[data-stylize]').length })""")
+        if not (deco['stepsLine'] and deco['vs']):
+            problems.append('steps 连接线 / VS 徽章未标 skip：%r' % deco)
+        if deco['rings'] != 3 or deco['arrows'] != 5:
+            problems.append('同心圆环/闭环箭头装饰标记数异常：%r' % deco)
+        if deco['stylize'] != 0:
+            problems.append('D1 为 flat 质感主题，不应出现 data-stylize：%d' % deco['stylize'])
+
+        # (e) 编辑 Item 文字 → 保存 → 标记保留 + 净化 → 重载幂等
+        title = deck_loc(page, '[data-slide-id="launch-pipeline"] [data-ig-item] p[data-editable]:has-text("杯测校准")')
+        title.scroll_into_view_if_needed()
+        page.wait_for_timeout(300)
+        title.click(); title.click()
+        page.keyboard.type('杯测校准与定版')
+        page.keyboard.press('Control+Enter')
+        saved = save_and_capture(page)
+        with open(os.path.join(RESULTS, deck + '.edited.html'), 'w', encoding='utf-8') as f:
+            f.write(saved)
+        problems += assert_clean_output(deck, saved, [
+            ('Item 文字编辑未生效', '杯测校准与定版' in saved),
+            ('data-ig 辅助标记丢失', saved.count('data-ig="') == 6 and saved.count('data-ig-item') == 18),
+            ('嵌套 fill-bar 丢失', ('width:92%' in saved or 'width: 92%' in saved) and 'data-anim="fill-bar"' in saved),
+            ('标注旗标丢失', '会员贡献营收 63%' in saved),
+        ])
+        load_deck(page, saved, deck + '/index.html')
+        saved2 = save_and_capture(page)
+        if saved2 != saved:
+            problems.append('重载再保存不幂等')
+
+        report('T15-infographic-v2', '信息图 v2 标记合规', not problems,
+               '；'.join(problems) if problems else
+               '5 族 × 4 皮肤白名单通过；binary=2 等项数硬断言通过；Item 文字可编辑、装饰 skip、'
+               '嵌套 chart 分层正确；标注文字 editable / 引线 skip；编辑往返幂等且标记保留')
+    finally:
+        ctx.close()
+
+
+# ---------- 测试 18：组件画廊 F2+F3（components.md v3 §11/§12 + charts.md v2 + gallery/） ----------
+
+# F3 新增图表类型的 chart 族根（data-ig="chart-*"）覆盖清单——charts.md v2 扩展九 +
+# 存量 chart-progress（p13 嵌套实例）。新增图表类型时两端必须同步。
+CHART_IGS = {'chart-progress', 'chart-stacked', 'chart-grouped', 'chart-area',
+             'chart-waterfall', 'chart-scatter', 'chart-radar', 'chart-slope',
+             'chart-funnel', 'chart-heatmap'}
+
+def test_gallery_f2(browser):
+    """gallery/index.html（skeleton v4，33 页，多主题 sampler + G 期 9 主题样张页组）：
+    (a) 零溢出：每页全部 [data-editable] 元素矩形落在画布内（±2px）；
+    (b) 零重叠：同页可编辑元素两两矩形不相交（>16px² 才算，排除祖先包含）；
+    (c) data-ig 根：族×皮肤 ∈ 白名单、项数 ∈ 区间（复用 T15 镜像表，chart- 前缀跳过）；
+    (d) 覆盖断言：6 结构族 × 6 皮肤全部出现；
+    (e) 谱系节奏纪律（components.md §11）：mastfoot 声明抽取，无连续 3 页同谱系；
+    (f) F3 图表页：chart 族根覆盖 10 类（CHART_IGS）；每根几何 skip + 标签/标注 editable；
+        几何抽验——瀑布图累计水位衔接（首末柱贴基线、逐段连续、终点==起点+ΣΔ）、
+        雷达图顶点半径 ∝ 数据值、斜率图端点 y == 数据线性映射（data-geo/data-vals
+        是画廊自带的测量钩子，编辑契约之外、序列化原样保留）。
+    测量在 1920×1080 视口 + reduced-motion 下进行（动效零位移，布局即终态）。"""
+    deck = 'components-gallery'
+    src = read_deck(deck)
+    problems = []
+    ctx = browser.new_context(viewport={'width': 1920, 'height': 1080},
+                              reduced_motion='reduce')
+    page = ctx.new_page()
+    page.on('pageerror', lambda e: print('[pageerror]', e))
+    try:
+        page.goto('%s/decks/%s/index.html' % (BASE, deck))
+        page.wait_for_timeout(800)
+        # content-visibility:auto 下远屏页不排版——先强制全部排版本再测量（仅测量页，不保存）
+        page.evaluate("""() => document.querySelectorAll('.slide-slot')
+          .forEach(s => s.style.contentVisibility = 'visible')""")
+        page.wait_for_timeout(400)
+
+        # (a)+(b) 逐页溢出 / 重叠
+        geo = page.evaluate("""() => {
+          const out = [];
+          document.querySelectorAll('.slide').forEach(slide => {
+            const sr = slide.getBoundingClientRect();
+            const els = Array.from(slide.querySelectorAll('[data-editable]'));
+            const rs = els.map(el => ({ el, r: el.getBoundingClientRect() }));
+            rs.forEach(({el, r}) => {
+              if (r.left < sr.left - 2 || r.top < sr.top - 2 ||
+                  r.right > sr.right + 2 || r.bottom > sr.bottom + 2)
+                out.push(slide.dataset.slideId + ' 溢出: ' + el.tagName + ' "' +
+                  (el.textContent || '').trim().slice(0, 16) + '"');
+            });
+            for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
+              const a = rs[i], b = rs[j];
+              if (a.el.contains(b.el) || b.el.contains(a.el)) continue;
+              const ix = Math.max(0, Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left));
+              const iy = Math.max(0, Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top));
+              if (ix * iy > 16)
+                out.push(slide.dataset.slideId + ' 重叠: "' +
+                  (a.el.textContent || '').trim().slice(0, 12) + '" × "' +
+                  (b.el.textContent || '').trim().slice(0, 12) + '"');
+            }
+          });
+          return out;
+        }""")
+        problems += geo
+
+        # (c) data-ig 根校验（镜像 T15 口径）
+        roots = page.evaluate("""() => Array.from(document.querySelectorAll('[data-ig]')).map(r => ({
+          ig: r.getAttribute('data-ig'), skin: r.getAttribute('data-ig-skin'),
+          items: r.querySelectorAll(':scope [data-ig-item]').length,
+          rootEditable: r.hasAttribute('data-editable'),
+          edits: r.querySelectorAll('[data-editable]').length,
+          skips: r.querySelectorAll('[data-editable-skip]').length,
+          itemsNoText: Array.from(r.querySelectorAll(':scope [data-ig-item]'))
+            .filter(i => !i.querySelector('[data-editable]')).length }))""")
+        fams, skins = set(), set()
+        n_struct = 0
+        chart_igs = set()
+        for r in roots:
+            if r['ig'].startswith('chart-'):
+                if r['skin'] is not None:
+                    problems.append('chart 族不应带 data-ig-skin：%r' % r['ig'])
+                chart_igs.add(r['ig'])
+                # (f) 图表根分层：几何 skip + 标签/标注 editable 都必须存在
+                if r['skips'] < 1:
+                    problems.append('%s 缺几何 skip 层' % r['ig'])
+                if r['edits'] < 3:
+                    problems.append('%s 可编辑标签/标注不足（%d 个）' % (r['ig'], r['edits']))
+                continue
+            n_struct += 1
+            fam = r['ig'].split('-')[0]
+            fams.add(fam); skins.add(r['skin'])
+            if r['skin'] not in IG_ALLOWED.get(fam, set()):
+                problems.append('族×皮肤禁止组合：%s × %s' % (r['ig'], r['skin']))
+            lo, hi = IG_RANGES.get(r['ig'], (None, None))
+            if lo is None:
+                problems.append('未知骨架（IG_RANGES 未收录）：%s' % r['ig'])
+            elif not (lo <= r['items'] <= hi):
+                problems.append('%s 项数=%d，超出区间 [%d,%d]' % (r['ig'], r['items'], lo, hi))
+            if r['rootEditable']:
+                problems.append('%s 容器误标 data-editable' % r['ig'])
+            if r['itemsNoText']:
+                problems.append('%s 有 %d 个 Item 不含可编辑文字' % (r['ig'], r['itemsNoText']))
+        if n_struct != 13:
+            problems.append('结构族主体数=%d，期望 13' % n_struct)
+        if chart_igs != CHART_IGS:
+            problems.append('图表根覆盖异常：缺 %r / 多 %r' % (CHART_IGS - chart_igs, chart_igs - CHART_IGS))
+
+        # (d) 6 族 × 6 皮肤全覆盖
+        if fams != {'list', 'sequence', 'compare', 'hierarchy', 'relation'}:
+            problems.append('结构族覆盖不全：%r' % fams)
+        if skins != {'bare', 'card', 'badge', 'ribbon', 'stat', 'icon-line'}:
+            problems.append('皮肤覆盖不全：%r' % skins)
+
+        # (e) 谱系节奏：封面=宣言，guide=说明页跳过，其余取 mastfoot 右槽"谱系：X"
+        lineages = page.evaluate("""() => Array.from(document.querySelectorAll('.slide')).map(s => {
+          if (s.dataset.slideId === 'cover') return '宣言';
+          const spans = s.querySelectorAll('.mastfoot span');
+          if (!spans.length) return null;
+          const m = /谱系：(\\S+)/.exec(spans[spans.length - 1].textContent);
+          if (!m) return null;
+          const g = m[1].split('·')[0].trim();
+          return g === '—' || g === '—（说明页）' ? null : g;
+        })""")
+        for i in range(len(lineages) - 2):
+            trio = lineages[i:i + 3]
+            if trio[0] and trio[0] == trio[1] == trio[2]:
+                problems.append('连续 3 页同谱系：%r（页 %d-%d）' % (trio[0], i + 1, i + 3))
+        seen = set(g for g in lineages if g)
+        if seen != {'宣言', '数据英雄', '网格矩阵', '轴与节点', '图文证据', '裂屏对开'}:
+            problems.append('谱系覆盖异常：%r' % seen)
+
+        # (f) F3 几何抽验：瀑布 / 雷达 / 斜率
+        wf = page.evaluate("""() => Array.from(document.querySelectorAll(
+          '[data-slide-id="profit-waterfall"] [data-geo="wf-bar"]'))
+          .map(b => ({ bottom: parseFloat(b.style.bottom), height: parseFloat(b.style.height) }))""")
+        if len(wf) != 7:
+            problems.append('瀑布图柱数=%d，期望 7' % len(wf))
+        else:
+            FLOOR = 56.0
+            if wf[0]['bottom'] != FLOOR or wf[6]['bottom'] != FLOOR:
+                problems.append('瀑布图首末柱未贴基线：%r / %r' % (wf[0], wf[6]))
+            # 累计水位链：level = 前柱的"接力水位"（前柱升→柱顶，降→柱底）；
+            # 本柱升则底接水位、降则顶接水位，接不上即断裂
+            level = wf[0]['bottom'] + wf[0]['height']
+            for i in range(1, 6):
+                rise = abs(wf[i]['bottom'] - level)
+                fall = abs(wf[i]['bottom'] + wf[i]['height'] - level)
+                if min(rise, fall) > 1:
+                    problems.append('瀑布图第 %d 段累计水位断裂：bottom=%s h=%s 水位=%s' % (
+                        i + 1, wf[i]['bottom'], wf[i]['height'], level))
+                level = (wf[i]['bottom'] + wf[i]['height']) if rise <= fall else wf[i]['bottom']
+            if abs(level - (FLOOR + wf[6]['height'])) > 1:
+                problems.append('瀑布图终点柱高与累计不符：水位 %s vs 终点柱 %r' % (level, wf[6]))
+
+        radar = page.evaluate("""() => {
+          const p = document.querySelector('[data-slide-id="radar-stack"] polygon[data-geo="radar-series"]');
+          if (!p) return null;
+          return { pts: p.getAttribute('points'), vals: p.getAttribute('data-vals'),
+                   cx: +p.getAttribute('data-cx'), cy: +p.getAttribute('data-cy'), r: +p.getAttribute('data-r') };
+        }""")
+        if not radar:
+            problems.append('雷达图测量钩子缺失')
+        else:
+            pts = [tuple(map(float, xy.split(','))) for xy in radar['pts'].split()]
+            vals = [float(v) for v in radar['vals'].split(',')]
+            if len(pts) != 6 or len(vals) != 6:
+                problems.append('雷达图顶点/数值数不符：%d vs %d' % (len(pts), len(vals)))
+            else:
+                for i, ((x, y), v) in enumerate(zip(pts, vals)):
+                    dist = math.hypot(x - radar['cx'], y - radar['cy'])
+                    if abs(dist - v / 100 * radar['r']) > 1.5:
+                        problems.append('雷达顶点 %d 半径 %.1f ≠ 值 %.0f 映射 %.1f' % (
+                            i, dist, v, v / 100 * radar['r']))
+                    ang = math.atan2(y - radar['cy'], x - radar['cx'])
+                    want = -math.pi / 2 + i * math.pi / 3
+                    diff = (ang - want + math.pi) % (2 * math.pi) - math.pi  # 角度归一到 [-π,π]
+                    if abs(diff) > 0.02:
+                        problems.append('雷达顶点 %d 角度偏差 %.3f rad' % (i, diff))
+
+        slope = page.evaluate("""() => Array.from(document.querySelectorAll(
+          '[data-slide-id="slope-cities"] line[data-geo="slope-line"]'))
+          .map(l => ({ y1: +l.getAttribute('y1'), y2: +l.getAttribute('y2'),
+                       v1: +l.getAttribute('data-v1'), v2: +l.getAttribute('data-v2') }))""")
+        if len(slope) != 5:
+            problems.append('斜率图线数=%d，期望 5' % len(slope))
+        else:
+            for i, s in enumerate(slope):
+                w1, w2 = 600 * (1 - s['v1'] / 30), 600 * (1 - s['v2'] / 30)
+                if abs(s['y1'] - w1) > 0.6 or abs(s['y2'] - w2) > 0.6:
+                    problems.append('斜率线 %d 端点不映射数据：(%s,%s) vs (%s,%s)' % (
+                        i, s['y1'], s['y2'], w1, w2))
+
+        report('T18-gallery-f2', '组件画廊 F2+F3', not problems,
+               '；'.join(problems) if problems else
+               '33 页零溢出零重叠；13 族根 + 10 图表根白名单/分层全过；6 族 × 6 皮肤全覆盖；6 谱系无连续 3 页同谱系；'
+               '瀑布水位/雷达顶点/斜率端点几何抽验通过')
+    finally:
+        ctx.close()
+
+
+# ---------- 测试 16：图片槽位契约静态校验器（迭代 E / 契约 v5） ----------
+
+CHECK_IMAGES = os.path.join(ROOT, 'skills/html-pptx/scripts/check-images.mjs')
+
+def run_check_images(*args):
+    return subprocess.run(['node', CHECK_IMAGES, *args], capture_output=True, text=True)
+
+def test_check_images():
+    """(a) 合规 deck（charts-a3 + culture-kraft，v5 三属性齐全）通过且无警告；
+    (b) 存量无槽位 deck（tech-ikb）警告但退出码 0；
+    (c) 插画模式（--mode illustration）下 placeholder 残留 → 报错且非零退出；
+    (d) 幂等：重跑结果逐字节一致。"""
+    problems = []
+    ok_decks = [os.path.join(ROOT, 'tests/decks', d, 'index.html') for d in ('charts-a3', 'culture-kraft')]
+    r1 = run_check_images(*ok_decks)
+    if r1.returncode != 0 or 'WARN' in (r1.stdout + r1.stderr):
+        problems.append('合规 deck 未零警告通过：rc=%d %s%s' % (r1.returncode, r1.stdout, r1.stderr))
+    r2 = run_check_images(os.path.join(ROOT, 'tests/decks/tech-ikb/index.html'))
+    if r2.returncode != 0 or r2.stderr.count('缺 data-image-slot') != 2:
+        problems.append('存量 deck 警告路径异常：rc=%d stderr=%s' % (r2.returncode, r2.stderr.strip()[:200]))
+    r3 = run_check_images(ok_decks[0], '--mode', 'illustration')
+    if r3.returncode == 0 or 'placeholder 状态槽位' not in r3.stderr:
+        problems.append('插画模式反降级未报错：rc=%d %s' % (r3.returncode, r3.stderr.strip()[:200]))
+    r1b = run_check_images(*ok_decks)
+    if (r1b.returncode, r1b.stdout, r1b.stderr) != (r1.returncode, r1.stdout, r1.stderr):
+        problems.append('重跑结果不一致（非幂等）')
+    report('T16-check-images', '槽位契约静态校验器', not problems,
+           '；'.join(problems) if problems else
+           '合规 deck 零警告通过；存量 deck 2 警告 rc=0；插画模式 placeholder 残留 rc=1；重跑幂等')
+
+# ---------- 测试 17：图片上传置 state=uploaded（迭代 E / 契约 v5） ----------
+
+def test_image_upload_state(browser):
+    """headless 无法驱动 FSAA 系统弹窗：stub showOpenFilePicker/showDirectoryPicker
+    后调用真实 replaceImage（同名覆盖分支）——上传成功后 img 置
+    data-image-state="uploaded"（slot/intent 保留）、置脏，保存产物持久化且 ?v= 剥离。"""
+    deck = 'culture-kraft'
+    point_assets(deck)
+    src = read_deck(deck)
+    ctx, page = fresh_page(browser)
+    problems = []
+    try:
+        page.goto(BASE + '/harness.html')
+        wait_editor_ready(page)
+        load_deck(page, src, deck + '/index.html')
+        ef = editor_frame(page)
+        ef.evaluate("""() => {
+          window.showOpenFilePicker = async () => [{
+            name: 'village-fields.svg',
+            getFile: async () => new File(
+              ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 3"></svg>'],
+              'village-fields.svg', { type: 'image/svg+xml' })
+          }];
+          window.showDirectoryPicker = async () => ({
+            requestPermission: async () => 'granted',
+            getFileHandle: async () => ({ createWritable: async () => (
+              { write: async () => {}, close: async () => {} }) })
+          });
+        }""")
+        r = ef.evaluate("""async () => {
+          const img = document.getElementById('deckFrame').contentDocument
+            .querySelector('[data-slide-id="the-land"] img[data-editable-image]');
+          await window.replaceImage(img);
+          return { state: img.getAttribute('data-image-state'),
+                   slot: img.getAttribute('data-image-slot'),
+                   intent: img.getAttribute('data-image-intent'),
+                   src: img.getAttribute('src'),
+                   dirty: window.state.dirty };
+        }""")
+        if r['state'] != 'uploaded':
+            problems.append('上传后 state=%r，期望 uploaded' % r['state'])
+        if r['slot'] != 'village-fields-4x3' or '田野' not in (r['intent'] or ''):
+            problems.append('slot/intent 未保留：%r' % r)
+        if not (r['src'] or '').startswith('assets/village-fields.svg?v='):
+            problems.append('同名覆盖分支 src 异常：%r' % r['src'])
+        if r['dirty'] is not True:
+            problems.append('上传未置脏')
+        saved = save_and_capture(page)
+        for label, cond in [
+            ('state=uploaded 未持久化', 'data-image-state="uploaded"' in saved),
+            ('slot 未持久化', 'data-image-slot="village-fields-4x3"' in saved),
+            ('intent 未持久化', 'data-image-intent="层叠田野与远山的乡土意象' in saved),
+            ('src 残留 ?v=', 'village-fields.svg?v=' not in saved),
+        ]:
+            if not cond:
+                problems.append(label)
+        report('T17-upload-state', '图片上传 state 翻转', not problems,
+               '；'.join(problems) if problems else
+               'stub FSAA 走真实 replaceImage：state→uploaded、slot/intent 保留、置脏、保存产物持久化（?v= 已剥离）')
+    finally:
+        ctx.close()
+
 
 def main():
     setup_serve()
@@ -885,6 +2418,19 @@ def main():
             test_standalone(browser)
             test_annotation_e2e(browser)
             test_annotation_edges(browser)
+            test_panel_export(browser)
+            test_style_editing(browser)
+            test_toc_nav(browser)
+            test_git_versions(browser)
+            test_motion_v3(browser)
+            test_edit_chars_v3(browser)
+            test_motion_v5(browser)
+            test_edit_motion_v5(browser)
+            test_fx_v51(browser)
+            test_infographic_v2(browser)
+            test_gallery_f2(browser)
+            test_check_images()
+            test_image_upload_state(browser)
 
             browser.close()
     finally:

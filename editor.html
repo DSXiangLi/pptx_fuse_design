@@ -4,11 +4,81 @@
 <!--
   ============================================================================
   HTML PPTX 编辑器 · editor.html
-  版本：v1.2（2026-09-16）
-  实现依据：docs/design-editor.md v0.3（评审修订稿）
-  标记契约：skills/html-pptx/references/editing-contract.md v1（本页是消费侧实现）
+  版本：v2.3（2026-09-19）
+  实现依据：docs/design-editor.md v0.3（评审修订稿）+ docs/design/editor-v2.md
+  标记契约：skills/html-pptx/references/editing-contract.md v6.2（本页是消费侧实现）
 
   变更记录：
+  - v2.3（G 期：主题表达力栈，docs/design/theme-expression-stack.md）：
+    主题库重构为 9 个七层重主题 + 配色变体——主题卡新增变体色点行
+    （点击切换变体、再点回基底，选中变体即选中主题）；导出意图 JSON 的
+    theme 项携带变体合并后的 tokens + theme_css（主题 G9 母题 CSS 块），
+    导出文案改为双 SLOT 口径（SLOT: theme tokens + SLOT: theme css，
+    skeleton v6）；面板分组新增「装饰主导」（focus=G9）。
+  - v2.2（视觉纵深 F5：canvas FX 仪式层，docs/design/visual-depth.md §四）：
+    适配 skeleton v5.1——serializeClean 净化兜底移除 canvas[data-fx] 的
+    运行时 width/height 属性（freeze 主责：编辑器加载即冻结，fx 从未启动；
+    契约 v6.1）。canvas 像素不属 DOM 状态，序列化天然不含。
+  - v2.1（视觉纵深 F4：动效词汇库 8 族，docs/design/visual-depth.md §三）：
+    适配 skeleton v5——① 编辑态冻结交互动效层：加载后调用骨架
+    __pptxMotion.freeze() 摘除 pointer tracker，注入样式把 [data-scroll] /
+    [data-ptr] / .spotlight / .read-progress 压回静态终态（编辑不被
+    交互层干扰，注入样式带 data-editor-injected 随净化剔除）；
+    ② 净化清单扩展：移除 pointer tracker 运行时 CSS 变量（.slide 上的
+    --mx/--my/--mxr/--myr 与 tilt/magnetic 元素上的 --rx/--ry/--mgx/--mgy）、
+    移除 typewriter 的 tw-live class（restoreAll 覆盖 typewriter/scramble
+    进行中文本）；mask-lines 的 .ml-line/.ml-inner 是产物结构原样保留；
+    ③ 编辑 gradient-flow 等透明填充文字时强制还原本色
+    （-webkit-text-fill-color:currentColor + 去背景渐变，契约 v6）；
+    ④ 面板 motion 组改五层启用矩阵（克制=仅 L1 / 标准=L1–L4 各一 /
+    华丽=L1–L5 全开），选项数据由 sync-themes.mjs 写入
+    __MOTION_JSON_BEGIN/END__ 标记区间（语义源 references/motion.md §5）。
+  - v2.0（视觉纵深 F1：高级感要素落位，docs/design/visual-depth.md）：
+    适配 skeleton v4——刊头家具（.masthead/.mastfoot）是产物 SLOT
+    内容（普通 DOM + data-editable 文字），序列化原样保留，净化清单
+    无需新增规则（家具无运行时状态；既有"移除 <html> class"规则同时
+    覆盖 v3 的 texture-cover 与 v4 的无运行时 class 两种骨架）；
+    v4 背景配给制（cover-page / texture-on 纯 CSS 配给）同样无运行时
+    残留。面板主题数据由 sync-themes.mjs 重新生成（F1 起主题新增
+    G1 accent 预算 / G2 字号对比·字重映射 / G3 立场必填，tokens 含
+    --texture-*，主题数不变）。
+  - v1.9（迭代 E：AI 插画管线，docs/design/illustration-pipeline.md）：
+    图片替换上传成功后把该 img 的 data-image-state 置为 "uploaded"
+    （保留 data-image-slot / data-image-intent——契约不随换图丢失；
+    存量无槽位老 deck 同样置 uploaded，不强制要求槽位属性）。
+  - v1.8（迭代 C：动效系统 v2，docs/design/motion-system.md）：
+    适配 skeleton v3 运行时动效引擎——进入编辑前若目标元素正处于拆字/
+    count-up 运行时动效中，先调用骨架接口 window.__pptxMotion.restore(el)
+    强制还原为纯文本再进入编辑态；serializeClean 净化扩展：保存前
+    restoreAll() 终止全部进行中动效，克隆体上兜底还原拆字 span
+    （.sp-unit → textContent）、移除 draw-line 的 stroke-dasharray/
+    stroke-dashoffset 运行时 style，<html> 的 class 整体视为运行时产物
+    移除（js 动效门槛 + texture-cover 质感范围）。
+  - v1.7（主题 Schema 化联动，docs/design/theme-schema.md §6）：
+    主题卡按 focus 分组展示（配色/质感/字排/形态主导），卡片显示 focus
+    标签与气质一句话——让用户看着重点选；面板数据带 focus/group 字段，
+    由 sync-themes.mjs 从 Schema 化 themes.md（16 套）生成。
+  - v1.6（编辑器 v2，docs/design/editor-v2.md）：
+    1. 文字样式编辑：选中 data-editable 文字元素后顶栏出现样式控件组
+       （字体/字号/字色/对齐），只写白名单四属性 inline style
+       （font-family/font-size/color/text-align），随保存序列化保留——
+       契约"样式覆盖"节；粒度是整个元素，不做选区级富文本；
+    2. PPT 式目录侧栏：克隆 section 进 Shadow DOM（deck CSS 注入、:root→:host、
+       强制动效终态）+ IntersectionObserver 懒渲染 + 点击导航 + 当前页高亮；
+       编辑后按需失效重克隆（导航件不是监视器，不做实时同步）；
+    3. git 版本：探测 tools/edit.py 伴随服务（GET api/health），有后端时
+       保存走 POST api/save（每次保存一个版本），顶栏"历史"面板列版本、
+       回滚（服务端先做 pre-rollback 保护提交）；无后端维持 FSAA/下载现状，
+       历史按钮置灰。嵌入态保存仍走 postMessage，与伴随服务无关。
+  - v1.5（骨架 v2 联动）：serializeClean 净化规则扩展——移除 <html> 的 js
+    class、移除元素 style 中的 --i 自定义属性（skeleton v2 动效引擎的运行时
+    残留，见 editing-contract.md §动效与编辑的互斥）。
+  - v1.4（主题数据单源化）：面板主题卡片数据改由
+    skills/html-pptx/scripts/sync-themes.mjs 从 themes.md 解析生成，幂等写回
+    __THEMES_JSON_BEGIN/END__ 标记区间；消灭双源手工维护。
+  - v1.3（技能 v1.1 联动）：设计意图面板新增"内容密度"组（density: low/high，
+    对应 skills/html-pptx/references/typography.md §5 密度双档）；导出指令
+    增加密度条目，并提示 AI 按工作流重组而非只改字号。
   - v1.1（e2e 验收修复）：
     1. 嵌入态保存一律走 postMessage（原条件 embedded && !fsaa 在 FSAA 存在的
        宿主中失效，保存被静默吞掉，宿主永远收不到 pptx-html:save）；
@@ -32,9 +102,12 @@
   - 保存序列化净化规则见设计文档 §5.4（五条），由 serializeClean() 实现。
 
   数据源说明：
-  - 设计面板中的主题数据（PANEL_DATA.questions[0]）由
-    skills/html-pptx/references/themes.md（13 套策展主题）人工整理生成。
-    改主题必须先改 themes.md，再同步本文件中的 PANEL_DATA，禁止单边漂移。
+  - 设计面板中的主题数据（PANEL_DATA.questions[0].options）由
+    skills/html-pptx/scripts/sync-themes.mjs 从 references/themes.md 生成。
+    改主题必须先改 themes.md，再跑 node skills/html-pptx/scripts/sync-themes.mjs；
+    __THEMES_JSON_BEGIN/END__ 标记区间内禁止手工编辑。
+  - 动效组选项（questions[2]，__MOTION_JSON_BEGIN/END__ 标记区间）同理由
+    sync-themes.mjs 写入，语义源是 references/motion.md §5 五层启用矩阵。
   ============================================================================
 -->
 <meta charset="UTF-8">
@@ -110,6 +183,10 @@
   .group{margin-top:18px}
   .group>h3{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;margin-bottom:8px}
   .theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .theme-group{grid-column:1/-1}
+  .theme-group + .theme-group{margin-top:10px}
+  .theme-group-title{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.06em;margin-bottom:6px}
+  .theme-group-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .theme-card{
     border:1px solid var(--border);border-radius:8px;padding:9px;cursor:pointer;background:#fff;
   }
@@ -117,10 +194,17 @@
   .theme-card.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
   .theme-card .swatches{display:flex;gap:4px;margin-bottom:7px}
   .theme-card .swatches i{width:22px;height:22px;border-radius:5px;border:1px solid rgba(0,0,0,.12)}
+  .theme-card .variants{display:flex;gap:5px;margin:-2px 0 7px;align-items:center}
+  .theme-card .variants b{font-size:9px;font-weight:400;color:var(--muted);margin-right:1px}
+  .theme-card .variants i{width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.18);cursor:pointer;box-sizing:border-box}
+  .theme-card .variants i:hover{transform:scale(1.15)}
+  .theme-card .variants i.selected{box-shadow:0 0 0 2px var(--paper, #fff),0 0 0 3.5px var(--accent)}
   .theme-card .sample{line-height:1.35;margin-bottom:5px;overflow:hidden;white-space:nowrap}
   .theme-card .sample .fd{font-size:15px;font-weight:700}
   .theme-card .sample .fb{font-size:11px;opacity:.75;margin-left:6px}
   .theme-card .name{font-size:12px;font-weight:600}
+  .theme-card .focus-tag{font-size:10px;font-weight:400;color:var(--muted);
+    border:1px solid var(--border);border-radius:4px;padding:0 4px;margin-left:6px;vertical-align:1px}
   .theme-card .desc{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.5;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .opt-row{display:flex;gap:8px}
@@ -218,12 +302,63 @@
   .anno-item .del:hover{color:var(--danger)}
   .anno-foot{padding:10px 12px;border-top:1px solid var(--border)}
   .anno-foot button{width:100%}
+
+  /* ── 目录侧栏（v1.6 §2） ────────────────────────────────── */
+  .toc{
+    width:0;flex:none;overflow:hidden;border-right:1px solid transparent;
+    background:var(--bar);transition:width .18s ease;
+    display:flex;flex-direction:column;
+  }
+  .toc.open{width:240px;border-right-color:var(--border)}
+  .toc-inner{width:240px;flex:1;display:flex;flex-direction:column;min-height:0}
+  .toc-head{flex:none;padding:10px 12px;border-bottom:1px solid var(--border);
+    font-size:12px;font-weight:600}
+  .toc-list{flex:1;overflow-y:auto;padding:10px}
+  .toc-card{
+    border:1px solid var(--border);border-radius:8px;margin-bottom:10px;
+    cursor:pointer;background:#fff;overflow:hidden;
+  }
+  .toc-card:hover{border-color:#b9b9b3}
+  .toc-card.cur{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+  .toc-thumb{width:100%;background:#111}
+  .toc-meta{display:flex;gap:6px;align-items:baseline;padding:5px 8px;font-size:11px;color:var(--muted)}
+  .toc-meta .no{font-family:"SF Mono","Menlo",monospace;font-weight:700;color:var(--text)}
+  .toc-meta .sid{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* ── 顶栏样式控件组（v1.6 §1，选中文字元素时出现） ────────── */
+  .stylebar{display:none;align-items:center;gap:6px}
+  .stylebar.show{display:flex}
+  .stylebar select{
+    font:inherit;font-size:12px;padding:4px 6px;border:1px solid var(--border);
+    border-radius:6px;background:var(--bar);max-width:132px;
+  }
+  .st-size{display:flex;align-items:center;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  .st-size button{border:0;border-radius:0;padding:4px 8px}
+  .st-size input{width:52px;border:0;padding:4px 2px;font:inherit;font-size:12px;text-align:center;outline:none}
+  .st-size input.warn{color:var(--warn-text);background:var(--warn-bg)}
+  .st-swatches{display:flex;gap:4px;align-items:center}
+  .st-swatch{width:18px;height:18px;border-radius:4px;border:1px solid rgba(0,0,0,.18);padding:0;cursor:pointer}
+  .st-swatch:hover{transform:scale(1.12)}
+  .st-color{width:26px;height:24px;padding:0;border:1px solid var(--border);border-radius:4px;background:none;cursor:pointer}
+  .st-align button{padding:5px 8px}
+  .st-warn{color:var(--warn-text);font-size:11px}
+
+  /* ── 版本历史面板（v1.6 §3，复用 drawer 形态） ────────────── */
+  .ver-item{
+    display:flex;gap:8px;align-items:center;padding:8px;
+    border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:#fff;
+  }
+  .ver-item .vm{flex:1;min-width:0}
+  .ver-item .vt{font-size:12px;font-weight:600}
+  .ver-item .vh{font-size:11px;color:var(--muted);font-family:"SF Mono","Menlo",monospace;margin-top:2px}
+  .ver-item>button{flex:none;padding:3px 10px;font-size:12px}
+  .ver-empty{padding:16px 8px;color:var(--muted);font-size:12px;text-align:center}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="brand">HTML PPTX 编辑器<small>v1.2</small></div>
+  <div class="brand">HTML PPTX 编辑器<small>v1.9</small></div>
   <button id="btnOpen">打开文件</button>
   <button id="btnSave" class="primary" disabled title="将修改写回原文件">保存 (⌘S)</button>
   <div class="sep"></div>
@@ -232,9 +367,25 @@
     <button data-mode="annotate">批注</button>
   </div>
   <div class="sep"></div>
+  <button id="btnToc" aria-pressed="false" title="目录侧栏：缩略图导航">目录</button>
   <div class="file-name" id="fileName">未打开文件</div>
   <div class="spacer"></div>
+  <div class="stylebar" id="styleBar">
+    <select id="stFont" title="字体（作用于整个选中文字元素）"></select>
+    <div class="st-size" title="字号（画布坐标 px；低于 18px 警告但不禁止）">
+      <button id="stSizeDec" tabindex="-1">−</button>
+      <input id="stSize" type="number" min="1" step="2">
+      <button id="stSizeInc" tabindex="-1">＋</button>
+    </div>
+    <div class="st-swatches" id="stSwatches" title="主题色板"></div>
+    <input type="color" id="stColor" class="st-color" title="自定义字色">
+    <div class="seg st-align" id="stAlign" title="对齐">
+      <button data-align="left">左</button><button data-align="center">中</button><button data-align="right">右</button><button data-align="justify">齐</button>
+    </div>
+    <span class="st-warn" id="stSizeWarn" hidden>低于 18px</span>
+  </div>
   <button id="btnReplaceImg" disabled title="替换当前选中图片（等价手势：选中图片后再点击一次）">替换图片</button>
+  <button id="btnHistory" disabled title="未检测到伴随服务：运行 python3 tools/edit.py 启动后可获得 git 版本记录">历史</button>
   <button id="btnPanel" aria-pressed="false">设计面板</button>
 </header>
 
@@ -245,6 +396,13 @@
 </div>
 
 <main>
+  <aside class="toc" id="toc">
+    <div class="toc-inner">
+      <div class="toc-head">目录</div>
+      <div class="toc-list" id="tocList"></div>
+    </div>
+  </aside>
+
   <div class="stage" id="stage">
     <iframe id="deckFrame" title="幻灯片预览"></iframe>
     <div class="empty-state" id="emptyState">
@@ -280,6 +438,10 @@
         <div class="opt-row" id="motionOpts"></div>
       </section>
       <section class="group">
+        <h3>内容密度</h3>
+        <div class="opt-row" id="densityOpts"></div>
+      </section>
+      <section class="group">
         <h3>自由补充</h3>
         <textarea id="customText" placeholder="例如：封面希望更克制一点；第 3 页图表想突出同比数据……"></textarea>
       </section>
@@ -287,6 +449,20 @@
     <div class="drawer-foot">
       <button class="primary" id="btnExport">生成修改指令（复制到剪贴板）</button>
       <p>输出为自然语言指令 + 结构化 JSON，粘贴给 AI coding agent 即可执行。</p>
+    </div>
+  </aside>
+
+  <aside class="drawer" id="histDrawer">
+    <div class="drawer-inner">
+      <div class="drawer-head">
+        <h2>版本历史</h2>
+        <p>由 tools/edit.py 伴随服务提供：每次保存记录一个 git 版本。回滚前会自动提交当前状态（pre-rollback），可反悔。</p>
+      </div>
+      <div id="histList"><div class="ver-empty">还没有版本记录，保存一次试试</div></div>
+    </div>
+    <div class="drawer-foot">
+      <button id="btnHistRefresh">刷新列表</button>
+      <p>回滚只还原 deck 文件本身；assets/ 图片的变更请直接替换文件。</p>
     </div>
   </aside>
 </main>
@@ -325,13 +501,25 @@
   </div>
 </div>
 
+<div class="modal-mask" id="confirmMask">
+  <div class="modal">
+    <h3 id="confirmTitle"></h3>
+    <p id="confirmText"></p>
+    <div class="btns">
+      <button id="confirmCancel">取消</button>
+      <button id="confirmOk" class="primary">确定</button>
+    </div>
+  </div>
+</div>
+
 <input type="file" id="fileInput" accept=".html,.htm,text/html" hidden>
 
 <script>
 'use strict';
 /* ============================================================
    PANEL_DATA —— design-system 面板数据源（内置，不运行时 fetch）
-   主题部分由 skills/html-pptx/references/themes.md 整理生成（2026-09-16 同步）。
+   主题部分由 skills/html-pptx/references/themes.md 整理生成（2026-09-18 同步，
+   Schema 化 G0–G8 + focus 分组）。
    改主题先改 themes.md，再同步此处。Schema 见设计文档 §7.2。
    ============================================================ */
 var PANEL_DATA = {
@@ -339,61 +527,760 @@ var PANEL_DATA = {
   kind: 'design-intent',
   questions: [
     {
-      id: 'theme', header: '配色', question: '选择整体主题配色', multi_select: false,
+      id: 'theme', header: '主题', question: '选择整体主题（按设计感来源分组）', multi_select: false,
+      /*__THEMES_JSON_BEGIN__*/
       options: [
-        { id:'a1', label:'墨水经典', series:'A', description:'通用分享、商业发布的安全选择；纯墨黑 + 暖米白，杂志感最强。',
-          visual:{ paper:'#f1efea', ink:'#0a0a0b', accent:'#0a0a0b', font_display:'serif', font_body:'sans' },
-          tokens:{ '--paper':'#f1efea','--paper-tint':'#e8e5de','--ink':'#0a0a0b','--ink-tint':'#18181a','--accent':'#0a0a0b','--accent-on':'#f1efea',
-            '--font-display':'"Songti SC","Noto Serif SC","STSong",serif','--font-body':'"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
-        { id:'a2', label:'靛蓝瓷', series:'A', description:'科技/研究/数据分享、技术发布会；深靛蓝 + 瓷白，冷静理性。',
-          visual:{ paper:'#f1f3f5', ink:'#0a1f3d', accent:'#0a1f3d', font_display:'serif', font_body:'sans' },
-          tokens:{ '--paper':'#f1f3f5','--paper-tint':'#e4e8ec','--ink':'#0a1f3d','--ink-tint':'#152a4a','--accent':'#0a1f3d','--accent-on':'#f1f3f5',
-            '--font-display':'"Songti SC","Noto Serif SC","STSong",serif','--font-body':'"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
-        { id:'a3', label:'森林墨', series:'A', description:'自然/可持续/文化/非虚构内容；深森林绿 + 象牙，沉稳有呼吸感。',
-          visual:{ paper:'#f5f1e8', ink:'#1a2e1f', accent:'#1a2e1f', font_display:'serif', font_body:'sans' },
-          tokens:{ '--paper':'#f5f1e8','--paper-tint':'#ece7da','--ink':'#1a2e1f','--ink-tint':'#253d2c','--accent':'#1a2e1f','--accent-on':'#f5f1e8',
-            '--font-display':'"Songti SC","Noto Serif SC","STSong",serif','--font-body':'"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
-        { id:'a4', label:'牛皮纸', series:'A', description:'怀旧/人文/阅读/历史/文学；深棕 + 暖米，温暖有年代感。',
-          visual:{ paper:'#eedfc7', ink:'#2a1e13', accent:'#2a1e13', font_display:'serif', font_body:'sans' },
-          tokens:{ '--paper':'#eedfc7','--paper-tint':'#e0d0b6','--ink':'#2a1e13','--ink-tint':'#3a2a1d','--accent':'#2a1e13','--accent-on':'#eedfc7',
-            '--font-display':'"Songti SC","Noto Serif SC","STSong",serif','--font-body':'"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
-        { id:'a5', label:'沙丘', series:'A', description:'艺术/设计/创意/时尚；炭灰 + 沙色，克制高级。',
-          visual:{ paper:'#f0e6d2', ink:'#1f1a14', accent:'#1f1a14', font_display:'serif', font_body:'sans' },
-          tokens:{ '--paper':'#f0e6d2','--paper-tint':'#e3d7bf','--ink':'#1f1a14','--ink-tint':'#2d2620','--accent':'#1f1a14','--accent-on':'#f0e6d2',
-            '--font-display':'"Songti SC","Noto Serif SC","STSong",serif','--font-body':'"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
-        { id:'b1', label:'克莱因蓝（IKB）', series:'B', description:'通用、商业发布、AI/科技、设计领域；最经典的瑞士配色。',
-          visual:{ paper:'#fafaf8', ink:'#0a0a0a', accent:'#002FA7', font_display:'sans', font_body:'sans' },
-          tokens:{ '--paper':'#fafaf8','--paper-tint':'#f0f0ee','--ink':'#0a0a0a','--ink-tint':'#1a1a1a','--accent':'#002FA7','--accent-on':'#ffffff',
-            '--font-display':'"Helvetica Neue","PingFang SC","Noto Sans SC",sans-serif','--font-body':'"Helvetica Neue","PingFang SC","Noto Sans SC",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
-        { id:'b2', label:'柠檬黄', series:'B', description:'年轻、运动、零售、消费品、活力主题；浅色高亮需配深色文字。',
-          visual:{ paper:'#fafaf8', ink:'#0a0a0a', accent:'#FFD500', font_display:'sans', font_body:'sans' },
-          tokens:{ '--paper':'#fafaf8','--paper-tint':'#f0f0ee','--ink':'#0a0a0a','--ink-tint':'#1a1a1a','--accent':'#FFD500','--accent-on':'#0a0a0a',
-            '--font-display':'"Helvetica Neue","PingFang SC","Noto Sans SC",sans-serif','--font-body':'"Helvetica Neue","PingFang SC","Noto Sans SC",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
-        { id:'b3', label:'柠檬绿', series:'B', description:'生态、可持续、健康、新兴科技、Z 世代品牌；荧光感适合屏幕。',
-          visual:{ paper:'#fafaf8', ink:'#0a0a0a', accent:'#C5E803', font_display:'sans', font_body:'sans' },
-          tokens:{ '--paper':'#fafaf8','--paper-tint':'#f0f0ee','--ink':'#0a0a0a','--ink-tint':'#1a1a1a','--accent':'#C5E803','--accent-on':'#0a0a0a',
-            '--font-display':'"Helvetica Neue","PingFang SC","Noto Sans SC",sans-serif','--font-body':'"Helvetica Neue","PingFang SC","Noto Sans SC",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
-        { id:'b4', label:'安全橙', series:'B', description:'工业、运动、技术发布会的警告/转折/重点页；只做局部高亮。',
-          visual:{ paper:'#fafaf8', ink:'#0a0a0a', accent:'#FF6B35', font_display:'sans', font_body:'sans' },
-          tokens:{ '--paper':'#fafaf8','--paper-tint':'#f0f0ee','--ink':'#0a0a0a','--ink-tint':'#1a1a1a','--accent':'#FF6B35','--accent-on':'#ffffff',
-            '--font-display':'"Helvetica Neue","PingFang SC","Noto Sans SC",sans-serif','--font-body':'"Helvetica Neue","PingFang SC","Noto Sans SC",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
-        { id:'c1', label:'信号黑', series:'C', description:'高冲击发布、keynote 开场；深灰底 + 信号橙焦点，默认页即暗页。',
-          visual:{ paper:'#1a1a1a', ink:'#ffffff', accent:'#FF5722', font_display:'sans', font_body:'sans' },
-          tokens:{ '--paper':'#1a1a1a','--paper-tint':'#242424','--ink':'#ffffff','--ink-tint':'#0f0f0f','--accent':'#FF5722','--accent-on':'#1a1a1a',
-            '--font-display':'"Arial Black","PingFang SC","Noto Sans SC",sans-serif','--font-body':'"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
-        { id:'c2', label:'暗夜植物园', series:'C', description:'艺术、品牌、高端私享；墨黑底 + 暖金点缀，每页至多一处。',
-          visual:{ paper:'#0f0f0f', ink:'#e8e4df', accent:'#d4a574', font_display:'serif', font_body:'sans' },
-          tokens:{ '--paper':'#0f0f0f','--paper-tint':'#1a1816','--ink':'#e8e4df','--ink-tint':'#2a2724','--accent':'#d4a574','--accent-on':'#0f0f0f',
-            '--font-display':'"Songti SC","Noto Serif SC","STSong",serif','--font-body':'"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
-        { id:'c3', label:'终端绿', series:'C', description:'开发者、技术布道、黑客美学；全页等宽字体。',
-          visual:{ paper:'#0d1117', ink:'#e6edf3', accent:'#39d353', font_display:'mono', font_body:'mono' },
-          tokens:{ '--paper':'#0d1117','--paper-tint':'#161b22','--ink':'#e6edf3','--ink-tint':'#1c2128','--accent':'#39d353','--accent-on':'#0d1117',
-            '--font-display':'"SF Mono","JetBrains Mono","Menlo",monospace','--font-body':'"SF Mono","JetBrains Mono","Menlo",monospace','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } },
-        { id:'c4', label:'纸与墨', series:'C', description:'文学、出版、深度长文；暖米 + 炭黑 + 绯红 accent。',
-          visual:{ paper:'#faf9f7', ink:'#1a1a1a', accent:'#c41e3a', font_display:'serif', font_body:'serif' },
-          tokens:{ '--paper':'#faf9f7','--paper-tint':'#efece7','--ink':'#1a1a1a','--ink-tint':'#2b2b2b','--accent':'#c41e3a','--accent-on':'#faf9f7',
-            '--font-display':'"Songti SC","Noto Serif SC","STSong",serif','--font-body':'"Songti SC","Noto Serif SC","STSong",serif','--font-mono':'"SF Mono","JetBrains Mono","Menlo",monospace' } }
-      ]
+          {
+            "id": "a1",
+            "label": "电子杂志",
+            "series": "A",
+            "vibe": "纯墨黑 + 暖米白，杂志感最强",
+            "description": "通用分享、商业发布、任何场景的安全选择；纯墨黑 + 暖米白，杂志感最强",
+            "focus": [
+              "G2",
+              "G9"
+            ],
+            "focus_label": "字排 + 装饰",
+            "group": "motif",
+            "group_label": "装饰主导",
+            "visual": {
+              "paper": "#f1efea",
+              "ink": "#0a0a0b",
+              "accent": "#0a0a0b",
+              "font_display": "serif",
+              "font_body": "sans"
+            },
+            "tokens": {
+              "--paper": "#f1efea",
+              "--paper-tint": "#e8e5de",
+              "--ink": "#0a0a0b",
+              "--ink-tint": "#18181a",
+              "--accent": "#0a0a0b",
+              "--accent-on": "#f1efea",
+              "--font-display": "\"Songti SC\",\"Noto Serif SC\",\"STSong\",serif",
+              "--font-body": "\"PingFang SC\",\"Noto Sans SC\",\"Microsoft YaHei\",sans-serif",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "glow",
+              "--texture-layer": "radial-gradient(75% 55% at 80% 10%, color-mix(in srgb, var(--ink) 6%, transparent), transparent 65%)",
+              "--texture-scope": "cover"
+            },
+            "theme_css": "/* A1 电子杂志 · 装饰母题 */\n.mt-ghost{position:absolute;z-index:0;pointer-events:none;user-select:none;font-family:var(--font-display);font-weight:600;line-height:1;color:transparent;-webkit-text-stroke:1px color-mix(in srgb,var(--ink) 22%,transparent)}\n.mt-vquote{writing-mode:vertical-rl;font-family:var(--font-mono);font-size:13px;letter-spacing:.35em;opacity:.5;pointer-events:none}\n.mt-dot{display:inline-block;width:5px;height:5px;background:var(--ink)}",
+            "variants": [
+              {
+                "id": "a1-v1",
+                "label": "靛蓝瓷",
+                "vibe": "深靛蓝 + 瓷白，冷静理性，像学术期刊——科技/研究/数据分享、工程师文化",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#f1f3f5",
+                  "--paper-tint": "#e4e8ec",
+                  "--ink": "#0a1f3d",
+                  "--ink-tint": "#152a4a",
+                  "--accent": "#0a1f3d",
+                  "--accent-on": "#f1f3f5",
+                  "--texture-layer": "radial-gradient(85% 60% at 18% 0%, color-mix(in srgb, var(--ink) 5%, transparent), transparent 62%)"
+                },
+                "visual": {
+                  "paper": "#f1f3f5",
+                  "ink": "#0a1f3d",
+                  "accent": "#0a1f3d"
+                }
+              },
+              {
+                "id": "a1-v2",
+                "label": "森林墨",
+                "vibe": "深森林绿 + 象牙，沉稳有呼吸感——自然/可持续/文化/非虚构内容",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#f5f1e8",
+                  "--paper-tint": "#ece7da",
+                  "--ink": "#1a2e1f",
+                  "--ink-tint": "#253d2c",
+                  "--accent": "#1a2e1f",
+                  "--accent-on": "#f5f1e8",
+                  "--texture-type": "grain",
+                  "--texture-layer": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E\"), radial-gradient(70% 60% at 75% 85%, color-mix(in srgb, var(--ink) 5%, transparent), transparent 65%)"
+                },
+                "visual": {
+                  "paper": "#f5f1e8",
+                  "ink": "#1a2e1f",
+                  "accent": "#1a2e1f"
+                }
+              },
+              {
+                "id": "a1-v3",
+                "label": "沙丘",
+                "vibe": "炭灰 + 沙色，克制高级，像建筑设计图册——艺术/设计/创意/时尚",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#f0e6d2",
+                  "--paper-tint": "#e3d7bf",
+                  "--ink": "#1f1a14",
+                  "--ink-tint": "#2d2620",
+                  "--accent": "#1f1a14",
+                  "--accent-on": "#f0e6d2",
+                  "--texture-type": "grain",
+                  "--texture-layer": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E\"), radial-gradient(80% 65% at 70% 90%, color-mix(in srgb, var(--accent) 4%, transparent), transparent 65%)"
+                },
+                "visual": {
+                  "paper": "#f0e6d2",
+                  "ink": "#1f1a14",
+                  "accent": "#1f1a14"
+                }
+              },
+              {
+                "id": "a1-v4",
+                "label": "牛皮纸",
+                "vibe": "深棕 + 暖米，像牛皮信封，温暖有年代感——怀旧/人文/阅读/历史/文学分享",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#eedfc7",
+                  "--paper-tint": "#e0d0b6",
+                  "--ink": "#2a1e13",
+                  "--ink-tint": "#3a2a1d",
+                  "--accent": "#2a1e13",
+                  "--accent-on": "#eedfc7",
+                  "--texture-type": "paper",
+                  "--texture-layer": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E\"), repeating-linear-gradient(0deg, color-mix(in srgb, var(--ink) 2%, transparent) 0 1px, transparent 1px 5px), radial-gradient(90% 70% at 30% 15%, color-mix(in srgb, var(--ink) 5%, transparent), transparent 60%)",
+                  "--texture-scope": "all"
+                },
+                "visual": {
+                  "paper": "#eedfc7",
+                  "ink": "#2a1e13",
+                  "accent": "#2a1e13"
+                }
+              }
+            ]
+          },
+          {
+            "id": "b1",
+            "label": "瑞士国际主义",
+            "series": "B",
+            "vibe": "最经典的瑞士配色，绝不出错",
+            "description": "通用场合、商业发布、AI/科技、设计领域；最经典的瑞士配色，绝不出错",
+            "focus": [
+              "G1",
+              "G9"
+            ],
+            "focus_label": "配色 + 装饰",
+            "group": "motif",
+            "group_label": "装饰主导",
+            "visual": {
+              "paper": "#fafaf8",
+              "ink": "#0a0a0a",
+              "accent": "#002FA7",
+              "font_display": "sans",
+              "font_body": "sans"
+            },
+            "tokens": {
+              "--paper": "#fafaf8",
+              "--paper-tint": "#f0f0ee",
+              "--ink": "#0a0a0a",
+              "--ink-tint": "#1a1a1a",
+              "--accent": "#002FA7",
+              "--accent-on": "#ffffff",
+              "--font-display": "\"Helvetica Neue\",\"PingFang SC\",\"Noto Sans SC\",sans-serif",
+              "--font-body": "\"Helvetica Neue\",\"PingFang SC\",\"Noto Sans SC\",sans-serif",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "flat",
+              "--texture-layer": "none",
+              "--texture-scope": "cover"
+            },
+            "theme_css": "/* B1 瑞士国际主义 · 装饰母题 + 缓动签名 */\n:root{--ease-out:cubic-bezier(.2,.9,.25,1)}\n.mt-cross{position:absolute;width:14px;height:14px;pointer-events:none;opacity:.55}\n.mt-cross::before,.mt-cross::after{content:\"\";position:absolute;background:var(--ink)}\n.mt-cross::before{left:50%;top:0;bottom:0;width:1px;margin-left:-.5px}\n.mt-cross::after{top:50%;left:0;right:0;height:1px;margin-top:-.5px}\n.mt-grid-dots{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(color-mix(in srgb,var(--ink) 18%,transparent) 1px,transparent 1.5px);background-size:24px 24px}\n.mt-swatch{display:inline-flex;align-items:center;justify-content:center;min-width:2.2em;height:2.2em;background:var(--accent);color:var(--accent-on);font-family:var(--font-mono);font-weight:600}",
+            "variants": [
+              {
+                "id": "b1-v1",
+                "label": "柠檬黄",
+                "vibe": "浅色高亮，活力直接——年轻、运动、零售、消费品",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#fafaf8",
+                  "--paper-tint": "#f0f0ee",
+                  "--ink": "#0a0a0a",
+                  "--ink-tint": "#1a1a1a",
+                  "--accent": "#FFD500",
+                  "--accent-on": "#0a0a0a"
+                },
+                "visual": {
+                  "paper": "#fafaf8",
+                  "ink": "#0a0a0a",
+                  "accent": "#FFD500"
+                }
+              },
+              {
+                "id": "b1-v2",
+                "label": "柠檬绿",
+                "vibe": "荧光感高亮，适合屏幕与投影——生态、可持续、健康、新兴科技、Z 世代品牌",
+                "accent_note": "荧光绿满版仅封面，投影场景慎用；其余同基底口径",
+                "tokens": {
+                  "--paper": "#fafaf8",
+                  "--paper-tint": "#f0f0ee",
+                  "--ink": "#0a0a0a",
+                  "--ink-tint": "#1a1a1a",
+                  "--accent": "#C5E803",
+                  "--accent-on": "#0a0a0a"
+                },
+                "visual": {
+                  "paper": "#fafaf8",
+                  "ink": "#0a0a0a",
+                  "accent": "#C5E803"
+                }
+              },
+              {
+                "id": "b1-v3",
+                "label": "安全橙",
+                "vibe": "工业感高亮，警告/转折/重点专用——工业、运动、技术发布会的\"警告/转折/重点\"页",
+                "accent_note": "**不满屏**——满版橙过于刺眼，封面/收束的特权形态是橙色通栏条带（高度 ≤20%）；首尾闭环为同位条带呼应",
+                "tokens": {
+                  "--paper": "#fafaf8",
+                  "--paper-tint": "#f0f0ee",
+                  "--ink": "#0a0a0a",
+                  "--ink-tint": "#1a1a1a",
+                  "--accent": "#FF6B35",
+                  "--accent-on": "#ffffff"
+                },
+                "visual": {
+                  "paper": "#fafaf8",
+                  "ink": "#0a0a0a",
+                  "accent": "#FF6B35"
+                }
+              }
+            ]
+          },
+          {
+            "id": "c1",
+            "label": "信号黑",
+            "series": "C",
+            "vibe": "纯黑舞台 + 一束信号橙，keynote 发布的压强美学",
+            "description": "产品发布、主题演讲、数据宣言、需要冲击力与记忆点的场合；纯黑舞台 + 一束信号橙，keynote 发布的压强美学",
+            "focus": [
+              "G1",
+              "G5"
+            ],
+            "focus_label": "配色 + 动效",
+            "group": "color",
+            "group_label": "配色主导",
+            "visual": {
+              "paper": "#1a1a1a",
+              "ink": "#ffffff",
+              "accent": "#FF5722",
+              "font_display": "sans",
+              "font_body": "sans"
+            },
+            "tokens": {
+              "--paper": "#1a1a1a",
+              "--paper-tint": "#242424",
+              "--ink": "#ffffff",
+              "--ink-tint": "#0f0f0f",
+              "--accent": "#FF5722",
+              "--accent-on": "#1a1a1a",
+              "--font-display": "\"Arial Black\",\"PingFang SC\",\"Noto Sans SC\",sans-serif",
+              "--font-body": "\"PingFang SC\",\"Noto Sans SC\",\"Microsoft YaHei\",sans-serif",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "flat",
+              "--texture-layer": "none",
+              "--texture-scope": "cover"
+            },
+            "theme_css": "/* C1 信号黑 · 装饰母题 + 缓动签名 */\n:root{--ease-out:cubic-bezier(.2,1.25,.3,1)}\n.mt-sig-bar{display:block;width:64px;height:10px;background:var(--accent)}\n.mt-sig-folio{position:absolute;right:2%;bottom:-.16em;z-index:0;pointer-events:none;user-select:none;font-family:var(--font-display);font-weight:900;font-size:30vh;line-height:.8;color:color-mix(in srgb,var(--ink) 7%,transparent)}\n.mt-sig-mark{display:inline-block;width:.55em;height:.55em;background:var(--accent)}",
+            "variants": [
+              {
+                "id": "c1-v1",
+                "label": "赛博青",
+                "vibe": "冷调电子信号，赛博感——开发者产品、数据平台、AI 基础设施发布",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#1a1a1a",
+                  "--paper-tint": "#242424",
+                  "--ink": "#ffffff",
+                  "--ink-tint": "#0f0f0f",
+                  "--accent": "#00E5FF",
+                  "--accent-on": "#1a1a1a"
+                },
+                "visual": {
+                  "paper": "#1a1a1a",
+                  "ink": "#ffffff",
+                  "accent": "#00E5FF"
+                }
+              },
+              {
+                "id": "c1-v2",
+                "label": "警报红",
+                "vibe": "警报/故障/转折，紧迫感——风险披露、安全主题、发布会的\"问题\"章节",
+                "accent_note": "满版红仅封面（冲击力极强，连用两页即疲劳）；收束页用半亮红色块呼应；其余同基底口径",
+                "tokens": {
+                  "--paper": "#1a1a1a",
+                  "--paper-tint": "#242424",
+                  "--ink": "#ffffff",
+                  "--ink-tint": "#0f0f0f",
+                  "--accent": "#FF2D40",
+                  "--accent-on": "#ffffff"
+                },
+                "visual": {
+                  "paper": "#1a1a1a",
+                  "ink": "#ffffff",
+                  "accent": "#FF2D40"
+                }
+              }
+            ]
+          },
+          {
+            "id": "c2",
+            "label": "暗夜植物园",
+            "series": "C",
+            "vibe": "暗夜纸面上浮一层暖金灯光，像翻开一本 19 世纪植物图鉴——沉静、精确、有学术温度",
+            "description": "自然/博物/文化/人文类分享，研究型叙事，慢节奏深度内容；暗夜纸面上浮一层暖金灯光，像翻开一本 19 世纪植物图鉴——沉静、精确、有学术温度",
+            "focus": [
+              "G3",
+              "G9"
+            ],
+            "focus_label": "质感 + 装饰",
+            "group": "texture",
+            "group_label": "质感主导",
+            "visual": {
+              "paper": "#0f0f0f",
+              "ink": "#e8e4df",
+              "accent": "#d4a574",
+              "font_display": "serif",
+              "font_body": "sans"
+            },
+            "tokens": {
+              "--paper": "#0f0f0f",
+              "--paper-tint": "#1a1816",
+              "--ink": "#e8e4df",
+              "--ink-tint": "#2a2724",
+              "--accent": "#d4a574",
+              "--accent-on": "#0f0f0f",
+              "--font-display": "\"Songti SC\",\"Noto Serif SC\",\"STSong\",serif",
+              "--font-body": "\"PingFang SC\",\"Noto Sans SC\",\"Microsoft YaHei\",sans-serif",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "glow",
+              "--texture-layer": "radial-gradient(90% 70% at 78% 8%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 60%)",
+              "--texture-scope": "cover"
+            },
+            "theme_css": "/* C2 暗夜植物园 · 装饰母题 */\n.mt-bot-tag{display:inline-flex;align-items:center;gap:.7em;padding:.3em .9em;border:1px solid color-mix(in srgb,var(--ink) 32%,transparent);font-family:var(--font-mono);font-size:12px;letter-spacing:.22em;color:color-mix(in srgb,var(--ink) 78%,transparent)}\n.mt-bot-tag::before{content:\"\";width:4px;height:4px;background:var(--accent)}\n.mt-bot-plate{position:relative;border:1px solid color-mix(in srgb,var(--ink) 28%,transparent)}\n.mt-bot-plate>.mt-bot-tag{position:absolute;top:-1px;left:-1px;background:var(--paper)}\n.mt-bot-lead{display:flex;align-items:center;gap:12px;font-family:var(--font-mono);font-size:12px;letter-spacing:.14em;color:color-mix(in srgb,var(--ink) 60%,transparent)}\n.mt-bot-lead::before{content:\"\";flex:none;width:5px;height:5px;border:1px solid var(--accent);border-radius:50%}\n.mt-bot-lead::after{content:\"\";flex:1;height:1px;background:linear-gradient(90deg,color-mix(in srgb,var(--ink) 38%,transparent),transparent)}\n.mt-bot-latin{font-family:var(--font-display);font-style:italic;letter-spacing:.04em;color:color-mix(in srgb,var(--ink) 68%,transparent)}\n.mt-bot-vein{position:absolute;pointer-events:none;width:90px;height:100%;opacity:.5;background:repeating-linear-gradient(160deg,transparent 0 26px,color-mix(in srgb,var(--ink) 26%,transparent) 26px 27px),linear-gradient(90deg,transparent calc(50% - .5px),color-mix(in srgb,var(--ink) 26%,transparent) calc(50% - .5px) calc(50% + .5px),transparent calc(50% + .5px))}",
+            "variants": [
+              {
+                "id": "c2-v1",
+                "label": "月白",
+                "vibe": "暖金灯熄灭后的银灰月色——更冷、更静，像午夜温室的玻璃顶",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#0f0f0f",
+                  "--paper-tint": "#1a1816",
+                  "--ink": "#e8e4df",
+                  "--ink-tint": "#2a2724",
+                  "--accent": "#C9CDC4",
+                  "--accent-on": "#0f0f0f"
+                },
+                "visual": {
+                  "paper": "#0f0f0f",
+                  "ink": "#e8e4df",
+                  "accent": "#C9CDC4"
+                }
+              },
+              {
+                "id": "c2-v2",
+                "label": "苔绿",
+                "vibe": "温室深处的苔痕绿——更潮湿、更幽闭的夜，适合蕨类/森林/生态叙事",
+                "accent_note": "苔绿明度低，暗底上只做线条与小签点，禁大色块；其余同基底口径",
+                "tokens": {
+                  "--paper": "#0f0f0f",
+                  "--paper-tint": "#1a1816",
+                  "--ink": "#e8e4df",
+                  "--ink-tint": "#2a2724",
+                  "--accent": "#8FA07A",
+                  "--accent-on": "#0f0f0f"
+                },
+                "visual": {
+                  "paper": "#0f0f0f",
+                  "ink": "#e8e4df",
+                  "accent": "#8FA07A"
+                }
+              }
+            ]
+          },
+          {
+            "id": "c3",
+            "label": "终端绿",
+            "series": "C",
+            "vibe": "暗底磷光绿 + 全栈等宽，CRT 终端的物质感与纪律",
+            "description": "技术分享、开发者大会、工程文化、安全与基础设施、极客主题；暗底磷光绿 + 全栈等宽，CRT 终端的物质感与纪律",
+            "focus": [
+              "G1",
+              "G9"
+            ],
+            "focus_label": "配色 + 装饰",
+            "group": "motif",
+            "group_label": "装饰主导",
+            "visual": {
+              "paper": "#0d1117",
+              "ink": "#e6edf3",
+              "accent": "#39d353",
+              "font_display": "mono",
+              "font_body": "mono"
+            },
+            "tokens": {
+              "--paper": "#0d1117",
+              "--paper-tint": "#161b22",
+              "--ink": "#e6edf3",
+              "--ink-tint": "#1c2128",
+              "--accent": "#39d353",
+              "--accent-on": "#0d1117",
+              "--font-display": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--font-body": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "grain",
+              "--texture-layer": "repeating-linear-gradient(0deg, color-mix(in srgb, var(--ink) 4%, transparent) 0 1px, transparent 1px 4px)",
+              "--texture-scope": "all"
+            },
+            "theme_css": "/* C3 终端绿 · 装饰母题（光标跳闪复用骨架 tw-caret keyframes，主题块不自带 @keyframes） */\n.mt-term-box{position:relative;border:1px solid color-mix(in srgb,var(--accent) 45%,transparent)}\n.mt-term-box::before{content:\"+\";position:absolute;top:-.6em;left:-.35em;color:var(--accent);font-family:var(--font-mono);line-height:1}\n.mt-term-box::after{content:\"+\";position:absolute;bottom:-.6em;right:-.35em;color:var(--accent);font-family:var(--font-mono);line-height:1}\n.mt-term-caret{display:inline-block;width:.55em;height:1em;margin-left:.08em;background:var(--accent);vertical-align:-.12em;animation:tw-caret 1s steps(1) infinite}\n.mt-term-prompt::before{content:\"$ \";color:var(--accent);font-weight:600}",
+            "variants": [
+              {
+                "id": "c3-v1",
+                "label": "琥珀磷光",
+                "vibe": "后期 amber 终端（VT220 琥珀屏），暖调怀旧——计算机史、复古计算、硬件文化",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#0d1117",
+                  "--paper-tint": "#161b22",
+                  "--ink": "#e6edf3",
+                  "--ink-tint": "#1c2128",
+                  "--accent": "#FFB000",
+                  "--accent-on": "#0d1117"
+                },
+                "visual": {
+                  "paper": "#0d1117",
+                  "ink": "#e6edf3",
+                  "accent": "#FFB000"
+                }
+              },
+              {
+                "id": "c3-v2",
+                "label": "白磷光",
+                "vibe": "P1 白磷光终端，最冷最素，接近单色打印纸带——极简技术文档、规范与协议主题",
+                "accent_note": "白磷光 accent 与 ink 近色——点状纪律不变，强调靠亮度差与光标位置；其余同基底口径",
+                "tokens": {
+                  "--paper": "#0d1117",
+                  "--paper-tint": "#161b22",
+                  "--ink": "#e6edf3",
+                  "--ink-tint": "#1c2128",
+                  "--accent": "#F0F6FC",
+                  "--accent-on": "#0d1117"
+                },
+                "visual": {
+                  "paper": "#0d1117",
+                  "ink": "#e6edf3",
+                  "accent": "#F0F6FC"
+                }
+              }
+            ]
+          },
+          {
+            "id": "c4",
+            "label": "纸与墨",
+            "series": "C",
+            "vibe": "纸白 + 墨黑 + 一点绯红，传统书籍的安静与仪式感",
+            "description": "文化、出版、人文历史、阅读、品牌故事、长篇叙事内容；纸白 + 墨黑 + 一点绯红，传统书籍的安静与仪式感",
+            "focus": [
+              "G2",
+              "G9"
+            ],
+            "focus_label": "字排 + 装饰",
+            "group": "motif",
+            "group_label": "装饰主导",
+            "visual": {
+              "paper": "#faf9f7",
+              "ink": "#1a1a1a",
+              "accent": "#c41e3a",
+              "font_display": "serif",
+              "font_body": "serif"
+            },
+            "tokens": {
+              "--paper": "#faf9f7",
+              "--paper-tint": "#efece7",
+              "--ink": "#1a1a1a",
+              "--ink-tint": "#2b2b2b",
+              "--accent": "#c41e3a",
+              "--accent-on": "#faf9f7",
+              "--font-display": "\"Songti SC\",\"Noto Serif SC\",\"STSong\",serif",
+              "--font-body": "\"Songti SC\",\"Noto Serif SC\",\"STSong\",serif",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "paper",
+              "--texture-layer": "radial-gradient(80% 60% at 25% 12%, color-mix(in srgb, var(--ink) 3%, transparent), transparent 65%)",
+              "--texture-scope": "cover"
+            },
+            "theme_css": "/* C4 纸与墨 · 装饰母题 */\n.mt-pub-orn{display:flex;align-items:center;justify-content:center;gap:16px;color:var(--accent);font-family:var(--font-display);pointer-events:none;user-select:none}\n.mt-pub-orn::before,.mt-pub-orn::after{content:\"\";width:64px;height:1px;background:color-mix(in srgb,var(--ink) 28%,transparent)}\n.mt-pub-dropcap::first-letter{font-family:var(--font-display);font-weight:700;font-size:3.2em;line-height:.78;float:left;padding:.06em .14em 0 0;color:var(--accent)}\n.mt-pub-pull{border-left:3px solid var(--accent);padding-left:1.2em;font-family:var(--font-display);font-size:1.45em;line-height:1.7}",
+            "variants": [
+              {
+                "id": "c4-v1",
+                "label": "藏青",
+                "vibe": "学术专著与商务出版，沉稳理性——研究、金融、机构报告、严肃长文",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#faf9f7",
+                  "--paper-tint": "#efece7",
+                  "--ink": "#1a1a1a",
+                  "--ink-tint": "#2b2b2b",
+                  "--accent": "#27496D",
+                  "--accent-on": "#faf9f7"
+                },
+                "visual": {
+                  "paper": "#faf9f7",
+                  "ink": "#1a1a1a",
+                  "accent": "#27496D"
+                }
+              },
+              {
+                "id": "c4-v2",
+                "label": "黛绿",
+                "vibe": "东方出版社气质，文学与自然——文学、茶文化、博物、人文地理",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#faf9f7",
+                  "--paper-tint": "#efece7",
+                  "--ink": "#1a1a1a",
+                  "--ink-tint": "#2b2b2b",
+                  "--accent": "#2F5D50",
+                  "--accent-on": "#faf9f7"
+                },
+                "visual": {
+                  "paper": "#faf9f7",
+                  "ink": "#1a1a1a",
+                  "accent": "#2F5D50"
+                }
+              }
+            ]
+          },
+          {
+            "id": "d1",
+            "label": "奶油物语",
+            "series": "D",
+            "vibe": "暖奶油底 + 焦糖点缀，圆润轻盈的甜品店感",
+            "description": "生活方式、品牌发布、食品餐饮、母婴亲子、活动邀请等轻暖场景；暖奶油底 + 焦糖点缀，圆润轻盈的甜品店感",
+            "focus": [
+              "G4",
+              "G9"
+            ],
+            "focus_label": "形态 + 装饰",
+            "group": "motif",
+            "group_label": "装饰主导",
+            "visual": {
+              "paper": "#fbf6ee",
+              "ink": "#3d3229",
+              "accent": "#c08334",
+              "font_display": "sans",
+              "font_body": "sans"
+            },
+            "tokens": {
+              "--paper": "#fbf6ee",
+              "--paper-tint": "#f4ecdc",
+              "--ink": "#3d3229",
+              "--ink-tint": "#544738",
+              "--accent": "#c08334",
+              "--accent-on": "#fffaf0",
+              "--font-display": "\"Yuanti SC\",\"PingFang SC\",\"Noto Sans SC\",sans-serif",
+              "--font-body": "\"Yuanti SC\",\"PingFang SC\",\"Noto Sans SC\",sans-serif",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "flat",
+              "--texture-layer": "none",
+              "--texture-scope": "cover"
+            },
+            "theme_css": "/* D1 奶油物语 · 装饰母题 + 缓动签名 */\n:root{--ease-out:cubic-bezier(.34,1.56,.64,1)}\n.mt-crm-sticker{display:inline-block;padding:.45em 1.1em;border-radius:999px;background:var(--accent);color:var(--accent-on);font-weight:600;letter-spacing:.05em;transform:rotate(-3deg);box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 30%,transparent)}\n.mt-crm-scallop{height:16px;background-image:radial-gradient(circle at 8px 0,var(--paper-tint) 8px,transparent 8.5px);background-size:16px 16px;background-repeat:repeat-x}\n.mt-crm-dot{display:inline-block;width:.55em;height:.55em;border-radius:50%;background:var(--accent)}",
+            "variants": [
+              {
+                "id": "d1-v1",
+                "label": "抹茶",
+                "vibe": "抹茶绿 + 奶油底，清新安静的和菓子感——茶饮、健康、自然系、生活方式品牌",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#fbf6ee",
+                  "--paper-tint": "#f4ecdc",
+                  "--ink": "#3d3229",
+                  "--ink-tint": "#544738",
+                  "--accent": "#7A8B3F",
+                  "--accent-on": "#fffaf0"
+                },
+                "visual": {
+                  "paper": "#fbf6ee",
+                  "ink": "#3d3229",
+                  "accent": "#7A8B3F"
+                }
+              },
+              {
+                "id": "d1-v2",
+                "label": "莓果",
+                "vibe": "莓果粉 + 奶油底，甜美柔软的法式橱窗感——美妆、母婴、节庆、礼物场景",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#fbf6ee",
+                  "--paper-tint": "#f4ecdc",
+                  "--ink": "#3d3229",
+                  "--ink-tint": "#544738",
+                  "--accent": "#C45B6E",
+                  "--accent-on": "#fffaf0"
+                },
+                "visual": {
+                  "paper": "#fbf6ee",
+                  "ink": "#3d3229",
+                  "accent": "#C45B6E"
+                }
+              }
+            ]
+          },
+          {
+            "id": "d2",
+            "label": "柔光暗房",
+            "series": "D",
+            "vibe": "暗房安全灯下的琥珀光——影像正在显影液里浮现，安静、有胶片的颗粒时间感",
+            "description": "摄影/影像/艺术/品牌故事，氛围叙事，情绪主导的发布；暗房安全灯下的琥珀光——影像正在显影液里浮现，安静、有胶片的颗粒时间感",
+            "focus": [
+              "G3",
+              "G9"
+            ],
+            "focus_label": "质感 + 装饰",
+            "group": "texture",
+            "group_label": "质感主导",
+            "visual": {
+              "paper": "#14110e",
+              "ink": "#f0e6d8",
+              "accent": "#e8a34c",
+              "font_display": "serif",
+              "font_body": "sans"
+            },
+            "tokens": {
+              "--paper": "#14110e",
+              "--paper-tint": "#211b16",
+              "--ink": "#f0e6d8",
+              "--ink-tint": "#2c241d",
+              "--accent": "#e8a34c",
+              "--accent-on": "#14110e",
+              "--font-display": "\"Songti SC\",\"Noto Serif SC\",\"STSong\",serif",
+              "--font-body": "\"PingFang SC\",\"Noto Sans SC\",\"Microsoft YaHei\",sans-serif",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "glow",
+              "--texture-layer": "radial-gradient(120% 90% at 70% 10%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 60%)",
+              "--texture-scope": "cover"
+            },
+            "theme_css": "/* D2 柔光暗房 · 装饰母题 + 缓动签名 */\n:root{--ease-out:cubic-bezier(.1,.7,.2,1)}\n.mt-drk-film{height:26px;pointer-events:none;background-image:linear-gradient(90deg,color-mix(in srgb,var(--ink) 55%,transparent) 0 12px,transparent 12px 24px);background-size:24px 12px;background-repeat:repeat-x;background-position:0 50%;opacity:.6}\n.mt-drk-beam{position:absolute;pointer-events:none;width:200px;height:200px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 20%,transparent),transparent 65%);clip-path:polygon(0 0,100% 0,0 100%)}\n.mt-drk-halo{position:relative}\n.mt-drk-halo::before{content:\"\";position:absolute;inset:-12%;pointer-events:none;background:radial-gradient(65% 65% at 50% 60%,color-mix(in srgb,var(--accent) 13%,transparent),transparent 70%)}",
+            "variants": [
+              {
+                "id": "d2-v1",
+                "label": "银盐",
+                "vibe": "黑白银盐相纸的冷调——暖灯关掉，只剩月光白的显影盘，适合建筑/纪实/极简影像",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#14110e",
+                  "--paper-tint": "#211b16",
+                  "--ink": "#f0e6d8",
+                  "--ink-tint": "#2c241d",
+                  "--accent": "#C0C8D0",
+                  "--accent-on": "#14110e"
+                },
+                "visual": {
+                  "paper": "#14110e",
+                  "ink": "#f0e6d8",
+                  "accent": "#C0C8D0"
+                }
+              },
+              {
+                "id": "d2-v2",
+                "label": "安全灯红",
+                "vibe": "暗房安全灯的忠实采样——红是暗房里唯一被允许的光，氛围最强、使用最克制",
+                "accent_note": "红光下辉光即安全灯本灯，正合世界；但红 accent 面积预算从严——≤5% 不变且永不满屏，正文文字一律保持 ink 不落红",
+                "tokens": {
+                  "--paper": "#14110e",
+                  "--paper-tint": "#211b16",
+                  "--ink": "#f0e6d8",
+                  "--ink-tint": "#2c241d",
+                  "--accent": "#C0392B",
+                  "--accent-on": "#f0e6d8"
+                },
+                "visual": {
+                  "paper": "#14110e",
+                  "ink": "#f0e6d8",
+                  "accent": "#C0392B"
+                }
+              }
+            ]
+          },
+          {
+            "id": "d3",
+            "label": "手绘油彩",
+            "series": "D",
+            "vibe": "画纸暖灰 + 赭石一笔，手绘油彩的呼吸感与留白",
+            "description": "艺术、文化、展览、人文叙事、创作者作品集、慢内容分享；画纸暖灰 + 赭石一笔，手绘油彩的呼吸感与留白",
+            "focus": [
+              "G2",
+              "G9"
+            ],
+            "focus_label": "字排 + 装饰",
+            "group": "motif",
+            "group_label": "装饰主导",
+            "visual": {
+              "paper": "#e9e5da",
+              "ink": "#33413a",
+              "accent": "#a05f3c",
+              "font_display": "serif",
+              "font_body": "serif"
+            },
+            "tokens": {
+              "--paper": "#e9e5da",
+              "--paper-tint": "#dcd6c6",
+              "--ink": "#33413a",
+              "--ink-tint": "#46564d",
+              "--accent": "#a05f3c",
+              "--accent-on": "#f5f1e6",
+              "--font-display": "\"Kaiti SC\",\"STKaiti\",\"Songti SC\",\"Noto Serif SC\",serif",
+              "--font-body": "\"Kaiti SC\",\"STKaiti\",\"Songti SC\",\"Noto Serif SC\",serif",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "paper",
+              "--texture-layer": "radial-gradient(80% 60% at 30% 20%, color-mix(in srgb, var(--accent) 5%, transparent), transparent 70%), radial-gradient(70% 80% at 75% 85%, color-mix(in srgb, var(--ink) 4%, transparent), transparent 70%)",
+              "--texture-scope": "all"
+            },
+            "theme_css": "/* D3 手绘油彩 · 装饰母题 */\n.mt-art-brush{position:relative;isolation:isolate}\n.mt-art-brush::before{content:\"\";position:absolute;inset:-.15em -.35em;z-index:-1;background:color-mix(in srgb,var(--accent) 22%,transparent);border-radius:62% 38% 55% 45%/48% 55% 42% 52%}\n.mt-art-circle{border:2px dashed color-mix(in srgb,var(--accent) 65%,transparent);border-radius:58% 42% 50% 50%/52% 48% 55% 45%;padding:.4em .9em}\n.mt-art-frame{border:1px solid color-mix(in srgb,var(--ink) 55%,transparent);box-shadow:inset 0 0 0 5px var(--paper),inset 0 0 0 6px color-mix(in srgb,var(--ink) 35%,transparent)}",
+            "variants": [
+              {
+                "id": "d3-v1",
+                "label": "雾蓝",
+                "vibe": "油画三色体系的重心移向雾蓝——烟雨山水感，冷静诗意，适合东方美学、节气、慢旅行",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#e9e5da",
+                  "--paper-tint": "#dcd6c6",
+                  "--ink": "#33413a",
+                  "--ink-tint": "#46564d",
+                  "--accent": "#5B7A8C",
+                  "--accent-on": "#f5f1e6"
+                },
+                "visual": {
+                  "paper": "#e9e5da",
+                  "ink": "#33413a",
+                  "accent": "#5B7A8C"
+                }
+              },
+              {
+                "id": "d3-v2",
+                "label": "灰绿",
+                "vibe": "油画三色体系的重心移向灰绿——苔色入画，植物标本册感，适合自然、植物、生态、茶文化",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#e9e5da",
+                  "--paper-tint": "#dcd6c6",
+                  "--ink": "#33413a",
+                  "--ink-tint": "#46564d",
+                  "--accent": "#6B7F5E",
+                  "--accent-on": "#f5f1e6"
+                },
+                "visual": {
+                  "paper": "#e9e5da",
+                  "ink": "#33413a",
+                  "accent": "#6B7F5E"
+                }
+              }
+            ]
+          }
+        ]
+      /*__THEMES_JSON_END__*/
     },
     {
       id: 'rhythm', header: '明暗节奏', question: 'hero 暗页（.slide.dark）出现频率', multi_select: false,
@@ -404,11 +1291,35 @@ var PANEL_DATA = {
       ]
     },
     {
-      id: 'motion', header: '动效', question: '动效强度', multi_select: false,
+      id: 'motion', header: '动效', question: '动效丰富度（五层启用矩阵）', multi_select: false,
+      /* 选项语义源：references/motion.md v3 §5 五层启用矩阵——档间差异是
+         机制类别（L1 入场/L2 文字/L3 数据/L4 环境/L5 交互），不是强度。
+         数据由 sync-themes.mjs 写入，禁止手工编辑标记区间。 */
+      /*__MOTION_JSON_BEGIN__*/
       options: [
-        { id:'none',   label:'无',   description:'去掉 reveal 入场动效' },
-        { id:'subtle', label:'克制', description:'保留默认 reveal 淡入（默认）' },
-        { id:'strong', label:'强',   description:'更明显的位移与阶梯延迟' }
+          {
+            "id": "restrained",
+            "label": "克制",
+            "description": "仅 L1 入场编排：默认阶梯 reveal + 页面节奏配方，无文字特效、无背景氛围、无交互层"
+          },
+          {
+            "id": "standard",
+            "label": "标准",
+            "description": "L1–L4 每层至多一个代表：入场编排 + 一个文字动效（如 chars/mask-lines）+ 一个数据动效（如 count-up/draw-line）+ 一个环境氛围（默认）"
+          },
+          {
+            "id": "lush",
+            "label": "华丽",
+            "description": "L1–L5 五层全开：锚点级文字/数据动效 + 环境光效 + 指针/滚动交互层；注意力预算不放宽（每页主动效仍 ≤1），相邻页锚点 recipe 不重复"
+          }
+        ]
+      /*__MOTION_JSON_END__*/
+    },
+    {
+      id: 'density', header: '内容密度', question: '单页信息量档位', multi_select: false,
+      options: [
+        { id:'low',  label:'低密度', description:'演讲主导：一页一意、大字、宁可加页（默认）' },
+        { id:'high', label:'高密度', description:'阅读主导：自包含页、结构化 grid、4-8 要点' }
       ]
     },
     { id:'custom', header:'自由补充', question:'其他想调整的地方', multi_select:false, options:[] }
@@ -425,7 +1336,11 @@ var state = {
   loaded: false,
   dirty: false,
   embedded: window.parent !== window,
-  fsaa: typeof window.showOpenFilePicker === 'function'
+  fsaa: typeof window.showOpenFilePicker === 'function',
+  /* v1.6 §3：tools/edit.py 伴随服务（探测到才启用版本能力） */
+  backend: null,         // /api/health 响应 {ok, git, gitReady}
+  deckPath: null,        // 后端模式下 deck 的相对路径（来自 ?deck= 参数）
+  gitConsent: null       // 非 git 目录 init 的一次性确认：null 未问 / true / false
 };
 
 var frame = document.getElementById('deckFrame');
@@ -444,7 +1359,7 @@ var annoUnexported = false;  // 有未导出的批注变更
 var marquee = null;          // {x0, y0, x1, y1, el, d} 进行中的框选
 var pendingAnno = null;      // {hits:[{el, slide, path, tag, excerpt, checked}]} 弹窗期间
 
-var EDIT_CLASSES = ['ed-hover', 'ed-selected', 'ed-editing', 'anno-hit', 'anno-flash', 'anno-dragging'];
+var EDIT_CLASSES = ['ed-hover', 'ed-selected', 'ed-editing', 'anno-hit', 'anno-flash', 'anno-dragging', 'split-anim', 'tw-live'];
 
 function $(id){ return document.getElementById(id); }
 
@@ -547,7 +1462,7 @@ async function ensureSwitchOkAndOpen(text, name, handle, assetsUrl){
   openHtml(text, name, handle, assetsUrl);
 }
 
-function openHtml(text, name, handle, assetsUrl){
+function openHtml(text, name, handle, assetsUrl, deckPath){
   /* 契约预检：至少有 .slide 和 data-slide-id；不符合仍可打开，仅提示 */
   var contractOk = false;
   try {
@@ -569,6 +1484,8 @@ function openHtml(text, name, handle, assetsUrl){
   state.fileHandle = handle || null;
   state.assetsHandle = null;
   state.fileName = name || 'untitled.html';
+  /* 伴随服务路径只认打开来源：FSAA/拖拽/嵌入加载的文件路径未知，不能误用旧 deckPath */
+  state.deckPath = deckPath || null;
   selEl = null; editEl = null; hoverEl = null; registry = [];
   /* 批注仅存会话（§10.5）：换文件即清空 */
   if (marquee) cancelMarquee();
@@ -588,6 +1505,7 @@ function openHtml(text, name, handle, assetsUrl){
   $('emptyState').classList.add('hidden');
   $('btnSave').disabled = false;
   updateSaveButton();
+  updateHistoryBtn();
   $('sbMsg').textContent = '';
   updateStatusBar();
 }
@@ -613,7 +1531,16 @@ var INJECTED_CSS = [
     'border-radius:calc(3px/var(--slide-scale,.5));box-shadow:0 0 0 calc(1px/var(--slide-scale,.5)) rgba(0,0,0,.25)}',
   /* 框选选框是视口层 UI，不做画布缩放补偿 */
   '.anno-marquee{position:fixed;z-index:9999;pointer-events:none;border:1.5px dashed #f59e0b;background:rgba(245,158,11,.12)}',
-  'body.anno-dragging,body.anno-dragging *{user-select:none !important}'
+  'body.anno-dragging,body.anno-dragging *{user-select:none !important}',
+  /* v2.1（契约 v6）：编辑态冻结交互动效层——scroll-timeline / pointer 驱动
+     元素回静态终态（transform/animation 冻结），spotlight/进度线隐藏；
+     透明填充类效果（gradient-flow）编辑时还原本色，否则用户看不见自己在改什么 */
+  '[data-scroll]{animation:none !important}',
+  '[data-scroll="parallax"],[data-scroll="scrub"]{transform:none !important;opacity:1 !important}',
+  '[data-scroll="scrub-draw"]{stroke-dashoffset:0 !important}',
+  '[data-ptr]{transform:none !important;transition:none !important}',
+  '.spotlight,.read-progress{display:none !important}',
+  '[data-anim="gradient-flow"].ed-editing{background-image:none !important;-webkit-text-fill-color:currentColor !important;animation:none !important}'
 ].join('\n');
 
 function initEditLayer(){
@@ -629,6 +1556,16 @@ function initEditLayer(){
   buildRegistry(d);
   wireGestures(d);
   wireSlideStatus(d);
+  /* v2.1（契约 v6）：冻结交互动效层——骨架 v5 的 pointer tracker 摘除、
+     运行时 CSS 变量清空；scroll-timeline 部分由 INJECTED_CSS 冻结。
+     老骨架（v2–v4）无 freeze 接口，跳过即可。 */
+  try {
+    var mw0 = frame.contentWindow;
+    if (mw0 && mw0.__pptxMotion && mw0.__pptxMotion.freeze) mw0.__pptxMotion.freeze();
+  } catch(e){}
+  collectStyleMeta();   /* v1.6 §1：主题字体栈/色板来自 deck 的 :root computed style */
+  renderSwatches();
+  buildToc();           /* v1.6 §2：目录侧栏（懒渲染缩略图） */
   updateStatusBar();
 }
 
@@ -687,6 +1624,10 @@ function clearSelection(){
 }
 
 function enterEdit(el){
+  /* 迭代 C（契约 v3）：目标元素正处于拆字/count-up 运行时动效中时，
+     先调用骨架接口强制还原为纯文本，再进入编辑态 */
+  var mw = el.ownerDocument && el.ownerDocument.defaultView;
+  if (mw && mw.__pptxMotion) mw.__pptxMotion.restore(el);
   editEl = el;
   editOriginal = el.innerHTML;
   el.classList.add('ed-editing');
@@ -738,7 +1679,7 @@ function commitEdit(){
   /* 仅在内容变化时归一化，避免对未编辑的原文做无谓重写 */
   if (el.innerHTML !== editOriginal) normalizeBreaks(el);
   exitEditDom(el);
-  if (el.innerHTML !== editOriginal) setDirty(true);
+  if (el.innerHTML !== editOriginal){ setDirty(true); invalidateThumbOf(el); }
   el.classList.add('ed-selected'); selEl = el;
   updateStatusBar();
 }
@@ -827,7 +1768,8 @@ function wireGestures(d){
   wireMarquee(d);
 }
 
-/* 状态栏当前页：复用骨架 chrome 的计数逻辑 */
+/* 状态栏当前页：复用骨架 chrome 的计数逻辑；v1.6 起同时驱动目录侧栏高亮 */
+var curSlideIdx = 0;
 function wireSlideStatus(d){
   var deck = d.querySelector('.deck');
   if (!deck){ $('sbPage').textContent = '—'; return; }
@@ -838,13 +1780,16 @@ function wireSlideStatus(d){
     for (var i = 0; i < slots.length; i++){
       if (slots[i].offsetTop + slots[i].offsetHeight / 2 > top + 8){ idx = i; break; }
     }
+    curSlideIdx = idx;
     $('sbPage').textContent = '第 ' + (idx + 1) + ' / ' + n + ' 页';
+    tocHighlight(idx);
   };
   deck.addEventListener('scroll', function(){ frame.contentWindow.requestAnimationFrame(update); }, { passive:true });
   update();
 }
 
 function updateStatusBar(){
+  updateStyleBar();   /* v1.6 §1：样式控件组随选中态显隐 */
   if (mode === 'annotate' && !editEl){
     $('sbSel').textContent = '批注模式：在幻灯片上拖拽框选要批注的元素（Esc 取消框选）';
     $('btnReplaceImg').disabled = true;
@@ -1267,7 +2212,10 @@ async function replaceImage(img){
       img.setAttribute('src', dir + newName);
       toast('已写入 assets/' + newName + ' 并更新引用，保存后生效');
     }
+    /* 契约 v5：上传成功置 uploaded，保留 data-image-slot / data-image-intent */
+    img.setAttribute('data-image-state', 'uploaded');
     setDirty(true);
+    invalidateThumbOf(img);
     $('sbMsg').textContent = '有未保存的图片引用变更';
   } catch(e){
     toast('写入图片失败：' + e.message);
@@ -1279,6 +2227,12 @@ async function replaceImage(img){
    ============================================================ */
 function serializeClean(){
   var d = doc();
+  /* 迭代 C（契约 v3）：先终止并还原全部进行中的运行时动效
+     （拆字 span → 纯文本、count-up → 终值文本），再克隆序列化 */
+  try {
+    var mw = frame.contentWindow;
+    if (mw && mw.__pptxMotion) mw.__pptxMotion.restoreAll();
+  } catch(e){}
   var clone = d.documentElement.cloneNode(true);
 
   /* 1. 移除编辑器注入节点（统一带 data-editor-injected） */
@@ -1297,11 +2251,45 @@ function serializeClean(){
     n.removeAttribute('class');
   });
 
-  /* 3. 框架运行时状态归位：html 上的 --slide-scale、.in-view、chrome 页码重置 "1 / N" */
+  /* 3. 框架运行时状态归位：html 上的 --slide-scale 与整个 class 属性
+     （js 动效门槛、texture-cover 质感范围、no-sdt 回退标记均为运行时产物）、
+     .in-view、[data-anim] 上的 --i 阶梯序号（含 mask-lines 的 .ml-inner）、
+     pointer tracker 写入的 CSS 变量（契约 v6）、chrome 页码重置 "1 / N"。
+     注意 --pdepth/--depth/--val/--flow-path/--pin-i 是生成侧产物内容，不得移除。 */
+  var RUNTIME_PROPS = ['--i', '--mx', '--my', '--mxr', '--myr', '--rx', '--ry', '--mgx', '--mgy', '--sp'];
   clone.removeAttribute('style');
+  if (clone.hasAttribute('class')) clone.removeAttribute('class');
   Array.prototype.forEach.call(clone.querySelectorAll('.in-view'), function(n){
     n.classList.remove('in-view');
     if (!n.getAttribute('class')) n.removeAttribute('class');
+  });
+  Array.prototype.forEach.call(clone.querySelectorAll('[style]'), function(n){
+    RUNTIME_PROPS.forEach(function(p){
+      if (n.style.getPropertyValue(p) !== '') n.style.removeProperty(p);
+    });
+    /* 空 style 属性一并移除（如 freeze() removeProperty 后剩下的 style=""） */
+    if (!n.getAttribute('style') || !n.getAttribute('style').trim()) n.removeAttribute('style');
+  });
+  /* 拆字 span 兜底还原（契约 v3）：restoreAll 已处理本骨架产物的进行中动效，
+     这里兜底被打断/旧骨架残留的 .sp-unit 容器——塌缩回纯文本节点 */
+  Array.prototype.forEach.call(
+    clone.querySelectorAll('[data-anim="chars"],[data-anim="words"],[data-anim="shatter"]'),
+    function(n){
+      if (n.querySelector('.sp-unit')) n.textContent = n.textContent;
+    });
+  /* draw-line 运行时描边 style 归位（stroke-dasharray/offset 由骨架 JS 写入） */
+  Array.prototype.forEach.call(clone.querySelectorAll('[data-anim="draw-line"]'), function(n){
+    if (!n.style) return;
+    n.style.removeProperty('stroke-dasharray');
+    n.style.removeProperty('stroke-dashoffset');
+    var st = n.getAttribute('style');
+    if (!st || !st.trim()) n.removeAttribute('style');
+  });
+  /* canvas[data-fx] 运行时 width/height 归位（契约 v6.1 / skeleton v5.1：
+     freeze 主责——编辑器加载即冻结，fx 从未启动；此处兜底旧产物/非常规路径） */
+  Array.prototype.forEach.call(clone.querySelectorAll('canvas[data-fx]'), function(n){
+    n.removeAttribute('width');
+    n.removeAttribute('height');
   });
   var chrome = clone.querySelector('.deck-chrome');
   if (chrome){
@@ -1348,6 +2336,23 @@ async function saveDeck(){
       toast('已发送保存请求到宿主页面');
       return true;
     } catch(e){ toast('与宿主通信失败：' + e.message); return false; }
+  }
+
+  /* 伴随服务模式（v1.6 §3）：有后端且文件经 ?deck= 打开时，
+     保存 = 服务端原子写文件 + git 版本提交（每次保存一个版本）。
+     失败不静默吞掉：提示后落入 FSAA/下载路径。 */
+  if (state.backend && state.deckPath){
+    try {
+      var res = await apiSave(text);
+      setDirty(false); $('sbMsg').textContent = '';
+      toast(res.committed ? '已保存并记录版本 ' + res.hash
+                          : '已保存到 ' + state.deckPath);
+      if ($('histDrawer').classList.contains('open')) loadVersions();
+      return true;
+    } catch(e){
+      toast('伴随服务保存失败（' + e.message + '），转为本地保存路径');
+      /* 落入下一条路径 */
+    }
   }
 
   /* 主路径：原文件句柄直写 */
@@ -1408,42 +2413,98 @@ window.addEventListener('keydown', function(e){
 /* ============================================================
    Design-System 面板（§7）：渲染 + 意图清单导出
    ============================================================ */
-var answers = { theme:null, rhythm:'moderate', motion:'subtle', custom:'' };
+var answers = { theme:null, themeVariant:null, rhythm:'moderate', motion:'standard', density:'low', custom:'' };
 var FONT_PREVIEW = { serif:'serif', sans:'sans-serif', mono:'monospace' };
 
 function renderPanel(){
   var themeQ = PANEL_DATA.questions[0];
   var grid = $('themeGrid');
+  /* 主题卡按 focus 分组展示（theme-schema.md §6「看着重点选」）：分组归属
+     由 sync-themes.mjs 按"最差异化优先"（质感>字排>形态>配色）写入
+     group_label，这里只按固定顺序摆组、渲染卡片。 */
+  var GROUP_ORDER = ['配色主导', '质感主导', '装饰主导', '字排主导', '形态主导'];
+  var byGroup = {};
   themeQ.options.forEach(function(opt){
-    var card = document.createElement('div');
-    card.className = 'theme-card';
-    card.dataset.id = opt.id;
-    var v = opt.visual;
-    card.innerHTML =
-      '<div class="swatches">' +
-        '<i style="background:' + v.paper + '" title="paper ' + v.paper + '"></i>' +
-        '<i style="background:' + v.ink + '" title="ink ' + v.ink + '"></i>' +
-        '<i style="background:' + v.accent + '" title="accent ' + v.accent + '"></i>' +
-      '</div>' +
-      '<div class="sample" style="background:' + v.paper + ';color:' + v.ink + ';border-radius:5px;padding:4px 6px">' +
-        '<span class="fd" style="font-family:' + FONT_PREVIEW[v.font_display] + '">Aa 标题</span>' +
-        '<span class="fb" style="font-family:' + FONT_PREVIEW[v.font_body] + '">正文字体</span>' +
-      '</div>' +
-      '<div class="name">' + opt.id.toUpperCase() + ' · ' + opt.label + '</div>' +
-      '<div class="desc">' + opt.description + '</div>';
-    card.addEventListener('click', function(){
-      answers.theme = (answers.theme === opt.id) ? null : opt.id;
-      Array.prototype.forEach.call(grid.children, function(c){
-        c.classList.toggle('selected', c.dataset.id === answers.theme);
-      });
-    });
-    grid.appendChild(card);
+    var g = opt.group_label || '配色主导';
+    if (!byGroup[g]) byGroup[g] = [];
+    byGroup[g].push(opt);
+  });
+  var groups = GROUP_ORDER.filter(function(g){ return byGroup[g]; });
+  Object.keys(byGroup).forEach(function(g){
+    if (GROUP_ORDER.indexOf(g) < 0) groups.push(g);
+  });
+  groups.forEach(function(g){
+    var sec = document.createElement('div');
+    sec.className = 'theme-group';
+    sec.innerHTML = '<div class="theme-group-title">' + g + '</div>';
+    var cards = document.createElement('div');
+    cards.className = 'theme-group-cards';
+    byGroup[g].forEach(function(opt){ cards.appendChild(buildThemeCard(opt)); });
+    sec.appendChild(cards);
+    grid.appendChild(sec);
   });
 
   buildOptRow('rhythmOpts', PANEL_DATA.questions[1], 'rhythm');
   buildOptRow('motionOpts', PANEL_DATA.questions[2], 'motion');
+  buildOptRow('densityOpts', PANEL_DATA.questions[3], 'density');
 
   $('customText').addEventListener('input', function(){ answers.custom = this.value; });
+}
+function buildThemeCard(opt){
+  var card = document.createElement('div');
+  card.className = 'theme-card';
+  card.dataset.id = opt.id;
+  var v = opt.visual;
+  card.innerHTML =
+    '<div class="swatches">' +
+      '<i style="background:' + v.paper + '" title="paper ' + v.paper + '"></i>' +
+      '<i style="background:' + v.ink + '" title="ink ' + v.ink + '"></i>' +
+      '<i style="background:' + v.accent + '" title="accent ' + v.accent + '"></i>' +
+    '</div>' +
+    '<div class="sample" style="background:' + v.paper + ';color:' + v.ink + ';border-radius:5px;padding:4px 6px">' +
+      '<span class="fd" style="font-family:' + FONT_PREVIEW[v.font_display] + '">Aa 标题</span>' +
+      '<span class="fb" style="font-family:' + FONT_PREVIEW[v.font_body] + '">正文字体</span>' +
+    '</div>' +
+    '<div class="name">' + opt.id.toUpperCase() + ' · ' + opt.label +
+      (opt.focus_label ? '<span class="focus-tag">' + opt.focus_label + '</span>' : '') + '</div>' +
+    '<div class="desc">' + (opt.vibe || opt.description) + '</div>';
+  /* 配色变体（两级架构，G 期）：色点行，点击切换变体（再点回基底）；
+     选中变体即选中主题。变体 dot 用 accent 点 + paper 底缩略呈现。 */
+  if (opt.variants && opt.variants.length){
+    var vrow = document.createElement('div');
+    vrow.className = 'variants';
+    vrow.appendChild(document.createElement('b')).textContent = '变体';
+    opt.variants.forEach(function(va){
+      var dot = document.createElement('i');
+      dot.style.background = va.visual.accent;
+      dot.title = va.label + (va.vibe ? '：' + va.vibe : '');
+      dot.dataset.vid = va.id;
+      dot.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        var turnOff = (answers.theme === opt.id && answers.themeVariant === va.id);
+        answers.theme = turnOff ? null : opt.id;
+        answers.themeVariant = turnOff ? null : va.id;
+        refreshThemeSelection();
+      });
+      vrow.appendChild(dot);
+    });
+    card.appendChild(vrow);
+  }
+  card.addEventListener('click', function(){
+    var turnOff = (answers.theme === opt.id && !answers.themeVariant);
+    answers.theme = turnOff ? null : opt.id;
+    answers.themeVariant = null;
+    refreshThemeSelection();
+  });
+  return card;
+}
+function refreshThemeSelection(){
+  Array.prototype.forEach.call(document.querySelectorAll('#themeGrid .theme-card'), function(c){
+    c.classList.toggle('selected', c.dataset.id === answers.theme);
+    Array.prototype.forEach.call(c.querySelectorAll('.variants i'), function(dot){
+      dot.classList.toggle('selected', c.dataset.id === answers.theme && dot.dataset.vid === answers.themeVariant);
+    });
+  });
 }
 function buildOptRow(elId, q, key){
   var row = $(elId);
@@ -1465,20 +2526,32 @@ function buildOptRow(elId, q, key){
 /* "生成修改指令"（§7.3）：自然语言 + JSON，复制到剪贴板 */
 function buildIntentExport(){
   var themeQ = PANEL_DATA.questions[0];
-  var theme = null;
+  var theme = null, variant = null;
   if (answers.theme){
     for (var i = 0; i < themeQ.options.length; i++)
       if (themeQ.options[i].id === answers.theme) theme = themeQ.options[i];
   }
-  var rhythmQ = PANEL_DATA.questions[1], motionQ = PANEL_DATA.questions[2];
+  if (theme && answers.themeVariant){
+    for (var j = 0; j < (theme.variants || []).length; j++)
+      if (theme.variants[j].id === answers.themeVariant) variant = theme.variants[j];
+  }
+  var rhythmQ = PANEL_DATA.questions[1], motionQ = PANEL_DATA.questions[2], densityQ = PANEL_DATA.questions[3];
   var rhythm = rhythmQ.options.filter(function(o){ return o.id === answers.rhythm; })[0];
   var motion = motionQ.options.filter(function(o){ return o.id === answers.motion; })[0];
+  var density = densityQ.options.filter(function(o){ return o.id === answers.density; })[0];
   var deck = state.fileName || 'index.html';
 
+  /* 变体 token 合并：变体只覆盖 G1 六色（可附 G3 三 token），其余层与基底共享 */
+  var themeTokens = theme ? Object.assign({}, theme.tokens, variant ? variant.tokens : null) : null;
+
   var intentAnswers = {
-    theme:  theme ? { choice: theme.id, label: theme.label, tokens: theme.tokens } : { choice: null },
+    theme:  theme ? { choice: theme.id, label: theme.label,
+                      variant: variant ? { choice: variant.id, label: variant.label } : null,
+                      tokens: themeTokens,
+                      theme_css: theme.theme_css || '' } : { choice: null },
     rhythm: { choice: answers.rhythm },
-    motion: { choice: answers.motion }
+    motion: { choice: answers.motion },
+    density: { choice: answers.density }
   };
   if (answers.custom.trim()) intentAnswers.custom = { text: answers.custom.trim() };
 
@@ -1493,13 +2566,18 @@ function buildIntentExport(){
   lines.push('请按以下设计意图修改 ' + deck + '（技能：skills/html-pptx）：');
   if (theme){
     lines.push('1. 主题配色：切换为 ' + theme.id.toUpperCase() + ' ' + theme.label +
-      '。请用下方 JSON 中 answers.theme.tokens 整套替换骨架的 SLOT: theme tokens，禁止混搭、禁止修改色值（规则见 skills/html-pptx/references/themes.md）。');
+      (variant ? '（变体：' + variant.label + '）' : '（基底配色）') +
+      '。请用下方 JSON 中 answers.theme.tokens 整套替换骨架的 SLOT: theme tokens（变体 token 已合并进去），' +
+      '并把 answers.theme.theme_css 整块注入骨架的 SLOT: theme css（主题装饰母题与动效签名所在，留空则该主题无母题）；' +
+      '禁止混搭、禁止修改色值（规则见 skills/html-pptx/references/themes.md）。' +
+      (variant && variant.accent_note ? '变体 accent 预算注记：' + variant.accent_note : ''));
   } else {
     lines.push('1. 主题配色：保持现状，不修改。');
   }
   lines.push('2. 明暗节奏：' + rhythm.label + '（' + rhythm.description + '），对应调整 hero 暗页（.slide.dark）的出现频率。');
-  lines.push('3. 动效强度：' + motion.label + '（' + motion.description + '）。');
-  if (answers.custom.trim()) lines.push('4. 用户补充：' + answers.custom.trim());
+  lines.push('3. 动效丰富度：' + motion.label + '（' + motion.description + '）。五层启用矩阵与 recipe 词汇表见 skills/html-pptx/references/motion.md v3 §4–§5——加的是机制层，不是同层数量。');
+  lines.push('4. 内容密度：' + density.label + '（' + density.description + '），规则见 skills/html-pptx/references/typography.md §5——密度变化涉及拆页/合页与字阶调整，按 SKILL.md 工作流整体重组，不要只改字号。');
+  if (answers.custom.trim()) lines.push('5. 用户补充：' + answers.custom.trim());
   lines.push('');
   lines.push('结构化意图（JSON）：');
   lines.push('```json');
@@ -1533,6 +2611,422 @@ $('btnPanel').addEventListener('click', function(){
 });
 
 /* ============================================================
+   文字样式编辑（v1.6 §1，契约"样式覆盖"节）
+   粒度 = 整个 data-editable 元素（plaintext-only 下不做选区级富文本）；
+   只写白名单四属性 inline style，与文字编辑同一保存通路，无新机制。
+   控件在父页面，读写的是 iframe 内元素的 style / computed style。
+   ============================================================ */
+var FONT_TOKENS = [ ['--font-display', '标题字体'], ['--font-body', '正文字体'], ['--font-mono', '等宽字体'] ];
+var COLOR_TOKENS = ['--paper', '--paper-tint', '--ink', '--ink-tint', '--accent', '--accent-on'];
+var SYSTEM_FONTS = [ ['serif', 'Serif（衬线）'], ['sans-serif', 'Sans（无衬线）'], ['monospace', 'Monospace（等宽）'] ];
+var FONT_SIZE_MIN = 18;   /* 与 SKILL.md 字号红线对齐：低于则警告不禁止（编辑是用户主权） */
+var deckFonts = [];       // [{label, css(var 引用), raw(解析值)}]
+var deckColors = [];      // [{token, css(var 引用), raw(解析值)}]
+
+function collectStyleMeta(){
+  deckFonts = []; deckColors = [];
+  var d = doc(); if (!d || !d.documentElement) return;
+  var cs = frame.contentWindow.getComputedStyle(d.documentElement);
+  FONT_TOKENS.forEach(function(t){
+    var raw = cs.getPropertyValue(t[0]).trim();
+    if (raw) deckFonts.push({ label: t[1], css: 'var(' + t[0] + ')', raw: raw });
+  });
+  COLOR_TOKENS.forEach(function(t){
+    var raw = cs.getPropertyValue(t).trim();
+    if (raw) deckColors.push({ token: t, css: 'var(' + t + ')', raw: raw });
+  });
+}
+/* 主题相关值写 var() 引用而非解析色值：换主题时用户样式仍跟随主题（契约注释） */
+function normCssVal(v){ return (v || '').replace(/[\s"']+/g, '').toLowerCase(); }
+
+/* 样式目标：编辑中元素优先，其次选中的文字元素；图片选中时整体隐藏 */
+function styleTarget(){
+  if (mode !== 'edit') return null;
+  if (editEl) return editEl;
+  if (selEl && selEl.hasAttribute('data-editable')) return selEl;
+  return null;
+}
+
+function updateStyleBar(){
+  var el = styleTarget();
+  $('styleBar').classList.toggle('show', !!el);
+  if (!el) return;
+  populateFontSelect(el);
+  var cs = frame.contentWindow.getComputedStyle(el);
+  var fs = parseFloat(cs.fontSize);
+  if (!isNaN(fs)){
+    $('stSize').value = Math.round(fs);
+    $('stSizeWarn').hidden = fs >= FONT_SIZE_MIN;
+  }
+  /* color input 只接受 #rrggbb：computed 值恰是解析后的 rgb()，需转换 */
+  $('stColor').value = rgbToHex(cs.color) || '#000000';
+  var ta = cs.textAlign;
+  Array.prototype.forEach.call($('stAlign').querySelectorAll('button'), function(b){
+    b.classList.toggle('on', b.dataset.align === ta ||
+      (ta === 'start' && b.dataset.align === 'left') ||
+      (ta === 'end' && b.dataset.align === 'right'));
+  });
+}
+
+function rgbToHex(v){
+  var m = /rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/.exec(v || '');
+  if (!m) return null;
+  var h = function(n){ return ('0' + (+n).toString(16)).slice(-2); };
+  return '#' + h(m[1]) + h(m[2]) + h(m[3]);
+}
+
+function populateFontSelect(el){
+  var sel = $('stFont');
+  sel.innerHTML = '';
+  deckFonts.forEach(function(f){
+    var o = document.createElement('option');
+    o.value = f.css; o.textContent = f.label; o.style.fontFamily = f.raw;
+    sel.appendChild(o);
+  });
+  SYSTEM_FONTS.forEach(function(f){
+    var o = document.createElement('option');
+    o.value = f[0]; o.textContent = f[1]; o.style.fontFamily = f[0];
+    sel.appendChild(o);
+  });
+  /* 当前值 = inline 优先，否则 computed；先尝试匹配主题栈（var 引用或解析值）与系统字体 */
+  var cur = el.style.getPropertyValue('font-family').trim() ||
+            frame.contentWindow.getComputedStyle(el).fontFamily;
+  var nCur = normCssVal(cur), hit = false;
+  deckFonts.forEach(function(f){
+    if (!hit && (nCur === normCssVal(f.css) || nCur === normCssVal(f.raw))){ sel.value = f.css; hit = true; }
+  });
+  SYSTEM_FONTS.forEach(function(f){
+    if (!hit && nCur === normCssVal(f[0])){ sel.value = f[0]; hit = true; }
+  });
+  if (!hit){
+    /* 生成侧自定义栈不在清单：补"当前字体"项，选中时写回字面量 */
+    var o = document.createElement('option');
+    o.value = cur; o.textContent = '当前字体';
+    sel.appendChild(o);
+    sel.value = cur;
+  }
+}
+
+function renderSwatches(){
+  var box = $('stSwatches');
+  box.innerHTML = '';
+  deckColors.forEach(function(c){
+    var b = document.createElement('button');
+    b.className = 'st-swatch';
+    b.style.background = c.raw;
+    b.title = c.token + ' ' + c.raw;
+    b.dataset.token = c.token;
+    b.addEventListener('click', function(){ applyStyleProp('color', c.css); });
+    box.appendChild(b);
+  });
+}
+
+function applyStyleProp(prop, value){
+  var el = styleTarget();
+  if (!el) return;
+  el.style.setProperty(prop, value);
+  setDirty(true);
+  invalidateThumbOf(el);
+  updateStyleBar();
+}
+function applyFontSize(v){
+  var el = styleTarget();
+  if (!el || isNaN(v) || v < 1) return;
+  el.style.setProperty('font-size', Math.round(v) + 'px');
+  setDirty(true);
+  $('stSizeWarn').hidden = v >= FONT_SIZE_MIN;
+  $('stSize').classList.toggle('warn', v < FONT_SIZE_MIN);
+  invalidateThumbOf(el);
+}
+function stepFontSize(delta){
+  var cur = parseFloat($('stSize').value) || FONT_SIZE_MIN;
+  var v = Math.max(1, cur + delta);
+  $('stSize').value = v;
+  applyFontSize(v);
+}
+$('stFont').addEventListener('change', function(){ applyStyleProp('font-family', this.value); });
+$('stSize').addEventListener('change', function(){ applyFontSize(parseFloat(this.value)); });
+$('stSizeDec').addEventListener('click', function(){ stepFontSize(-2); });
+$('stSizeInc').addEventListener('click', function(){ stepFontSize(2); });
+$('stColor').addEventListener('input', function(){ applyStyleProp('color', this.value); });
+$('stAlign').addEventListener('click', function(e){
+  var b = e.target.closest('button[data-align]');
+  if (b) applyStyleProp('text-align', b.dataset.align);
+});
+
+/* ============================================================
+   目录侧栏（v1.6 §2）
+   缩略图 = 克隆 section 进 Shadow DOM：deck CSS 注入影子树（:root→:host
+   使 token 生效），强制动效终态（注入 animation:none + 补 .in-view——
+   骨架 v2 的隐藏门槛是 html.js，影子树里天然不命中）。--slide-scale 写到
+   host 上按 缩略宽度/1920 缩放。IntersectionObserver 懒渲染控制 DOM 成本。
+   ============================================================ */
+var tocCards = [];        // {slideId, card, thumb, slideEl, slotEl, rendered}
+var tocObserver = null;
+
+function buildToc(){
+  var list = $('tocList');
+  list.innerHTML = '';
+  tocCards = [];
+  if (tocObserver){ tocObserver.disconnect(); tocObserver = null; }
+  var d = doc(); if (!d) return;
+  var slides = d.querySelectorAll('.slide[data-slide-id]');
+  if (!slides.length) return;
+  tocObserver = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if (!en.isIntersecting) return;
+      tocObserver.unobserve(en.target);
+      renderThumb(en.target.__tocCard);
+    });
+  }, { root: list });
+  Array.prototype.forEach.call(slides, function(slide, i){
+    var card = document.createElement('div');
+    card.className = 'toc-card';
+    var thumb = document.createElement('div');
+    thumb.className = 'toc-thumb';
+    var meta = document.createElement('div');
+    meta.className = 'toc-meta';
+    var no = document.createElement('span'); no.className = 'no'; no.textContent = i + 1;
+    var sid = document.createElement('span'); sid.className = 'sid';
+    sid.textContent = slide.getAttribute('data-slide-id');
+    meta.appendChild(no); meta.appendChild(sid);
+    card.appendChild(thumb); card.appendChild(meta);
+    list.appendChild(card);
+    var rec = { slideId: slide.getAttribute('data-slide-id'), card: card, thumb: thumb,
+                slideEl: slide, slotEl: slide.closest('.slide-slot') || slide, rendered: false };
+    card.__tocCard = rec;
+    card.addEventListener('click', function(){ tocGoto(rec); });
+    tocCards.push(rec);
+    tocObserver.observe(card);
+  });
+  tocHighlight(curSlideIdx);
+}
+
+function deckCssText(){
+  var d = doc(); var css = '';
+  Array.prototype.forEach.call(d.querySelectorAll('style'), function(s){
+    if (s.hasAttribute('data-editor-injected')) return;
+    css += s.textContent + '\n';
+  });
+  return css.replace(/:root/g, ':host');
+}
+
+function renderThumb(rec){
+  if (!rec) return;
+  var host = rec.thumb;
+  var root = host.shadowRoot || host.attachShadow({ mode: 'open' });
+  root.innerHTML = '';
+  var st = document.createElement('style');
+  st.textContent = deckCssText() +
+    '\n:host{font-family:var(--font-body,sans-serif)}' +
+    '\n*{animation:none !important;transition:none !important}';
+  root.appendChild(st);
+  var w = host.clientWidth || 218;
+  var scale = w / 1920;
+  host.style.setProperty('--slide-scale', scale);
+  var wrap = document.createElement('div');
+  /* 骨架 .slide 以 top center 缩放：左边距补偿让缩放后视觉恰好对齐容器 [0,w] */
+  wrap.style.cssText = 'overflow:hidden;pointer-events:none;height:' + Math.ceil(1080 * scale) + 'px';
+  var clone = rec.slideEl.cloneNode(true);
+  clone.removeAttribute('id');
+  clone.classList.add('in-view');          /* reveal 体系强制终态 */
+  clone.setAttribute('aria-hidden', 'true');
+  clone.style.marginLeft = Math.round((w - 1920) / 2) + 'px';
+  Array.prototype.forEach.call(clone.querySelectorAll('[id]'), function(n){ n.removeAttribute('id'); });
+  Array.prototype.forEach.call(clone.querySelectorAll('[contenteditable]'), function(n){ n.removeAttribute('contenteditable'); });
+  EDIT_CLASSES.forEach(function(c){
+    clone.classList.remove(c);
+    Array.prototype.forEach.call(clone.querySelectorAll('.' + c), function(n){ n.classList.remove(c); });
+  });
+  wrap.appendChild(clone);
+  root.appendChild(wrap);
+  rec.rendered = true;
+}
+
+function tocGoto(rec){
+  var d = doc(); if (!d) return;
+  var deck = d.querySelector('.deck');
+  if (!deck || !rec.slotEl.isConnected) return;
+  /* 页码与高亮由 deck scroll 事件驱动（wireSlideStatus），此处只负责滚动 */
+  deck.scrollTo({ top: rec.slotEl.offsetTop, behavior: 'auto' });
+}
+
+function tocHighlight(idx){
+  tocCards.forEach(function(c, i){ c.card.classList.toggle('cur', i === idx); });
+}
+
+/* 编辑后按需失效重克隆：只刷对应页，不做实时同步（缩略图是导航件不是监视器） */
+function invalidateThumbOf(el){
+  var slide = el && el.closest && el.closest('.slide');
+  if (!slide) return;
+  var sid = slide.getAttribute('data-slide-id');
+  tocCards.forEach(function(c){
+    if (c.slideId === sid && c.rendered) renderThumb(c);
+  });
+}
+
+$('btnToc').addEventListener('click', function(){
+  var toc = $('toc');
+  toc.classList.toggle('open');
+  this.setAttribute('aria-pressed', toc.classList.contains('open') ? 'true' : 'false');
+});
+
+/* ============================================================
+   本地伴随服务（v1.6 §3，tools/edit.py）
+   编辑器保持单文件纯静态：加载时探测同源 /api/health，探测到才启用
+   "保存即版本 + 历史回滚"；探测不到（普通静态服务 / file://）维持现状。
+   嵌入态保存仍走 postMessage，版本能力由宿主决定，与本服务无关。
+   ============================================================ */
+function probeBackend(){
+  fetch('api/health', { cache: 'no-store' })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(j){
+      if (j && j.ok){
+        state.backend = j;
+        maybeOpenDeckParam();
+      }
+      updateHistoryBtn();
+    })
+    .catch(function(){ updateHistoryBtn(); });
+}
+
+function updateHistoryBtn(){
+  var btn = $('btnHistory');
+  var ok = !!(state.backend && state.deckPath && !state.embedded);
+  btn.disabled = !ok;
+  btn.title = !state.backend
+    ? '未检测到伴随服务：运行 python3 tools/edit.py 启动后可获得 git 版本记录'
+    : (!state.deckPath
+        ? '当前文件不是经伴随服务打开（缺少 ?deck= 路径），无法定位文件'
+        : '查看版本历史');
+}
+
+/* ?deck=<相对路径>：伴随服务托管模式下直接载入工作目录内的 deck */
+function maybeOpenDeckParam(){
+  var p = null;
+  try { p = new URLSearchParams(location.search).get('deck'); } catch(e){}
+  if (!p || state.loaded) return;
+  fetch(p, { cache: 'no-store' })
+    .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+    .then(function(text){ openHtml(text, p, null, null, p); })
+    .catch(function(e){ toast('打开 ' + p + ' 失败：' + e.message); });
+}
+
+/* 通用确认弹窗（git init 一次性确认 / 回滚确认共用） */
+function askConfirm(title, text, okLabel){
+  return new Promise(function(resolve){
+    $('confirmTitle').textContent = title;
+    $('confirmText').textContent = text;
+    $('confirmOk').textContent = okLabel || '确定';
+    var mask = $('confirmMask');
+    mask.classList.add('show');
+    function done(v){
+      mask.classList.remove('show');
+      $('confirmOk').onclick = $('confirmCancel').onclick = null;
+      resolve(v);
+    }
+    $('confirmOk').onclick = function(){ done(true); };
+    $('confirmCancel').onclick = function(){ done(false); };
+  });
+}
+
+async function apiSave(text){
+  var body = { path: state.deckPath, html: text };
+  if (state.backend.gitReady === false && state.gitConsent !== false){
+    /* 目录非 git 仓库：按 §3 先询问再 init（一次确认，本次会话有效） */
+    if (state.gitConsent === null){
+      state.gitConsent = await askConfirm(
+        '初始化 git 仓库？',
+        '工作目录还不是 git 仓库。初始化后每次保存都会记录一个可回滚的版本' +
+        '（只提交该 deck 文件与其 assets/ 目录，不触碰其它文件）。',
+        '初始化并保存');
+    }
+    if (state.gitConsent) body.init = true;
+  }
+  var r = await fetch('api/save', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  var j = await r.json().catch(function(){ return null; });
+  if (!r.ok || !j || !j.ok) throw new Error((j && j.error) || ('HTTP ' + r.status));
+  if (j.gitReady) state.backend.gitReady = true;
+  return j;
+}
+
+$('btnHistory').addEventListener('click', function(){
+  var dr = $('histDrawer');
+  var open = dr.classList.toggle('open');
+  this.setAttribute('aria-pressed', open ? 'true' : 'false');
+  if (open) loadVersions();
+});
+$('btnHistRefresh').addEventListener('click', loadVersions);
+
+async function loadVersions(){
+  var box = $('histList');
+  box.innerHTML = '';
+  var loading = document.createElement('div');
+  loading.className = 'ver-empty'; loading.textContent = '加载中…';
+  box.appendChild(loading);
+  try {
+    var r = await fetch('api/versions?path=' + encodeURIComponent(state.deckPath), { cache: 'no-store' });
+    var j = await r.json();
+    if (!r.ok || !j.ok) throw new Error((j && j.error) || ('HTTP ' + r.status));
+    renderVersions(j.versions || []);
+  } catch(e){
+    box.innerHTML = '';
+    var d = document.createElement('div');
+    d.className = 'ver-empty'; d.textContent = '版本列表加载失败：' + e.message;
+    box.appendChild(d);
+  }
+}
+function renderVersions(versions){
+  var box = $('histList');
+  box.innerHTML = '';
+  if (!versions.length){
+    var d = document.createElement('div');
+    d.className = 'ver-empty'; d.textContent = '还没有版本记录，保存一次试试';
+    box.appendChild(d);
+    return;
+  }
+  versions.forEach(function(v){
+    var item = document.createElement('div');
+    item.className = 'ver-item';
+    item.dataset.hash = v.hash;
+    var vm = document.createElement('div'); vm.className = 'vm';
+    var vt = document.createElement('div'); vt.className = 'vt'; vt.textContent = v.message;
+    var vh = document.createElement('div'); vh.className = 'vh';
+    vh.textContent = v.hash.slice(0, 7) + ' · ' + v.time;
+    vm.appendChild(vt); vm.appendChild(vh);
+    var btn = document.createElement('button');
+    btn.className = 'ver-rollback';
+    btn.textContent = '回滚';
+    btn.title = '回滚到此版本（当前未提交状态会先自动提交 pre-rollback）';
+    btn.addEventListener('click', function(){ rollbackTo(v.hash); });
+    item.appendChild(vm); item.appendChild(btn);
+    box.appendChild(item);
+  });
+}
+async function rollbackTo(hash){
+  var ok = await askConfirm('回滚到此版本？',
+    '回滚前会自动提交当前未提交状态（pre-rollback），之后还可以再回滚回来。', '回滚');
+  if (!ok) return;
+  try {
+    var r = await fetch('api/rollback', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: state.deckPath, hash: hash })
+    });
+    var j = await r.json();
+    if (!r.ok || !j.ok) throw new Error((j && j.error) || ('HTTP ' + r.status));
+    toast('已回滚到此版本' + (j.preRollback ? '（当前状态已保护提交 ' + j.preRollback + '）' : ''));
+    /* 回滚改变的是磁盘文件：重新加载让 iframe 与文件重新一致 */
+    var rt = await fetch(state.deckPath + '?v=' + Date.now(), { cache: 'no-store' });
+    if (!rt.ok) throw new Error('重新加载失败 HTTP ' + rt.status);
+    openHtml(await rt.text(), state.fileName, null, null, state.deckPath);
+    loadVersions();
+  } catch(e){ toast('回滚失败：' + e.message); }
+}
+
+/* ============================================================
    嵌入预留（§8）：postMessage 协议形状
    入：{type:"pptx-html:load", html, name?, assetsUrl?}
    出：{type:"pptx-html:save", html, name} / {type:"pptx-html:dirty", dirty}
@@ -1553,6 +3047,10 @@ window.addEventListener('message', async function(e){
 renderPanel();
 updateSaveButton();
 renderDirty();
+probeBackend();
+/* 目录侧栏默认态：独立打开默认展开，嵌入态默认收起（宽度敏感，§2） */
+$('toc').classList.toggle('open', !state.embedded);
+$('btnToc').setAttribute('aria-pressed', String(!state.embedded));
 if (!state.fsaa && !state.embedded){
   showWarn('当前浏览器不支持文件系统访问（File System Access API）：文字编辑可用，保存将降级为下载导出，图片替换不可用。推荐使用 Chrome / Edge。');
 }

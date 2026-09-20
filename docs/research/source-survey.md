@@ -1,44 +1,62 @@
-# 参考项目调研与第一性原理分析
+# 参考项目调研（索引）
 
-> 调研对象：`source/` 下六个参考项目。目的：为新技能 `skills/html-pptx/` 的设计提供依据。
-> 调研日期：2026-09-16。
+> 本文是调研体系的**索引层**：六个参考项目的一句话定位、第一性原理分析、结论表。
+> 每个项目的方案详解与逐条辩证评估在 `projects/` 下的细节文档；跨项目的最优方案综合判断见 `optimal-solution.md`；枚举层的规范见 `sota-visual-languages.md`。
+> 调研日期：2026-09-16（第一轮）/ 2026-09-17（拆分细化）。
+
+## 〇、文档地图
+
+| 文档 | 内容 |
+|---|---|
+| `projects/guizang-ppt-skill.md` | 归藏 PPT 技能：种子模板 + 锁死主题/版式 + 脚本校验闭环 |
+| `projects/frontend-slides.md` | 前端幻灯片技能：1920×1080 固定舞台 + 三槽主题策略（12 预设 / 34 bold 模板 / 自定义）+ 反 AI slop |
+| `projects/codex-ppt-skill-main.md` | 整页 AI 生图拼 pptx：门禁式工作流 + 脚本强制的反降级契约 + 带量化验收的风格库 |
+| `projects/dashi-ppt-skill.md` | React SSR + 内置编辑器：JSON 契约 + 槽位字数预算 + beam search 全稿版式分配 + state-overlay 持久化 |
+| `projects/ppt-master.md` | SVG → 原生可编辑 PPTX：规则效力分级 + spec/lock 双文件 + 内置 SVG 编辑器（双通道编辑/批注先行实现） |
+| `projects/open-design.md` | 单 HTML deck + 桌面编辑器：骨架 SLOT 逐字复制 + 编辑桥七轮实测迭代全记录 |
+| `optimal-solution.md` | **综合判断**：以七条最优标准为标尺的逐条辩证结论 + 现状差距表 |
+| `sota-visual-languages.md` | **枚举规范**：SOTA 视觉的可衍生性判定 + 枚举项法定结构 + 三级验收标准 |
 
 ## 一、各项目一句话定位
 
 | 项目 | 产物形态 | 核心策略 | 对本项目的价值 |
 |---|---|---|---|
-| guizang-ppt-skill | 单 HTML，横滑翻页，vw/vh 流体 | 种子模板 + 锁死主题/版式 + 脚本校验 | 主题策展、校验闭环、"案底式"规则写法 |
-| frontend-slides | 单 HTML，1920×1080 固定舞台 + transform 缩放 | 无模板现写 + 渐进披露模板库 + 反 AI slop 原则 | 画布缩放方案、"Show don't tell" 风格发现、密度模式 |
-| codex-ppt-skill | 整页 AI 生图拼 pptx | 门禁式工作流（大纲→风格→样张→批量） | 叙事方法论、样张门禁、"风格是系统不是模板" |
-| dashi-ppt-skill | React SSR 静态 HTML + 内置编辑器 | JSON 契约 + 锁模板填文案 + 受约束定制 | 可编辑标记约定、容量驱动选版、稳定 ID 教训 |
-| ppt-master | SVG → 原生可编辑 PPTX | 规则效力分级 + spec/lock 双文件 + 条件加载 | 元设计（Hard/Default/Reference 分级）、防上下文漂移 |
-| open-design | 单 HTML deck + 桌面编辑器 | 固定骨架 SLOT 逐字复制 + 提示词即代码 | 骨架防漂移模式、编辑桥架构与实测教训 |
+| guizang-ppt-skill | 单 HTML，横滑翻页，vw/vh 流体 | 种子模板 + 锁死主题/版式 + 脚本校验 | 主题策展、校验闭环、"案底式"规则写法、字重量化阶梯、图片槽位契约 |
+| frontend-slides | 单 HTML，1920×1080 固定舞台 + transform 缩放 | 三槽主题策略（安全预设 / 34 套 bold 模板 / wildcard 自定义）+ 渐进披露 + 反 AI slop 原则 | 画布缩放方案、密度双档、枚举项七段式写法范本、CJK 专节 |
+| codex-ppt-skill | 整页 AI 生图拼 pptx | 门禁式工作流（大纲→风格→样张→批量），状态机与反降级由脚本强制 | 叙事方法论、样张门禁、风格枚举带量化验收的范本 |
+| dashi-ppt-skill | React SSR 静态 HTML + 内置编辑器 | JSON 契约 + 锁模板填文案 + 受约束 bespoke | 可编辑标记约定、槽位容量预算、beam search 版式分配、四级校验 |
+| ppt-master | SVG → 原生可编辑 PPTX | 规则效力分级 + spec/lock 双文件 + 条件加载（SKILL.md 已瘦身为 92 行路由器，规范体量在 references） | 元设计（Hard/Default/Reference 分级）、防上下文漂移、SVG 编辑器双通道（编辑/批注）先例 |
+| open-design | 单 HTML deck + 桌面编辑器 | 固定骨架 SLOT 逐字复制 + 提示词即代码 | 骨架防漂移模式、编辑桥架构、编辑模式七轮实测坑清单 |
+| baoyu-design（2026-09-19 补） | Claude Design 系统提示词的 Skill 化 | 设计系统文件夹约定 + 编译绑定 + 发散质量标尺 | 主题完备性问卷、差异轴纪律、unforgettable 一问——见 `../design/handover-theme-differentiation.md` §四 |
+| html-ppt-skill（2026-09-19 补） | 多文件 HTML deck 播放器 | 36 轻主题 + 15 重主题双层架构 + 主题热插拔 | 主题双层分级、撞脸检测 showcase、语义化 FX——见 `../design/handover-theme-differentiation.md` §四 |
 
 ## 二、关键发现（按主题归并）
 
 ### 画布与适配
-- frontend-slides / dashi / open-design 三家独立收敛到同一方案：**固定 1920×1080 设计画布 + 单个 transform 整体缩放**，禁止响应式重排。open-design 还记录了缩放实现的踩坑（transform-origin 必须 top left、shell 不能是 grid/flex 包装）。
+- frontend-slides / dashi / open-design 三家独立收敛到同一方案：**固定 1920×1080 设计画布 + 单个 transform 整体缩放**，禁止响应式重排。open-design 还记录了缩放实现的踩坑（transform-origin 必须 top left、shell 不能是 grid/flex 包装——注意其仓库内部两代骨架并存且不一致，见 `projects/open-design.md`）。
 - 六家的翻页交互（横滑/切页）与我们确定的"16:9 竖向滚动"形态都不兼容，**交互代码不可复用，缩放与 chrome 外置的思路可迁移**。
 
 ### 质量保障
 - guizang 的闭环最完整：Pre-flight 类名预检 → 生成 → 静态校验 + Playwright 渲染测量（输出溢出 px 数）→ 按"修正阶梯"修复（微调间距→压文案→换版式，不许缩字号）。
-- open-design 的"固定骨架 + SLOT 注释逐字复制"直接回应了"AI 每轮重写基础设施必然引入微妙 bug"的漂移问题。
-- ppt-master 的 spec/lock 双文件 + "每页生成前重读 lock"回应长上下文漂移。
+- dashi 的校验成本按 AI 自由度配比（bespoke 页才做像素测量）+ 残留默认文案检测 + 资产溯源审计；codex 用脚本状态机强制"聊天里说完成不算完成"。
+- open-design 的"固定骨架 + SLOT 注释逐字复制"直接回应了"AI 每轮重写基础设施必然引入微妙 bug"的漂移问题；其宿主侧还有 deck-fix 反向修补兜底（生成侧约束 + 消费侧防御双层并行）。
+- ppt-master 的 spec/lock 双文件 + "每页生成前重读 lock"回应长上下文漂移；首页门禁（P01 当方法样本，同类问题 ≥2 即归因方法级偏差）是对"全部生成完再校验"流程的具体改进。
 
 ### 一致性与审美
 - codex："风格是系统，不是重复构图"——一份 deck 一个视觉身份，但版式必须由内容驱动。
-- dashi v4 的反模式清单精准打击 AI 默认审美："不要把所有页面都画成标题+卡片墙""卡片网格最多占三分之一""给标签换色不是设计"。
+- dashi v4 的反模式清单精准打击 AI 默认审美："不要把所有页面都画成标题+卡片墙""卡片网格最多占三分之一""给标签换色不是设计"；其 beam search 版式分配用工程手段（构图多样性加分、种子化随机打散同分候选）对抗 AI 选择收敛。
 - guizang / open-design 的主题纪律："只选不改"——策展预设替代自由度，禁止混搭、禁止自定义 hex。
 - frontend-slides 直接对 AI 行为诊断（"你会收敛到 Space Grotesk 和紫渐变白底"），并记录 CSS 静默失败类坑（`-clamp()` 必须写成 `calc(-1 * clamp())`）。
 
 ### 可编辑性（我们核心诉求的先行者们）
-- dashi：`data-editable-path` 显式标记 + `data-editable-skip` 排除装饰 + 无标记时的启发式兜底（叶子元素 + 行内元素白名单）。**稳定 ID 教训**：不用遍历序号（reflow 会漂移），用"slide key + child-index 路径"。
-- open-design 的实测经验：`contenteditable=plaintext-only` 为默认、首击选中二击才编辑（避免截断文本框突然撑高）、源码文件是唯一事实源、补丁原地应用永不重载页面。
+- dashi：`data-editable-path` 显式标记 + `data-editable-skip` 排除装饰 + 无标记时的启发式兜底（叶子元素 + 行内元素白名单）。**稳定 ID 教训**：不用遍历序号（reflow 会漂移），用"slide key + child-index 路径"。其持久化走 state-overlay（内嵌 JSON 视图模型 + 原子写回），与我们"DOM 即真相"路线不同，但原子写回与媒体哈希落盘可对照。
+- open-design 的实测经验：`contenteditable=plaintext-only` 为默认、首击选中二击才编辑（避免截断文本框突然撑高）、源码文件是唯一事实源、补丁原地应用永不重载页面；完整七轮坑清单见 `projects/open-design.md`。
+- ppt-master 的内置 SVG 编辑器证明了 **Annotate 双通道**（标记写回 → 用户回 chat → agent 应用注解）是已实践的形态，与我们 editor.html 批注模式同构。
 - frontend-slides 的血泪规则：不要用 CSS `~` 兄弟选择器做编辑按钮 hover（pointer-events 断链），用 JS + 延迟。
 
 ### 共同的反面教材
-- SKILL.md 过载：guizang 632 行 + 8000 行 references、dashi 263 行塞数十条硬规则、ppt-master 单文件 700+ 行防御性散文。**agent 遵循成本与规则数量成正比**——这印证了"原则突出、枚举谨慎"的设计要求。
-- 编辑器与产物耦合（dashi 把 10277 行播放器+编辑器塞进每个产物）、产物是图片完全不可编辑（codex），都是我们要避开的。
+- 规范体量过载：guizang 632 行 SKILL.md + 8000 行 references、dashi 263 行塞数十条硬规则、ppt-master 总规范超 1.2 万行（入口虽已瘦身为路由器，上下文成本转移到了条件加载纪律上）。**agent 遵循成本与规则数量成正比**——这印证了"原则突出、枚举谨慎"的设计要求。
+- 编辑器与产物耦合（dashi 把 10277 行播放器+编辑器塞进每个产物）、产物是图片完全不可编辑（codex）、防溢出靠运行时缩字号（open-design 的 shrink-to-fit，与"禁缩字号"原则相反），都是我们要避开的。
 
 ## 三、第一性原理分析
 
@@ -48,7 +66,7 @@ AI 的默认输出收敛到训练分布的均值：居中 hero、紫蓝渐变、
 
 ### 问题 2：一致性从哪来？
 两种路线：锁死版式（guizang 22 版式、dashi 锁模板）换稳定，但压抑内容表达；完全自由则必然漂移。
-→ 推论：**一致性应该由 token 系统承载（色/字/间距/动效的少量变量），不由版式复制承载**。版式交给"构图原则 + 内容容量"动态决定。这就是"原则突出、枚举谨慎"的技术含义：枚举只保留在 token/主题层（这里枚举是保护），版式层用原则（这里枚举是枷锁）。
+→ 推论：**一致性应该由 token 系统承载（色/字/间距/动效的少量变量），不由版式复制承载**。版式交给"构图原则 + 内容容量"动态决定。这就是"原则突出、枚举谨慎"的技术含义：枚举只保留在 token/主题/骨架层（这里枚举是保护），版式层用原则（这里枚举是枷锁）。分层判定见 `sota-visual-languages.md`。
 
 ### 问题 3：文字溢出为什么根除不了？
 因为 AI 在"写完再发现溢出"。人眼检查不可靠，AI 目测更不可靠。
@@ -71,7 +89,7 @@ AI 的默认输出收敛到训练分布的均值：居中 hero、紫蓝渐变、
 | 可编辑标记契约（data-editable 族 + 稳定语义 ID） | dashi / open-design | 我们与编辑器的通信协议 |
 | 反模式清单（AI slop 负面清单） | frontend-slides / dashi v4 | 原则性对抗审美收敛 |
 
-**明确不拿的**：横滑翻页交互、演讲者模式（激光笔/观众屏）、编辑器内置进产物、SVG/PPTX 工具链、门禁式多轮人工确认、22 个锁死版式的枚举教法。
+**明确不拿的**：横滑翻页交互、演讲者模式（激光笔/观众屏）、编辑器内置进产物、SVG/PPTX 工具链、门禁式多轮人工确认、锁死页面版式的枚举教法（guizang 22 版式 / dashi 1020 模板）、运行时 shrink-to-fit 防溢出。
 
 ---
 
