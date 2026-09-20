@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="skeleton-version" content="7.1">
-<title><!-- SLOT: 文档标题 --></title>
+<title>SmartForge · 自媒体全链路营销系统</title>
 <style>
 /* ============================================================
    SLOT: theme tokens
@@ -15,15 +15,19 @@
    --texture-scope 是许可声明，配给机制见框架层"背景配给制"）。
    ============================================================ */
 :root{
-  /* 主题色（默认：墨水经典） */
-  --paper:#f1efea;
-  --paper-tint:#e8e5de;
-  --ink:#0a0a0b;
-  --ink-tint:#18181a;
-  --accent:#0a0a0b;
-  --accent-on:#f1efea;
+  /* C1 信号黑 · 基底信号橙（默认变体，themes.md 整套复制） */
+  --paper:#1a1a1a;
+  --paper-tint:#242424;
+  --ink:#ffffff;
+  --ink-tint:#0f0f0f;
+  --accent:#FF5722;
+  --accent-on:#1a1a1a;
+  /* G3 质感：flat 立场——无质感层，靠色块与字重压强 */
+  --texture-type: flat;
+  --texture-layer: none;
+  --texture-scope: cover;
   /* 字体栈（系统栈，离线可用） */
-  --font-display:"Songti SC","Noto Serif SC","STSong",serif;
+  --font-display:"Arial Black","PingFang SC","Noto Sans SC",sans-serif;
   --font-body:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
   --font-mono:"SF Mono","JetBrains Mono","Menlo",monospace;
   /* 画布内边距（画布坐标系 px） */
@@ -373,6 +377,12 @@ body{
    禁外部 url()；禁覆盖框架选择器（.slide/.masthead 等）。
    ============================================================ */
 
+/* C1 信号黑 · 装饰母题 + 缓动签名 */
+:root{--ease-out:cubic-bezier(.2,1.25,.3,1)}
+.mt-sig-bar{display:block;width:64px;height:10px;background:var(--accent)}
+.mt-sig-folio{position:absolute;right:2%;bottom:-.16em;z-index:0;pointer-events:none;user-select:none;font-family:var(--font-display);font-weight:900;font-size:30vh;line-height:.8;color:color-mix(in srgb,var(--ink) 7%,transparent)}
+.mt-sig-mark{display:inline-block;width:.55em;height:.55em;background:var(--accent)}
+
 </style>
 </head>
 <body>
@@ -407,9 +417,6 @@ body{
          进度线 div（具名 scroll-timeline 只对 .deck 后代可见）。
        - amb-*/light-* class：循环氛围与光效装饰件，一律 data-editable-skip；
          dash-flow / flow-dot（--flow-path 路径数据）也是 class 装饰件。
-       - tt-* class（v7.1）：文字效果（outline 描边/strike 删除线/mark 荧光标记/
-         uline 粗下划线），标在纯文本元素上（保持 data-editable）；词汇表与禁忌
-         见 references/typography.md §7。
        - data-fx（v5.1，fx 仪式层）：<canvas data-fx="constellation|starfield|
          particle-drift|ascii-field" data-editable-skip aria-hidden="true">，
          只许 .cover-page 仪式页、每页至多 1 个、主题 G5「fx 许可」白名单内
@@ -424,32 +431,780 @@ body{
        - 词汇表与纪律（五层启用矩阵/主题限定/注意力预算）见 references/motion.md。
        ========================================================== -->
 
+  <style>
+  /* ===== 产物样式 · smartforge-c1（本 deck 私有，非框架层、非主题 SLOT）=====
+     文本容器六型（components.md §13）结构样式 + data-rotate active 加强
+     （c1 气质：accent 描边 + 微光，K 期设计口径——active 造型属主题/产物主权）。
+     v2 密度重做：标注层（typography §5：mono 12–16px + 低明度 40–65% +
+     短文本）全量落地为 .anno/.anno-sm 两款；颜色一律 var(--*)/color-mix()
+     引用 token，无字面 hex，无外部 url()。 */
+  .pg-title{font-family:var(--font-display);font-weight:900;line-height:1.15}
+  .pg-kicker{font-family:var(--font-mono);font-size:16px;font-weight:500;letter-spacing:0;color:color-mix(in srgb,var(--ink) 55%,transparent)}
+  .eyebrow{display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:15px;font-weight:500;letter-spacing:0;color:color-mix(in srgb,var(--ink) 50%,transparent)}
+  .note-line{font-family:var(--font-mono);font-size:15px;font-weight:500;letter-spacing:0;line-height:1.6;color:color-mix(in srgb,var(--ink) 50%,transparent)}
+  /* 标注层（K 期深化）：印刷肌理，不承载关键结论 */
+  .anno{font-family:var(--font-mono);font-size:13px;font-weight:500;letter-spacing:.08em;line-height:1.55;color:color-mix(in srgb,var(--ink) 46%,transparent)}
+  .anno-sm{font-size:12px;color:color-mix(in srgb,var(--ink) 42%,transparent)}
+  /* 版头/分节头：左题右注 */
+  .head-row{display:flex;justify-content:space-between;align-items:flex-end;gap:40px}
+  .anno-col{display:flex;flex-direction:column;gap:6px;align-items:flex-end;text-align:right;flex:none}
+  .lede-row{display:flex;justify-content:space-between;align-items:baseline;gap:40px}
+  .lede{font-size:20px;line-height:1.6;color:color-mix(in srgb,var(--ink) 72%,transparent)}
+  .cell-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+  /* 封面目录（nav-link 章节锚点，skeleton v7） */
+  .toc-row{display:flex;gap:12px}
+  a.nav-link{flex:1;display:flex;align-items:baseline;gap:14px;background:var(--paper-tint);padding:22px 24px;text-decoration:none;color:var(--ink)}
+  a.nav-link:hover{background:var(--accent);color:var(--accent-on)}
+  a.nav-link:hover .toc-no{color:var(--accent-on)}
+  .toc-no{font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--accent)}
+  .toc-name{font-size:22px;font-weight:600}
+  .toc-sub{margin-left:auto}
+  /* 数据带 ticker（§13） */
+  .ticker{display:flex;gap:24px}
+  .tick-cell{flex:1;min-height:520px;background:var(--paper-tint);padding:40px 36px;display:flex;flex-direction:column}
+  .tick-from{font-family:var(--font-display);font-weight:800;font-size:54px;line-height:1.1;color:color-mix(in srgb,var(--ink) 42%,transparent)}
+  .tick-arrow{font-family:var(--font-display);font-weight:800;font-size:34px;color:color-mix(in srgb,var(--ink) 42%,transparent)}
+  .tick-to{font-family:var(--font-display);font-weight:900;font-size:132px;line-height:1.05;color:var(--accent)}
+  .tick-desc{font-size:19px;line-height:1.6;color:color-mix(in srgb,var(--ink) 85%,transparent)}
+  /* 指标卡 metric-card（§13） */
+  .mcard-row{display:flex;gap:20px}
+  .mcard{flex:1;background:var(--paper-tint);padding:30px 28px;display:flex;flex-direction:column;gap:14px}
+  .mcard-title{font-size:28px;font-weight:800}
+  .mcard-desc{font-size:18px;line-height:1.6;color:color-mix(in srgb,var(--ink) 80%,transparent)}
+  .mend-track{height:10px;background:var(--ink-tint)}
+  .mend-fill{height:100%}
+  /* 流水线三段卡 + data-rotate active 加强（v2：清单项带 mono 序号 + 类型标签） */
+  .pipe-row{display:flex;gap:36px;position:relative;min-height:460px}
+  .pipe-card{flex:1;background:var(--paper-tint);padding:30px;display:flex;flex-direction:column;gap:14px}
+  .pipe-stage{font-size:32px;font-weight:800}
+  .pipe-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+  .pipe-list li{display:flex;align-items:baseline;gap:10px;font-size:18px;line-height:1.5}
+  .li-ord{font-family:var(--font-mono);font-size:12px;font-weight:500;width:24px;flex:none;color:color-mix(in srgb,var(--ink) 42%,transparent)}
+  .li-tag{margin-left:auto;font-family:var(--font-mono);font-size:12px;font-weight:500;letter-spacing:.06em;color:color-mix(in srgb,var(--ink) 42%,transparent)}
+  .pipe-link-label{position:absolute;top:44%;transform:translateX(-50%);z-index:2}
+  /* 指标条元信息行（p3 漏洞卡：LEAK RATE label + 值） */
+  .bar-meta{display:flex;justify-content:space-between;align-items:baseline}
+  .bar-val{font-family:var(--font-mono);font-size:14px;font-weight:600;color:color-mix(in srgb,var(--ink) 65%,transparent)}
+  .pipe-links{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  #pipeline [data-rotate-item]{outline:2px solid transparent;transition:outline-color .4s var(--ease-out),box-shadow .4s var(--ease-out),color .4s var(--ease-out)}
+  #pipeline [data-rotate-item].active{color:var(--ink);outline-color:var(--accent);box-shadow:0 0 28px color-mix(in srgb,var(--accent) 32%,transparent)}
+  #pipeline [data-rotate-item].active .pipe-stage{color:var(--accent)}
+  /* 字段行 kv-rows（§13）：横向状态带 + 纵向字段块两种形态 */
+  .kv-band{display:flex;gap:36px;background:var(--ink-tint);padding:22px 36px}
+  .kv-cell{flex:1;display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+  .kv-label{font-family:var(--font-mono);font-size:15px;font-weight:500;letter-spacing:0;color:color-mix(in srgb,var(--ink) 48%,transparent)}
+  .kv-value{font-size:21px;font-weight:600;white-space:nowrap}
+  .kv-block{background:var(--ink-tint);padding:36px 40px;display:flex;flex-direction:column}
+  .kv-row{display:flex;justify-content:space-between;align-items:baseline;gap:24px;padding:15px 0}
+  .kv-row + .kv-row{margin-top:6px}
+  /* 对照列 versus-cols（§13） */
+  .vcols{display:flex;gap:28px}
+  .vcol{flex:1;display:flex;flex-direction:column;gap:18px}
+  .vcol-head{display:flex;align-items:baseline;gap:16px;padding:22px 32px}
+  .vcol-head-accent{background:var(--accent);color:var(--accent-on)}
+  .vcol-head-tint{background:var(--paper-tint)}
+  .vrow{display:flex;flex-direction:column;gap:8px;padding:4px 32px}
+  .vrow-title{font-size:26px;font-weight:800}
+  .vrow-desc{font-size:18px;line-height:1.55;color:color-mix(in srgb,var(--ink) 78%,transparent)}
+  /* 堆栈层 stack-rows（§13，v2：右侧注记轨 stack-rail 承担 ④ 注层） */
+  .stack{display:flex;flex-direction:column;gap:18px}
+  .stack-row{display:flex;align-items:center;gap:40px;background:var(--paper-tint);padding:26px 36px}
+  .stack-name{font-size:34px;font-weight:800;white-space:nowrap}
+  .stack-items{display:flex;flex-wrap:wrap;align-items:center;gap:14px;font-size:19px;line-height:1.6;color:color-mix(in srgb,var(--ink) 88%,transparent)}
+  .stack-rail{margin-left:auto;flex:none;width:300px;display:flex;flex-direction:column;gap:8px}
+  .rail-row{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+  /* 状态 chips（p7）与产出物条（p7 out-strip） */
+  .chip-row{display:flex;gap:12px;flex-wrap:wrap}
+  .chip{font-family:var(--font-mono);font-size:13px;font-weight:500;letter-spacing:.08em;color:color-mix(in srgb,var(--ink) 55%,transparent);background:var(--paper-tint);padding:8px 14px}
+  .out-strip{display:flex;gap:20px}
+  .out-cell{flex:1;background:var(--paper-tint);padding:22px 24px;display:flex;flex-direction:column;gap:8px}
+  .out-name{font-size:20px;font-weight:700}
+  /* 注记块 note-block（§13）：信号方块作注记标头（母题作 eyebrow 位） */
+  .note-block{display:flex;align-items:flex-start;gap:12px}
+  /* 中文标注不加字距（标注层纪律）；置于末位保证覆盖 */
+  .anno-cn{letter-spacing:0}
+  /* 背景隐性运动（L4 全局款 · motion.md §6）：信号噪点底纹——data-URI
+     turbulence 细颗粒（无外部 url()、无字面 hex、无关键字色值），骨架
+     amb-noise 循环驱动（1.4s steps(2) 微 jitter，周期/幅度为骨架烧死值）。
+     封面让位 constellation fx（fx 优先不叠加），p2–p8 全铺。 */
+  .sig-noise{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:.04;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.6 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");background-size:160px 160px}
+  /* 装饰呼吸（§6 装饰家具层）：巨号页码超低频呼吸——周期 8s、opacity
+     摆幅 .08（骨架 amb 上限 摆幅≤.4 / 周期≥3s 内取最小）；reduced-motion 停用 */
+  .folio-breath{animation:folio-breath 8s var(--ease-loop) infinite}
+  @keyframes folio-breath{0%,100%{opacity:1}50%{opacity:.92}}
+  @media (prefers-reduced-motion: reduce){.folio-breath{animation:none}}
+  </style>
+
+  <!-- p1 封面：宣言谱系 · chars 巨字 + 橙色块 wipe-clip + constellation 仪式层 + 目录 nav-link ×5 -->
   <div class="slide-slot">
-    <section class="slide dark cover-page" data-slide-id="cover">
-      <h1 data-editable data-anim="chars" style="font-family:var(--font-display);font-size:120px;line-height:1.3;font-weight:700">标题写在这里</h1>
-      <p data-editable class="reveal" style="margin-top:32px;font-size:28px;opacity:.72">副标题 · 一句话说明这份幻灯片</p>
+    <section class="slide cover-page" data-slide-id="cover" data-animate="hero">
+      <canvas data-fx="constellation" data-editable-skip aria-hidden="true"></canvas>
+      <div style="height:100%;display:flex;flex-direction:column;justify-content:space-between">
+        <div>
+          <span class="mt-sig-bar" data-editable-skip></span>
+          <p data-editable class="pg-kicker" style="margin-top:28px">天弘基金 AI 大赛 · 2026</p>
+          <p data-editable class="anno" style="margin-top:14px">ISSUE 2026 · FORMAT 16:9 WEB · STACK ZERO-ASSET · VER V2.0</p>
+        </div>
+        <div>
+          <h1 class="pg-title" style="font-size:188px"><span data-editable data-anim="chars">SMART </span><span data-editable data-anim="chars" class="tt-outline">FORGE</span></h1>
+          <div data-anim="wipe-clip" style="margin-top:36px;display:inline-block;background:var(--accent);padding:18px 34px">
+            <span data-editable class="pg-title" style="font-size:88px;color:var(--accent-on)">内容流水线</span>
+          </div>
+          <p data-editable class="reveal" style="--d:.35s;margin-top:34px;font-size:28px;color:color-mix(in srgb,var(--ink) 75%,transparent)">自媒体全链路营销系统 —— 把内容生产从外包手艺变成平台流水线</p>
+        </div>
+        <nav aria-label="章节目录">
+          <p data-editable class="note-line" style="margin-bottom:16px">目录 · CONTENTS ｜ 点击跳转 · 数字键 1–5 直跳章节 · 0 回封面 · END 到末页</p>
+          <div class="toc-row">
+            <a class="nav-link" href="#pain"><span class="toc-no" data-editable>01</span><span class="toc-name" data-editable>背景与痛点</span><span class="toc-sub anno anno-sm" data-editable>WHY NOW</span></a>
+            <a class="nav-link" href="#pipeline"><span class="toc-no" data-editable>02</span><span class="toc-name" data-editable>流水线</span><span class="toc-sub anno anno-sm" data-editable>PIPELINE</span></a>
+            <a class="nav-link" href="#deep-wide"><span class="toc-no" data-editable>03</span><span class="toc-name" data-editable>创新×复用</span><span class="toc-sub anno anno-sm" data-editable>DEEP × WIDE</span></a>
+            <a class="nav-link" href="#arch"><span class="toc-no" data-editable>04</span><span class="toc-name" data-editable>架构</span><span class="toc-sub anno anno-sm" data-editable>STACK</span></a>
+            <a class="nav-link" href="#online"><span class="toc-no" data-editable>05</span><span class="toc-name" data-editable>实践案例</span><span class="toc-sub anno anno-sm" data-editable>LIVE CASE</span></a>
+          </div>
+        </nav>
+      </div>
     </section>
   </div>
 
+  <!-- p2 反差数据带：数据英雄谱系 · ticker 三格 from→to + kv 图例带 + note-block
+       （v2 密度：格内 FROM/TO 标尺 + 单位/差额/来源标注层全量落地） -->
   <div class="slide-slot">
-    <section class="slide" data-slide-id="example-content">
+    <section class="slide" data-slide-id="impact">
       <header class="masthead">
-        <span data-editable>SECTION 01</span>
-        <span data-editable>2026-09</span>
+        <span data-editable>SMART FORGE · CONTENT PIPELINE</span>
+        <span data-editable>02 / 08</span>
       </header>
-      <h2 data-editable class="reveal" style="font-size:72px;line-height:1.3">一页只讲一件事</h2>
-      <p data-editable class="reveal" style="--d:.15s;margin-top:40px;font-size:24px;line-height:1.8;max-width:1200px">正文示例。图片用 <code>&lt;img data-editable-image src="assets/example.jpg"&gt;</code>，生成时放占位图。</p>
+      <span class="mt-sig-folio folio-breath" data-editable-skip>02</span>
+      <span class="mt-sig-bar" data-editable-skip></span>
+      <div class="head-row" style="margin-top:20px">
+        <h2 data-editable data-anim="chars" class="pg-title" style="font-size:108px">三笔账，全归零</h2>
+        <div class="anno-col" style="margin-bottom:16px">
+          <p data-editable class="anno">UNIT · CNY / 条</p>
+          <p data-editable class="anno">READ · FROM → TO</p>
+          <p data-editable class="anno anno-cn">BASIS · 示例口径</p>
+        </div>
+      </div>
+      <div class="lede-row" style="margin-top:14px">
+        <p data-editable class="lede">外包报价与平台内产的同口径对照——三笔账全部归零。</p>
+        <p data-editable class="anno">TICKER · 01–03</p>
+      </div>
+      <div class="ticker" style="margin-top:28px">
+        <div class="tick-cell" style="min-height:470px;padding:32px 32px">
+          <div class="cell-head">
+            <p data-editable class="eyebrow">01 · 资讯成本</p>
+            <p data-editable class="anno">T-01</p>
+          </div>
+          <p data-editable class="anno anno-sm" style="margin-top:10px">TYPE · COST / 单条</p>
+          <p data-editable class="anno anno-sm" style="margin-top:22px">FROM</p>
+          <p style="margin-top:2px"><span data-editable class="tick-from tt-strike">¥2,000</span> <span class="tick-arrow" data-editable-skip>→</span></p>
+          <p data-editable class="anno anno-sm" style="margin-top:8px">TO</p>
+          <p data-editable data-anim="scale-pop" class="tick-to" style="margin-top:2px">¥0</p>
+          <p data-editable class="anno" style="margin-top:8px">DELTA · −100%</p>
+          <p data-editable class="tick-desc" style="margin-top:auto;padding-top:16px">外包单条资讯 → 平台内产</p>
+          <p data-editable class="note-line" style="margin-top:12px">单条图文资讯 · 外包报价口径</p>
+          <p data-editable class="anno anno-sm anno-cn" style="margin-top:8px">SRC · 示例口径</p>
+        </div>
+        <div class="tick-cell" style="min-height:470px;padding:32px 32px">
+          <div class="cell-head">
+            <p data-editable class="eyebrow">02 · 视频成本</p>
+            <p data-editable class="anno">T-02</p>
+          </div>
+          <p data-editable class="anno anno-sm" style="margin-top:10px">TYPE · COST / 90s</p>
+          <p data-editable class="anno anno-sm" style="margin-top:22px">FROM</p>
+          <p style="margin-top:2px"><span data-editable data-anim="count-up" data-from="0" class="tick-from tt-strike">¥20,000</span> <span class="tick-arrow" data-editable-skip>→</span></p>
+          <p data-editable class="anno anno-sm" style="margin-top:8px">TO</p>
+          <p data-editable data-anim="scale-pop" class="tick-to" style="margin-top:2px">¥0</p>
+          <p data-editable class="anno" style="margin-top:8px">DELTA · −100%</p>
+          <p data-editable class="tick-desc" style="margin-top:auto;padding-top:16px">近 2 万一条 90s 视频 → 一键产出</p>
+          <p data-editable class="note-line" style="margin-top:12px">90s 短视频 · 外包报价口径</p>
+          <p data-editable class="anno anno-sm anno-cn" style="margin-top:8px">SRC · 示例口径</p>
+        </div>
+        <div class="tick-cell" style="min-height:470px;padding:32px 32px">
+          <div class="cell-head">
+            <p data-editable class="eyebrow">03 · 工具收敛</p>
+            <p data-editable class="anno">T-03</p>
+          </div>
+          <p data-editable class="anno anno-sm" style="margin-top:10px">TYPE · COUNT / 款</p>
+          <p data-editable class="anno anno-sm" style="margin-top:22px">FROM</p>
+          <p style="margin-top:2px"><span data-editable class="tick-from tt-strike">5+</span> <span class="tick-arrow" data-editable-skip>→</span></p>
+          <p data-editable class="anno anno-sm" style="margin-top:8px">TO</p>
+          <p data-editable data-anim="scale-pop" class="tick-to" style="margin-top:2px">1</p>
+          <p data-editable class="anno" style="margin-top:8px">DELTA · −80%</p>
+          <p data-editable class="tick-desc" style="margin-top:auto;padding-top:16px">外部工具 → 统一工作台</p>
+          <p data-editable class="note-line" style="margin-top:12px">全链路外部工具计数</p>
+          <p data-editable class="anno anno-sm anno-cn" style="margin-top:8px">SRC · 示例口径</p>
+        </div>
+      </div>
+      <div class="kv-band" style="margin-top:22px">
+        <div class="kv-cell"><span data-editable class="kv-label">BEFORE</span><span data-editable class="kv-value">外包报价</span></div>
+        <div class="kv-cell"><span data-editable class="kv-label">AFTER</span><span data-editable class="kv-value">平台内产</span></div>
+        <div class="kv-cell"><span data-editable class="kv-label">BILLS</span><span data-editable class="kv-value">3 笔账</span></div>
+        <div class="kv-cell"><span data-editable class="kv-label">DELTA</span><span data-editable class="kv-value">全部归零</span></div>
+        <div class="kv-cell"><span data-editable class="kv-label">BASIS</span><span data-editable class="kv-value">示例口径</span></div>
+        <div class="kv-cell"><span data-editable class="kv-label">FLOW</span><span data-editable class="kv-value">FROM → TO</span></div>
+      </div>
+      <div class="note-block" style="margin-top:18px">
+        <span class="mt-sig-mark" data-editable-skip style="flex:none;margin-top:6px"></span>
+        <div>
+          <p data-editable class="note-line">注：成本为单条物料外包报价与平台内产口径对比；工具数为内容生产全链路所用外部工具计数。</p>
+          <p data-editable class="anno anno-cn" style="margin-top:6px">NOTE · DELTA 为 FROM → TO 变化幅度 · 示例口径</p>
+        </div>
+      </div>
       <footer class="mastfoot">
-        <span data-editable>HTML PPTX</span>
-        <span data-editable>PAGE 02</span>
+        <span data-editable style="letter-spacing:0">天弘基金 AI 大赛 · 2026</span>
+        <span data-editable>DATA · THREE BILLS</span>
       </footer>
+      <div class="sig-noise amb-noise" data-editable-skip aria-hidden="true"></div>
+    </section>
+  </div>
+
+  <!-- p3 章节 01 背景与痛点：3 驱动（metric-card）+ 4 漏洞（metric-card + mend-bar） -->
+  <div class="slide-slot">
+    <section class="slide" data-slide-id="pain" data-chapter="背景与痛点" id="pain">
+      <header class="masthead">
+        <span data-editable style="letter-spacing:0">01 · 背景与痛点</span>
+        <span data-editable>03 / 08</span>
+      </header>
+      <span class="mt-sig-folio folio-breath" data-editable-skip>03</span>
+      <span class="mt-sig-bar" data-editable-skip></span>
+      <div class="head-row" style="margin-top:20px">
+        <h2 data-editable data-anim="chars" class="pg-title" style="font-size:96px">三重驱动，四处漏损</h2>
+        <div class="anno-col" style="margin-bottom:12px">
+          <p data-editable class="anno">DRIVERS ×3 · LEAKS ×4</p>
+          <p data-editable class="anno">TARGET · ALL → 0%</p>
+        </div>
+      </div>
+      <p data-editable class="lede" style="margin-top:12px">监管、流量、习惯三重驱动已经就位；现状链路仍有四处漏损——修复目标全部归零。</p>
+      <div class="cell-head" style="margin-top:20px">
+        <p data-editable class="eyebrow">DRIVERS · 三重驱动 · WHY NOW</p>
+        <p data-editable class="anno">TYPE · EXT ×2 / INT ×1</p>
+      </div>
+      <div class="mcard-row" style="margin-top:12px">
+        <div class="mcard" data-anim>
+          <p class="eyebrow"><span class="mt-sig-mark" data-editable-skip></span><span data-editable>DRIVER · 01</span></p>
+          <p data-editable class="mcard-title">新规约束</p>
+          <p data-editable class="mcard-desc">监管要求内容全程留痕</p>
+          <p data-editable class="mcard-desc" style="color:color-mix(in srgb,var(--ink) 60%,transparent)">→ 合规能力成为入场门槛</p>
+          <p data-editable class="anno" style="margin-top:auto">TYPE · EXTERNAL</p>
+          <p data-editable class="note-line">REGULATION</p>
+        </div>
+        <div class="mcard" data-anim>
+          <p class="eyebrow"><span class="mt-sig-mark" data-editable-skip></span><span data-editable>DRIVER · 02</span></p>
+          <p data-editable class="mcard-title">流量增长</p>
+          <p data-editable class="mcard-desc">自媒体渠道获客占比持续上升</p>
+          <p data-editable class="mcard-desc" style="color:color-mix(in srgb,var(--ink) 60%,transparent)">→ 内容生产需求持续放大</p>
+          <p data-editable class="anno" style="margin-top:auto">TYPE · EXTERNAL</p>
+          <p data-editable class="note-line">TRAFFIC</p>
+        </div>
+        <div class="mcard" data-anim>
+          <p class="eyebrow"><span class="mt-sig-mark" data-editable-skip></span><span data-editable>DRIVER · 03</span></p>
+          <p data-editable class="mcard-title">习惯迁移</p>
+          <p data-editable class="mcard-desc">团队已习惯 AI 辅助创作</p>
+          <p data-editable class="mcard-desc" style="color:color-mix(in srgb,var(--ink) 60%,transparent)">→ 工具化生产已被接受</p>
+          <p data-editable class="anno" style="margin-top:auto">TYPE · INTERNAL</p>
+          <p data-editable class="note-line">ADOPTION</p>
+        </div>
+      </div>
+      <div class="cell-head" style="margin-top:20px">
+        <p data-editable class="eyebrow">LEAKS · 四大漏洞 —— 修复目标：全部归零</p>
+        <p data-editable class="anno">MEND-BAR · 双态修复 ×4</p>
+      </div>
+      <div class="mcard-row" style="margin-top:12px">
+        <div class="mcard" data-anim>
+          <p data-editable class="eyebrow">LEAK · 01</p>
+          <p data-editable class="mcard-title">成本不可控</p>
+          <p data-editable class="mcard-desc"><span class="tt-mark">¥2K / 条</span>资讯 · ¥20K / 90s 视频</p>
+          <div class="bar-meta" style="margin-top:auto">
+            <span data-editable class="anno">LEAK RATE</span>
+            <span data-editable class="bar-val">94% → 0%</span>
+          </div>
+          <div class="mend-track" data-editable-skip><div class="mend-fill" data-anim="mend-bar" style="--from:94;--val:0"></div></div>
+          <p data-editable class="anno anno-sm anno-cn">SRC · 现状评估 · 示例口径</p>
+        </div>
+        <div class="mcard" data-anim>
+          <p data-editable class="eyebrow">LEAK · 02</p>
+          <p data-editable class="mcard-title">链路碎片化</p>
+          <p data-editable class="mcard-desc"><span class="tt-mark">≥5 款工具</span> · 无统一工作台</p>
+          <div class="bar-meta" style="margin-top:auto">
+            <span data-editable class="anno">LEAK RATE</span>
+            <span data-editable class="bar-val">86% → 0%</span>
+          </div>
+          <div class="mend-track" data-editable-skip><div class="mend-fill" data-anim="mend-bar" style="--from:86;--val:0"></div></div>
+          <p data-editable class="anno anno-sm anno-cn">SRC · 现状评估 · 示例口径</p>
+        </div>
+        <div class="mcard" data-anim>
+          <p data-editable class="eyebrow">LEAK · 03</p>
+          <p data-editable class="mcard-title">资产无法沉淀</p>
+          <p data-editable class="mcard-desc"><span class="tt-mark">0 组织级素材库</span> · 0 提示词库</p>
+          <div class="bar-meta" style="margin-top:auto">
+            <span data-editable class="anno">LEAK RATE</span>
+            <span data-editable class="bar-val">100% → 0%</span>
+          </div>
+          <div class="mend-track" data-editable-skip><div class="mend-fill" data-anim="mend-bar" style="--from:100;--val:0"></div></div>
+          <p data-editable class="anno anno-sm anno-cn">SRC · 现状评估 · 示例口径</p>
+        </div>
+        <div class="mcard" data-anim>
+          <p data-editable class="eyebrow">LEAK · 04</p>
+          <p data-editable class="mcard-title">合规难闭环</p>
+          <p data-editable class="mcard-desc"><span class="tt-mark">无全程留痕</span> · 难以追溯</p>
+          <div class="bar-meta" style="margin-top:auto">
+            <span data-editable class="anno">LEAK RATE</span>
+            <span data-editable class="bar-val">78% → 0%</span>
+          </div>
+          <div class="mend-track" data-editable-skip><div class="mend-fill" data-anim="mend-bar" style="--from:78;--val:0"></div></div>
+          <p data-editable class="anno anno-sm anno-cn">SRC · 现状评估 · 示例口径</p>
+        </div>
+      </div>
+      <div class="note-block" style="margin-top:12px">
+        <span class="mt-sig-mark" data-editable-skip style="flex:none;margin-top:6px"></span>
+        <div>
+          <p data-editable class="note-line">注：漏损率为各环节流失占比的现状评估（示例口径）；修复条表达 现状 → 目标，几何不随文字改。</p>
+          <p data-editable class="anno" style="margin-top:6px">MEND-BAR · --FROM → --VAL · 双态</p>
+        </div>
+      </div>
+      <footer class="mastfoot">
+        <span data-editable style="letter-spacing:0">天弘基金 AI 大赛 · 2026</span>
+        <span data-editable>WHY NOW · DRIVERS × LEAKS</span>
+      </footer>
+      <div class="sig-noise amb-noise" data-editable-skip aria-hidden="true"></div>
+    </section>
+  </div>
+
+  <!-- p4 章节 02 流水线：data-rotate 三段卡 + draw-line 连接 + kv-rows 系统状态带 -->
+  <div class="slide-slot">
+    <section class="slide" data-slide-id="pipeline" data-chapter="流水线" id="pipeline">
+      <header class="masthead">
+        <span data-editable style="letter-spacing:0">02 · 流水线</span>
+        <span data-editable>04 / 08</span>
+      </header>
+      <span class="mt-sig-folio folio-breath" data-editable-skip>04</span>
+      <span class="mt-sig-bar" data-editable-skip></span>
+      <div class="head-row" style="margin-top:20px">
+        <h2 data-editable data-anim="chars" class="pg-title" style="font-size:96px">需求进，物料出</h2>
+        <div class="anno-col" style="margin-bottom:12px">
+          <p data-editable class="anno">STAGES · 3</p>
+          <p data-editable class="anno">ITEMS · 4 + 7 + 4</p>
+        </div>
+      </div>
+      <div class="lede-row" style="margin-top:14px">
+        <p data-editable class="lede">业务需求进，四类物料出——一条流水线完成全部内容生产。</p>
+        <p data-editable class="anno">FLOW · IN → FORGE → OUT</p>
+      </div>
+      <div class="pipe-row" data-rotate style="margin-top:30px">
+        <svg class="pipe-links" viewBox="0 0 1680 460" preserveAspectRatio="none" data-editable-skip aria-hidden="true">
+          <path data-anim="draw-line" d="M540 230 L570 230 M563 222 L572 230 L563 238" fill="none" stroke="color-mix(in srgb,var(--ink) 55%,transparent)" stroke-width="3"/>
+          <path data-anim="draw-line" d="M1110 230 L1140 230 M1133 222 L1142 230 L1133 238" fill="none" stroke="color-mix(in srgb,var(--ink) 55%,transparent)" stroke-width="3"/>
+        </svg>
+        <span data-editable class="anno anno-sm pipe-link-label" style="left:554px">EXTRACT</span>
+        <span data-editable class="anno anno-sm pipe-link-label" style="left:1126px">PRODUCE</span>
+        <div class="pipe-card" data-rotate-item>
+          <div class="cell-head">
+            <p data-editable class="eyebrow">STAGE 01 · INPUT</p>
+            <p data-editable class="anno">PHASE 1/3</p>
+          </div>
+          <p data-editable class="pipe-stage">需求输入</p>
+          <ul class="pipe-list">
+            <li><span data-editable class="li-ord">01</span><span data-editable>业务需求</span><span data-editable class="li-tag">BIZ</span></li>
+            <li><span data-editable class="li-ord">02</span><span data-editable>市场行情</span><span data-editable class="li-tag">MKT</span></li>
+            <li><span data-editable class="li-ord">03</span><span data-editable>热点事件</span><span data-editable class="li-tag">HOT</span></li>
+            <li><span data-editable class="li-ord">04</span><span data-editable>行业观点</span><span data-editable class="li-tag">OP</span></li>
+          </ul>
+          <div class="cell-head" style="margin-top:auto">
+            <p data-editable class="note-line">4 类原料</p>
+            <p data-editable class="anno anno-sm anno-cn">VIA · 业务侧提交</p>
+          </div>
+        </div>
+        <div class="pipe-card" data-rotate-item>
+          <div class="cell-head">
+            <p data-editable class="eyebrow">STAGE 02 · FORGE</p>
+            <p data-editable class="anno">PHASE 2/3</p>
+          </div>
+          <p data-editable class="pipe-stage">智能锻造</p>
+          <ul class="pipe-list">
+            <li><span data-editable class="li-ord">01</span><span data-editable>识图改字</span><span data-editable class="li-tag">IMG</span></li>
+            <li><span data-editable class="li-ord">02</span><span data-editable>局部重绘</span><span data-editable class="li-tag">IMG</span></li>
+            <li><span data-editable class="li-ord">03</span><span data-editable>多图融合</span><span data-editable class="li-tag">IMG</span></li>
+            <li><span data-editable class="li-ord">04</span><span data-editable>多尺寸批量</span><span data-editable class="li-tag">BATCH</span></li>
+            <li><span data-editable class="li-ord">05</span><span data-editable>合规审核</span><span data-editable class="li-tag">GATE</span></li>
+            <li><span data-editable class="li-ord">06</span><span data-editable>全程留痕</span><span data-editable class="li-tag">LOG</span></li>
+            <li><span data-editable class="li-ord">07</span><span data-editable>提示词沉淀复用</span><span data-editable class="li-tag">REUSE</span></li>
+          </ul>
+          <div class="cell-head" style="margin-top:auto">
+            <p data-editable class="note-line">7 道工序</p>
+            <p data-editable class="anno anno-sm anno-cn">VIA · AI 工序链</p>
+          </div>
+        </div>
+        <div class="pipe-card" data-rotate-item>
+          <div class="cell-head">
+            <p data-editable class="eyebrow">STAGE 03 · OUTPUT</p>
+            <p data-editable class="anno">PHASE 3/3</p>
+          </div>
+          <p data-editable class="pipe-stage">成品输出</p>
+          <ul class="pipe-list">
+            <li><span data-editable class="li-ord">01</span><span data-editable>文字资讯</span><span data-editable class="li-tag">TEXT</span></li>
+            <li><span data-editable class="li-ord">02</span><span data-editable>小红书轮播图</span><span data-editable class="li-tag">IMG</span></li>
+            <li><span data-editable class="li-ord">03</span><span data-editable>产品海报</span><span data-editable class="li-tag">IMG</span></li>
+            <li><span data-editable class="li-ord">04</span><span data-editable>短视频物料</span><span data-editable class="li-tag">VIDEO</span></li>
+          </ul>
+          <div class="cell-head" style="margin-top:auto">
+            <p data-editable class="note-line">4 类物料</p>
+            <p data-editable class="anno anno-sm anno-cn">VIA · 一键导出</p>
+          </div>
+        </div>
+      </div>
+      <div class="cell-head" style="margin-top:26px">
+        <p data-editable class="eyebrow">SYS · 系统状态带</p>
+        <p data-editable class="anno">LIVE · 实时</p>
+      </div>
+      <div class="kv-band" style="margin-top:12px">
+        <div class="kv-cell"><span data-editable class="kv-label">STATUS</span><span data-editable class="kv-value" style="color:var(--accent)">RUNNING</span></div>
+        <div class="kv-cell"><span data-editable class="kv-label">COMPLETION</span><span data-editable class="kv-value">100%</span></div>
+        <div class="kv-cell"><span data-editable class="kv-label">MODALITY</span><span data-editable class="kv-value">4 类模态</span></div>
+        <div class="kv-cell"><span data-editable class="kv-label">COVERAGE</span><span data-editable class="kv-value">覆盖 6 岗位</span></div>
+        <div class="kv-cell"><span data-editable class="kv-label">COMPLIANCE</span><span data-editable class="kv-value">合规全链路</span></div>
+      </div>
+      <div class="note-block" style="margin-top:16px">
+        <span class="mt-sig-mark" data-editable-skip style="flex:none;margin-top:6px"></span>
+        <p data-editable class="note-line">注：序号为流水线内顺序；标签为工序 / 物料类型（IMG 图像 · BATCH 批量 · GATE 合规闸 · LOG 留痕 · REUSE 复用）。</p>
+      </div>
+      <footer class="mastfoot">
+        <span data-editable style="letter-spacing:0">天弘基金 AI 大赛 · 2026</span>
+        <span data-editable>PIPELINE · INPUT → FORGE → OUTPUT</span>
+      </footer>
+      <div class="sig-noise amb-noise" data-editable-skip aria-hidden="true"></div>
+    </section>
+  </div>
+
+  <!-- p5 章节 03 创新×复用：versus-cols 对照列（DEEP accent 档单焦点 / WIDE 灰档） -->
+  <div class="slide-slot">
+    <section class="slide" data-slide-id="deep-wide" data-chapter="创新×复用" id="deep-wide">
+      <header class="masthead">
+        <span data-editable style="letter-spacing:0">03 · 创新×复用</span>
+        <span data-editable>05 / 08</span>
+      </header>
+      <span class="mt-sig-folio folio-breath" data-editable-skip>05</span>
+      <span class="mt-sig-bar" data-editable-skip></span>
+      <div class="head-row" style="margin-top:20px">
+        <h2 data-editable data-anim="chars" class="pg-title" style="font-size:96px">创新做深，能力做宽</h2>
+        <div class="anno-col" style="margin-bottom:12px">
+          <p data-editable class="anno">COMPARE · 3 × 3</p>
+          <p data-editable class="anno anno-cn">MAP · 对应三层架构</p>
+        </div>
+      </div>
+      <div class="lede-row" style="margin-top:14px">
+        <p data-editable class="lede">创新纵深与复用广度逐条对照——做深三条，做宽三条。</p>
+        <p data-editable class="anno">COLS · DEEP / WIDE</p>
+      </div>
+      <div class="vcols" style="margin-top:28px">
+        <div class="vcol" data-anim="left">
+          <div class="vcol-head vcol-head-accent" style="flex-wrap:wrap">
+            <span data-editable style="font-family:var(--font-mono);font-size:16px;font-weight:600">DEEP</span>
+            <span data-editable style="font-size:26px;font-weight:800">创新纵深 ×3</span>
+            <span data-editable class="anno" style="margin-left:auto;color:color-mix(in srgb,var(--accent-on) 72%,transparent)">3 ITEMS</span>
+            <span data-editable class="anno anno-sm anno-cn" style="flex-basis:100%;color:color-mix(in srgb,var(--accent-on) 60%,transparent)">金融业务 · 做深做透</span>
+          </div>
+          <div class="vrow">
+            <div class="cell-head">
+              <p data-editable class="anno">DEEP · 01</p>
+              <p data-editable class="anno anno-sm">KEY · VERTICAL</p>
+            </div>
+            <p data-editable class="vrow-title">业务场景层 · 垂类定制</p>
+            <p data-editable class="vrow-desc">面向基金业务场景逐一定制内容生产能力</p>
+            <p data-editable class="anno anno-sm anno-cn">MAP · → L03 业务技能</p>
+          </div>
+          <div class="vrow">
+            <div class="cell-head">
+              <p data-editable class="anno">DEEP · 02</p>
+              <p data-editable class="anno anno-sm">KEY · WORKFLOW</p>
+            </div>
+            <p data-editable class="vrow-title">业务编排层 · 链路闭环</p>
+            <p data-editable class="vrow-desc">从需求到物料的完整链路在编排层内闭环</p>
+            <p data-editable class="anno anno-sm anno-cn">MAP · → L02 中台能力</p>
+          </div>
+          <div class="vrow">
+            <div class="cell-head">
+              <p data-editable class="anno">DEEP · 03</p>
+              <p data-editable class="anno anno-sm">KEY · REPLICATE</p>
+            </div>
+            <p data-editable class="vrow-title">商用模型 · 快速复刻</p>
+            <p data-editable class="vrow-desc">成熟商用模型能力按场景快速复刻落地</p>
+            <p data-editable class="anno anno-sm anno-cn">MAP · → L01 技术基座</p>
+          </div>
+        </div>
+        <div class="vcol" data-anim="right">
+          <div class="vcol-head vcol-head-tint" style="flex-wrap:wrap">
+            <span data-editable style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:color-mix(in srgb,var(--ink) 55%,transparent)">WIDE</span>
+            <span data-editable style="font-size:26px;font-weight:800">复用广度 ×3</span>
+            <span data-editable class="anno" style="margin-left:auto">3 ITEMS</span>
+            <span data-editable class="anno anno-sm anno-cn" style="flex-basis:100%">能力沉淀 · 横向可拓</span>
+          </div>
+          <div class="vrow">
+            <div class="cell-head">
+              <p data-editable class="anno">WIDE · 01</p>
+              <p data-editable class="anno anno-sm">KEY · ASSETS</p>
+            </div>
+            <p data-editable class="vrow-title">内容资产 · 全局复用</p>
+            <p data-editable class="vrow-desc">素材与提示词沉淀为组织级资产，全局调用</p>
+            <p data-editable class="anno anno-sm anno-cn">MAP · → L02 资产库</p>
+          </div>
+          <div class="vrow">
+            <div class="cell-head">
+              <p data-editable class="anno">WIDE · 02</p>
+              <p data-editable class="anno anno-sm">KEY · MIDDLEWARE</p>
+            </div>
+            <p data-editable class="vrow-title">业务能力 · 封装复用</p>
+            <p data-editable class="vrow-desc">识图改字、局部重绘等能力封装为标准组件</p>
+            <p data-editable class="anno anno-sm anno-cn">MAP · → L02 中台能力</p>
+          </div>
+          <div class="vrow">
+            <div class="cell-head">
+              <p data-editable class="anno">WIDE · 03</p>
+              <p data-editable class="anno anno-sm">KEY · FOUNDATION</p>
+            </div>
+            <p data-editable class="vrow-title">技术底座 · 统一共建</p>
+            <p data-editable class="vrow-desc">模型集群与算力底座统一建设，全团队共享</p>
+            <p data-editable class="anno anno-sm anno-cn">MAP · → L01 技术基座</p>
+          </div>
+        </div>
+      </div>
+      <div class="kv-band" style="margin-top:22px">
+        <div class="kv-cell"><span data-editable class="kv-label">COMPARE</span><span data-editable class="kv-value">3 × 3 对照</span></div>
+        <div class="kv-cell"><span data-editable class="kv-label">DEEP</span><span data-editable class="kv-value">纵深 ×3</span></div>
+        <div class="kv-cell"><span data-editable class="kv-label">WIDE</span><span data-editable class="kv-value">横向 ×3</span></div>
+        <div class="kv-cell"><span data-editable class="kv-label">MAP</span><span data-editable class="kv-value">→ L01–L03</span></div>
+        <div class="kv-cell"><span data-editable class="kv-label">SUM</span><span data-editable class="kv-value">做深 × 做宽</span></div>
+      </div>
+      <div class="note-block" style="margin-top:14px">
+        <span class="mt-sig-mark" data-editable-skip style="flex:none;margin-top:6px"></span>
+        <p data-editable class="note-line">注：KEY 为条目能力关键词；MAP 为该条目在三层架构（04 · 架构）中的落点。</p>
+      </div>
+      <footer class="mastfoot">
+        <span data-editable style="letter-spacing:0">天弘基金 AI 大赛 · 2026</span>
+        <span data-editable>DEEP × WIDE</span>
+      </footer>
+      <div class="sig-noise amb-noise" data-editable-skip aria-hidden="true"></div>
+    </section>
+  </div>
+
+  <!-- p6 章节 04 架构：stack-rows 三层堆栈（wipe-clip 通栏揭示） -->
+  <div class="slide-slot">
+    <section class="slide" data-slide-id="arch" data-chapter="架构" id="arch">
+      <header class="masthead">
+        <span data-editable style="letter-spacing:0">04 · 架构</span>
+        <span data-editable>06 / 08</span>
+      </header>
+      <span class="mt-sig-folio folio-breath" data-editable-skip>06</span>
+      <span class="mt-sig-bar" data-editable-skip></span>
+      <div class="head-row" style="margin-top:20px">
+        <h2 data-editable data-anim="chars" class="pg-title" style="font-size:96px">三层架构，统一底座</h2>
+        <div class="anno-col" style="margin-bottom:12px">
+          <p data-editable class="anno">LAYERS · 03–01</p>
+          <p data-editable class="anno">ORDER · TOP → DOWN</p>
+        </div>
+      </div>
+      <div class="lede-row" style="margin-top:14px">
+        <p data-editable class="lede">业务技能在上、中台能力居中、技术基座托底——全团队统一共建。</p>
+        <p data-editable class="anno">STACK · 3 LAYERS</p>
+      </div>
+      <div class="kv-band" style="margin-top:24px">
+        <div class="kv-cell"><span data-editable class="kv-label">L03</span><span data-editable class="kv-value">业务面 · 技能层</span></div>
+        <div class="kv-cell"><span data-editable class="kv-label">L02</span><span data-editable class="kv-value">平台面 · 能力层</span></div>
+        <div class="kv-cell"><span data-editable class="kv-label">L01</span><span data-editable class="kv-value">基座面 · 底座层</span></div>
+      </div>
+      <div class="stack" style="margin-top:24px">
+        <div class="stack-row" data-anim="wipe-clip">
+          <div>
+            <p data-editable class="eyebrow">LAYER 03</p>
+            <p data-editable class="stack-name" style="margin-top:10px">业务技能</p>
+            <p data-editable class="anno" style="margin-top:8px">BUSINESS SKILLS</p>
+          </div>
+          <div class="stack-items">
+            <span data-editable>文本资讯</span><span class="mt-sig-mark" data-editable-skip></span>
+            <span data-editable>小红书轮播</span><span class="mt-sig-mark" data-editable-skip></span>
+            <span data-editable>产品海报</span><span class="mt-sig-mark" data-editable-skip></span>
+            <span data-editable>短视频</span><span class="mt-sig-mark" data-editable-skip></span>
+            <span data-editable>行情陪伴</span><span class="mt-sig-mark" data-editable-skip></span>
+            <span data-editable>投教</span>
+          </div>
+          <div class="stack-rail">
+            <div class="rail-row"><span data-editable class="anno">CNT</span><span data-editable class="kv-value">6 项</span></div>
+            <div class="rail-row"><span data-editable class="anno">FOR</span><span data-editable class="kv-value">业务一线</span></div>
+            <div class="rail-row"><span data-editable class="anno">REUSE</span><span data-editable class="kv-value">全局复用</span></div>
+          </div>
+        </div>
+        <div class="stack-row" data-anim="wipe-clip">
+          <div>
+            <p data-editable class="eyebrow">LAYER 02</p>
+            <p data-editable class="stack-name" style="margin-top:10px">中台能力</p>
+            <p data-editable class="anno" style="margin-top:8px">MIDDLE PLATFORM</p>
+          </div>
+          <div class="stack-items">
+            <span data-editable>文本编辑器</span><span class="mt-sig-mark" data-editable-skip></span>
+            <span data-editable>图片编辑器</span><span class="mt-sig-mark" data-editable-skip></span>
+            <span data-editable>视频编辑器</span><span class="mt-sig-mark" data-editable-skip></span>
+            <span data-editable>权限</span><span class="mt-sig-mark" data-editable-skip></span>
+            <span data-editable>合规</span><span class="mt-sig-mark" data-editable-skip></span>
+            <span data-editable>资产库</span>
+          </div>
+          <div class="stack-rail">
+            <div class="rail-row"><span data-editable class="anno">CNT</span><span data-editable class="kv-value">6 个</span></div>
+            <div class="rail-row"><span data-editable class="anno">FORM</span><span data-editable class="kv-value">平台化封装</span></div>
+            <div class="rail-row"><span data-editable class="anno">GATE</span><span data-editable class="kv-value">权限 · 合规</span></div>
+          </div>
+        </div>
+        <div class="stack-row" data-anim="wipe-clip">
+          <div>
+            <p data-editable class="eyebrow">LAYER 01</p>
+            <p data-editable class="stack-name" style="margin-top:10px">技术基座</p>
+            <p data-editable class="anno" style="margin-top:8px">FOUNDATION MODEL</p>
+          </div>
+          <div class="stack-items">
+            <span data-editable>大模型集群</span><span class="mt-sig-mark" data-editable-skip></span>
+            <span data-editable>算力调度</span><span class="mt-sig-mark" data-editable-skip></span>
+            <span data-editable>存储集成</span><span class="mt-sig-mark" data-editable-skip></span>
+            <span data-editable>模型路由</span>
+          </div>
+          <div class="stack-rail">
+            <div class="rail-row"><span data-editable class="anno">CNT</span><span data-editable class="kv-value">4 层</span></div>
+            <div class="rail-row"><span data-editable class="anno">BUILD</span><span data-editable class="kv-value">统一共建</span></div>
+            <div class="rail-row"><span data-editable class="anno">SHARE</span><span data-editable class="kv-value">全团队共享</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="note-block" style="margin-top:16px">
+        <span class="mt-sig-mark" data-editable-skip style="flex:none;margin-top:6px"></span>
+        <p data-editable class="note-line">注：层号自上而下 L03 → L01；右侧注记为各层规模与定位（示例口径）。</p>
+      </div>
+      <footer class="mastfoot">
+        <span data-editable style="letter-spacing:0">天弘基金 AI 大赛 · 2026</span>
+        <span data-editable>STACK · L03 / L02 / L01</span>
+      </footer>
+      <div class="sig-noise amb-noise" data-editable-skip aria-hidden="true"></div>
+    </section>
+  </div>
+
+  <!-- p7 章节 05 实践案例：系统已上线宣言 + 元信息 kv-rows + ring 完成度 -->
+  <div class="slide-slot">
+    <section class="slide" data-slide-id="online" data-chapter="实践案例" id="online">
+      <header class="masthead">
+        <span data-editable style="letter-spacing:0">05 · 实践案例</span>
+        <span data-editable>07 / 08</span>
+      </header>
+      <span class="mt-sig-folio folio-breath" data-editable-skip>07</span>
+      <div style="height:100%;display:flex;flex-direction:column">
+        <div style="flex:1;display:flex;gap:56px;min-height:0">
+          <div style="flex:1.05;display:flex;flex-direction:column">
+            <span class="mt-sig-bar" data-editable-skip></span>
+            <p data-editable class="eyebrow" style="margin-top:20px">CASE · SYSTEM LIVE</p>
+            <h2 data-editable data-anim="chars" class="pg-title" style="margin-top:14px;font-size:128px">系统已上线</h2>
+            <p data-editable class="reveal lede" style="--d:.2s;margin-top:16px;font-size:22px;line-height:1.7">SmartForge 内容流水线已在全岗位运行——内容生产从外包手艺变成平台流水线。</p>
+            <div class="chip-row" style="margin-top:18px">
+              <span data-editable class="chip">STATUS · RUNNING</span>
+              <span data-editable class="chip">MODALITY · 4 类</span>
+              <span data-editable class="chip">ROLES · 6 岗位</span>
+              <span data-editable class="chip anno-cn">TRACE · 全程留痕</span>
+              <span data-editable class="chip anno-cn">ENV · 内部环境</span>
+            </div>
+            <div style="margin-top:auto;display:flex;align-items:center;gap:28px">
+              <svg width="132" height="132" viewBox="0 0 132 132" data-editable-skip aria-hidden="true">
+                <circle cx="66" cy="66" r="56" fill="none" stroke="var(--paper-tint)" stroke-width="10"/>
+                <circle data-anim="ring" pathLength="100" style="--val:100" cx="66" cy="66" r="56" fill="none" stroke="var(--accent)" stroke-width="10" transform="rotate(-90 66 66)"/>
+              </svg>
+              <div>
+                <p data-editable style="font-size:34px;font-weight:800">完成度 100%</p>
+                <p data-editable class="note-line" style="margin-top:8px">COMPLETION · 已上线运行</p>
+                <p data-editable class="anno anno-sm" style="margin-top:6px">TARGET · 100 / 100</p>
+              </div>
+            </div>
+            <div class="kv-block" style="margin-top:22px;padding:22px 28px">
+              <div class="cell-head">
+                <span data-editable class="anno">ACCESS · 访问</span>
+                <span data-editable class="anno anno-sm anno-cn">占位地址 · 交付替换</span>
+              </div>
+              <p data-editable style="margin-top:8px;font-size:21px;font-weight:600">smartforge.internal（占位）</p>
+            </div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+            <div class="kv-block">
+              <div class="cell-head" style="margin-bottom:20px">
+                <p data-editable class="eyebrow">SYSTEM META · 元信息</p>
+                <p data-editable class="anno">8 FIELDS</p>
+              </div>
+              <div class="kv-row"><span data-editable class="kv-label">ISSUE</span><span data-editable class="kv-value">天弘基金 AI 大赛 · 2026</span></div>
+              <div class="kv-row"><span data-editable class="kv-label">LAUNCH</span><span data-editable class="kv-value">2026 · 已上线</span></div>
+              <div class="kv-row"><span data-editable class="kv-label">COMPLETION</span><span data-editable class="kv-value">100% · 已上线</span></div>
+              <div class="kv-row"><span data-editable class="kv-label">MODALITY</span><span data-editable class="kv-value">4 类模态</span></div>
+              <div class="kv-row"><span data-editable class="kv-label">ROLES</span><span data-editable class="kv-value">覆盖 6 岗位</span></div>
+              <div class="kv-row"><span data-editable class="kv-label">REUSE</span><span data-editable class="kv-value">提示词与素材全局沉淀</span></div>
+              <div class="kv-row"><span data-editable class="kv-label">COMPLIANCE</span><span data-editable class="kv-value">全链路留痕可追溯</span></div>
+              <div class="kv-row"><span data-editable class="kv-label">ACCESS</span><span data-editable class="kv-value">smartforge.internal（占位）</span></div>
+              <p data-editable class="anno anno-cn" style="margin-top:16px">META · 系统元信息 · 状态为上线时快照</p>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:26px;flex:none">
+          <div class="cell-head">
+            <p data-editable class="eyebrow">OUTPUT · 已上线产出</p>
+            <p data-editable class="anno">FMT · TEXT / IMG / VIDEO</p>
+          </div>
+          <div class="out-strip" style="margin-top:12px">
+            <div class="out-cell">
+              <div class="cell-head"><span data-editable class="anno anno-sm">OUT · 01</span><span data-editable class="anno anno-sm">TEXT</span></div>
+              <p data-editable class="out-name">文字资讯</p>
+              <p data-editable class="anno anno-cn" style="font-size:13px">快讯 · 解读 · 观点稿件</p>
+            </div>
+            <div class="out-cell">
+              <div class="cell-head"><span data-editable class="anno anno-sm">OUT · 02</span><span data-editable class="anno anno-sm">IMG</span></div>
+              <p data-editable class="out-name">小红书轮播图</p>
+              <p data-editable class="anno anno-cn" style="font-size:13px">多图轮播 · 种草笔记</p>
+            </div>
+            <div class="out-cell">
+              <div class="cell-head"><span data-editable class="anno anno-sm">OUT · 03</span><span data-editable class="anno anno-sm">IMG</span></div>
+              <p data-editable class="out-name">产品海报</p>
+              <p data-editable class="anno anno-cn" style="font-size:13px">产品主视觉 · 活动海报</p>
+            </div>
+            <div class="out-cell">
+              <div class="cell-head"><span data-editable class="anno anno-sm">OUT · 04</span><span data-editable class="anno anno-sm">VIDEO</span></div>
+              <p data-editable class="out-name">短视频物料</p>
+              <p data-editable class="anno anno-cn" style="font-size:13px">封面 · 字幕 · 贴片</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="mastfoot">
+        <span data-editable style="letter-spacing:0">天弘基金 AI 大赛 · 2026</span>
+        <span data-editable>CASE · SYSTEM LIVE</span>
+      </footer>
+      <div class="sig-noise amb-noise" data-editable-skip aria-hidden="true"></div>
+    </section>
+  </div>
+
+  <!-- p8 收束：首尾闭环——封面信号橙色块 → 收束页同尺寸橙色块呼应 -->
+  <div class="slide-slot">
+    <section class="slide cover-page" data-slide-id="closing" data-animate="hero">
+      <div style="height:100%;display:flex;flex-direction:column;justify-content:space-between">
+        <p data-editable class="pg-kicker">SMART FORGE · CONTENT PIPELINE</p>
+        <div>
+          <h2 data-editable data-anim="chars" class="pg-title" style="font-size:170px">SMART FORGE</h2>
+          <div data-anim="wipe-clip" style="margin-top:40px;display:inline-block;background:var(--accent);padding:16px 28px">
+            <span data-editable class="pg-title" style="font-size:44px;color:var(--accent-on)">内容流水线 · 已上线运行</span>
+          </div>
+          <p data-editable class="reveal" style="--d:.3s;margin-top:40px;font-size:32px;font-weight:700"><span class="tt-uline">你的数据</span>，<span class="tt-uline">你的设备</span>，<span class="tt-uline">你的规则</span>。</p>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <p data-editable class="note-line" style="letter-spacing:0">天弘基金 AI 大赛 · 2026</p>
+          <p data-editable class="anno">STACK · L03 / L02 / L01 · ONLINE</p>
+          <p data-editable class="note-line">FIN · 08 / 08</p>
+        </div>
+      </div>
+      <div class="sig-noise amb-noise" data-editable-skip aria-hidden="true"></div>
     </section>
   </div>
 
 </div>
 
 <!-- SLOT: 页码初始文本——生成时把 "1 / 1" 改为 "1 / N"（N=总页数） -->
-<div class="deck-chrome" id="chrome">1 / 1</div>
+<div class="deck-chrome" id="chrome">1 / 8</div>
 
 <script>
 /* ============================================================

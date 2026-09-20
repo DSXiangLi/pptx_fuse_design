@@ -14,7 +14,7 @@
 |---|---|---|---|
 | — | 身份：id、名称、气质一句话、适用场景、focus 声明、**世界参考**、**unforgettable**、**分化声明** | G0 identity | ✅ |
 | L1 色彩系统 | paper / paper-tint / ink / ink-tint / accent / accent-on + **accent 用量预算**（内容页面积上限 / 满屏特权页 / 首尾色彩闭环） | G1 color | ✅ |
-| L2 字体性格 | font-display / font-body / font-mono、字重倾向、**字号对比档**、**字重映射**、标题修饰 | G2 typography | ✅ |
+| L2 字体性格 | font-display / font-body / font-mono、字重倾向、**字号对比档**、**字重映射**、标题修饰（可引用 `typography.md` §7 文字效果词汇 `.tt-*`）；可选「display 联网备选」（性格字体 + fallback + 仅用户接受联网时加载，离线回落无感） | G2 typography | ✅ |
 | L3 质感层 | 材质类型 + 实现 token（叠加层规格、强度、范围）——**立场必填**：flat 也要显式写出（"flat 即质感立场"） | G3 texture | ✅（立场） |
 | L5 容器风格 | 圆角策略、hairline/分割线风格、阴影策略、**容器造型语言**（直角纯色/圆角弥散/描边窗口/玻璃/撕边……） | G4 shape | 可选 |
 | L6 动效签名 | 气质六选 + 强度上限 + 禁用 recipe + **锚点偏好** + **节奏偏移** + **缓动签名** + **fx 许可**（canvas 仪式层白名单，缺省全禁；见 `motion.md` §4/§6） | G5 motion | 可选 |
@@ -362,7 +362,8 @@ C 系补充暗色与强个性方向。暗色主题中 `.slide.dark` 变体的角
 - **字重倾向**：标题极粗 800–900、正文 400；层级靠色块与字重压强
 - **字号对比**：主标题:正文 ≥8:1（低密度）；巨字特档 10:1（封面宣言页）；高密度 ≥5:1
 - **字重映射**：反向立场（不走倒挂——极粗无衬线大字即压强）：标题恒重 800–900（≥35px 全档）；正文 400；14–16px 小字 500–600
-- **标题修饰**：无
+- **标题修饰**：填充 + 描边混排（`.tt-outline`）亲和——信号黑标题里描边词充当背景层、填充词（或 accent 词）做焦点；删除线对照（`.tt-strike`）亲和反差数据带的 from 值；禁用 gradient-flow（柔化渐变削弱信号，G5 同口径）
+- **display 联网备选**：Bebas Neue 类窄体大写（fallback：'Arial Narrow','Helvetica Neue Condensed',sans-serif）——仅用户接受联网时加载，离线回落系统极粗无衬线无感
 
 **G3 texture**
 

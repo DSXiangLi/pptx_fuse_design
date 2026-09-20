@@ -4,11 +4,16 @@
 <!--
   ============================================================================
   HTML PPTX 编辑器 · editor.html
-  版本：v2.3（2026-09-19）
+  版本：v2.4（2026-09-20）
   实现依据：docs/design-editor.md v0.3（评审修订稿）+ docs/design/editor-v2.md
-  标记契约：skills/html-pptx/references/editing-contract.md v6.2（本页是消费侧实现）
+  标记契约：skills/html-pptx/references/editing-contract.md v6.4（本页是消费侧实现）
 
   变更记录：
+  - v2.4（K 期：高密度表达，docs/design/high-density-containers.md）：
+    适配 skeleton v7——编辑态拦截 .nav-link 目录锚点点击跳转（契约 v6.3）；
+    序列化净化新增 data-rotate 轮转的 .active 运行时 class 移除；
+    v7.1 文字效果：.tt-outline 描边字编辑态还原本色（契约 v6.4，
+    同 gradient-flow 条款口径）。
   - v2.3（G 期：主题表达力栈，docs/design/theme-expression-stack.md）：
     主题库重构为 9 个七层重主题 + 配色变体——主题卡新增变体色点行
     （点击切换变体、再点回基底，选中变体即选中主题）；导出意图 JSON 的
@@ -2379,7 +2384,9 @@ var INJECTED_CSS = [
   '[data-scroll="scrub-draw"]{stroke-dashoffset:0 !important}',
   '[data-ptr]{transform:none !important;transition:none !important}',
   '.spotlight,.read-progress{display:none !important}',
-  '[data-anim="gradient-flow"].ed-editing{background-image:none !important;-webkit-text-fill-color:currentColor !important;animation:none !important}'
+  '[data-anim="gradient-flow"].ed-editing{background-image:none !important;-webkit-text-fill-color:currentColor !important;animation:none !important}',
+  /* 契约 v6.4 / skeleton v7.1：.tt-outline 描边字编辑态还原本色（去描边+继承父级色） */
+  '.tt-outline.ed-editing{-webkit-text-stroke-width:0 !important;-webkit-text-stroke-color:transparent !important;color:inherit !important}'
 ].join('\n');
 
 function initEditLayer(){
@@ -2536,6 +2543,11 @@ function wireGestures(d){
   /* 两段手势（§5.1）：首击选中，二击进入编辑/触发换图。批注模式下整体禁用（§5.0） */
   d.addEventListener('click', function(e){
     if (mode !== 'edit') return;
+    /* 契约 v6.3：nav-link 目录锚点在编辑态不跳转——拦截（骨架的跳转监听在
+       deck 冒泡阶段，本捕获监听先触发）；点击语义回归选中/编辑 */
+    if (e.target && e.target.closest && e.target.closest('a.nav-link')){
+      e.preventDefault(); e.stopPropagation();
+    }
     if (editEl && editEl.contains(e.target)) return;   /* 编辑中点击内部不动 */
     var t = editableTarget(e);
     if (!t){ if (editEl) commitEdit(); else clearSelection(); return; }
@@ -3129,6 +3141,11 @@ function serializeClean(){
   Array.prototype.forEach.call(clone.querySelectorAll('canvas[data-fx]'), function(n){
     n.removeAttribute('width');
     n.removeAttribute('height');
+  });
+  /* data-rotate 轮转的 .active 运行时 class（契约 v6.3 / skeleton v7） */
+  Array.prototype.forEach.call(clone.querySelectorAll('[data-rotate-item].active'), function(n){
+    n.classList.remove('active');
+    if (!n.getAttribute('class')) n.removeAttribute('class');
   });
   var chrome = clone.querySelector('.deck-chrome');
   if (chrome){

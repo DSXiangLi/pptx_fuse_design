@@ -35,7 +35,7 @@ PORT = 8925
 BASE = 'http://127.0.0.1:%d' % PORT
 RESULTS = os.path.join(ROOT, 'tests/harness/results')
 
-DECKS = ['tech-ikb', 'culture-kraft', 'launch-mono', 'art-botanical', 'density-low', 'density-high', 'infographic-b2', 'charts-a3', 'motion-d2', 'motion-v5', 'infographic-d1', 'tech-ikb-v2', 'culture-kraft-v2', 'launch-mono-v2', 'components-gallery', 'tech-ikb-v3', 'culture-kraft-v3', 'launch-mono-v3', 'j-localfirst-a1', 'j-localfirst-e2', 'j-localfirst-e6']
+DECKS = ['tech-ikb', 'culture-kraft', 'launch-mono', 'art-botanical', 'density-low', 'density-high', 'infographic-b2', 'charts-a3', 'motion-d2', 'motion-v5', 'infographic-d1', 'tech-ikb-v2', 'culture-kraft-v2', 'launch-mono-v2', 'components-gallery', 'tech-ikb-v3', 'culture-kraft-v3', 'launch-mono-v3', 'j-localfirst-a1', 'j-localfirst-e2', 'j-localfirst-e6', 'smartforge-c1']
 VIEW_W, VIEW_H = 1440, 900          # harness 视口
 
 RESULTS_LIST = []
@@ -125,7 +125,7 @@ def dirty_events(page):
 
 # ---------- 往返 diff 白名单（§5.4 + 实测的一次性解析/序列化规范化） ----------
 
-BOOLEAN_ATTRS = ['data-editable', 'data-editable-image', 'data-editable-skip', 'data-anim', 'data-ig-item']
+BOOLEAN_ATTRS = ['data-editable', 'data-editable-image', 'data-editable-skip', 'data-anim', 'data-ig-item', 'data-rotate', 'data-rotate-item']
 SVG_VOID = 'circle|ellipse|line|path|polygon|polyline|rect|stop|use'
 
 def _canon_style(m):
@@ -2101,7 +2101,7 @@ CHART_IGS = {'chart-progress', 'chart-stacked', 'chart-grouped', 'chart-area',
              'chart-funnel', 'chart-heatmap'}
 
 def test_gallery_f2(browser):
-    """gallery/index.html（skeleton v4，44 页，多主题 sampler + G/I 期 20 主题样张页组）：
+    """gallery/index.html（skeleton v4，50 页，多主题 sampler + 20 主题样张 + §13 六型容器页组）：
     (a) 零溢出：每页全部 [data-editable] 元素矩形落在画布内（±2px）；
     (b) 零重叠：同页可编辑元素两两矩形不相交（>16px² 才算，排除祖先包含）；
     (c) data-ig 根：族×皮肤 ∈ 白名单、项数 ∈ 区间（复用 T15 镜像表，chart- 前缀跳过）；
@@ -2284,7 +2284,7 @@ def test_gallery_f2(browser):
 
         report('T18-gallery-f2', '组件画廊 F2+F3', not problems,
                '；'.join(problems) if problems else
-               '44 页零溢出零重叠；13 族根 + 10 图表根白名单/分层全过；6 族 × 6 皮肤全覆盖；6 谱系无连续 3 页同谱系；'
+               '50 页零溢出零重叠；13 族根 + 10 图表根白名单/分层全过；6 族 × 6 皮肤全覆盖；6 谱系无连续 3 页同谱系；'
                '瀑布水位/雷达顶点/斜率端点几何抽验通过')
     finally:
         ctx.close()
@@ -2383,6 +2383,128 @@ def test_image_upload_state(browser):
         ctx.close()
 
 
+# ---------- 测试 22：章节跳转与 v7 动效（K 期 / skeleton v7 / 契约 v6.3） ----------
+
+def test_nav_v7(browser):
+    """smartforge-c1（高密度验收 deck，skeleton v7）：
+    (a) 数字键直跳第 N 章（data-chapter 注册序）；(b) 封面 nav-link 点击平滑跳转；
+    (c) End 键到末页；(d) 编辑器态 nav-link 点击被拦截、不跳转（契约 v6.3）；
+    (e) data-rotate 轮转 in-view 启动、freeze 清空 .active；
+    (f) 保存产物：mend-bar 的 --from/--val 保留、.active 无残留、nav-link 与
+    data-chapter 原样保留。"""
+    deck = 'smartforge-c1'
+    src = read_deck(deck)
+    problems = []
+    ctx, page = fresh_page(browser)
+    try:
+        # —— 直开 deck（无编辑器，验骨架行为） ——
+        page.goto('%s/decks/%s/index.html' % (BASE, deck))
+        page.wait_for_timeout(900)
+        nav = page.evaluate("""() => {
+          const deck = document.getElementById('deck');
+          const slots = [...document.querySelectorAll('.slide-slot')];
+          const ch = slots.filter(s => s.querySelector('.slide[data-chapter]'));
+          return { nCh: ch.length, nSlots: slots.length,
+                   tops: ch.map(s => s.offsetTop),
+                   links: document.querySelectorAll('a.nav-link[href^="#"]').length };
+        }""")
+        if nav['nCh'] < 3:
+            problems.append('data-chapter 章节数=%d（<3）' % nav['nCh'])
+        if nav['links'] < nav['nCh']:
+            problems.append('封面 nav-link 数=%d < 章节数=%d' % (nav['links'], nav['nCh']))
+
+        # (a) 数字键 2 → 第 2 章
+        page.evaluate("window.dispatchEvent(new KeyboardEvent('keydown',{key:'2'}))")
+        page.wait_for_timeout(1300)
+        top = page.evaluate("document.getElementById('deck').scrollTop")
+        if nav['nCh'] >= 2 and abs(top - nav['tops'][1]) > 60:
+            problems.append('数字键 2 未跳到第 2 章：scrollTop=%d 期望≈%d' % (top, nav['tops'][1]))
+
+        # (b) nav-link 点击跳转（点击第一个目录链接）
+        page.evaluate("window.dispatchEvent(new KeyboardEvent('keydown',{key:'0'}))")
+        page.wait_for_timeout(1100)
+        href = page.evaluate("document.querySelector('a.nav-link').getAttribute('href')")
+        page.evaluate("document.querySelector('a.nav-link').click()")
+        page.wait_for_timeout(1300)
+        top = page.evaluate("document.getElementById('deck').scrollTop")
+        tgt = page.evaluate(
+            "(() => { const t = document.getElementById('%s');"
+            " const s = t && t.closest('.slide-slot'); return s ? s.offsetTop : -1; })()"
+            % href.lstrip('#'))
+        if tgt < 0 or abs(top - tgt) > 60:
+            problems.append('nav-link 点击未跳转：scrollTop=%d 目标=%d' % (top, tgt))
+
+        # (c) End → 末页（scrollTop 会被夹到 scrollHeight - clientHeight，末页 slot
+        # 比视口矮时到不了 offsetTop——与最大滚动位置比较）
+        page.evaluate("window.dispatchEvent(new KeyboardEvent('keydown',{key:'End'}))")
+        page.wait_for_timeout(1300)
+        last = page.evaluate("""() => { const d = document.getElementById('deck');
+          const s = [...document.querySelectorAll('.slide-slot')];
+          return { top: d.scrollTop,
+                   expect: Math.min(s[s.length-1].offsetTop, d.scrollHeight - d.clientHeight) }; }""")
+        if abs(last['top'] - last['expect']) > 60:
+            problems.append('End 未到末页：%d vs %d' % (last['top'], last['expect']))
+
+        # (e) data-rotate：滚到含 data-rotate 的页 → .active 出现；freeze → 清空
+        rot_top = page.evaluate("""() => { const r = document.querySelector('[data-rotate]');
+          if (!r) return -1;
+          return r.closest('.slide-slot').offsetTop; }""")
+        if rot_top < 0:
+            problems.append('未找到 data-rotate 容器')
+        else:
+            page.evaluate("document.getElementById('deck').scrollTo({top:%d,behavior:'auto'})" % rot_top)
+            page.wait_for_timeout(3200)
+            n_active = page.evaluate("document.querySelectorAll('[data-rotate-item].active').length")
+            if n_active != 1:
+                problems.append('data-rotate 轮转后 active 数=%d（期望 1）' % n_active)
+            page.evaluate("window.__pptxMotion.freeze()")
+            n_active = page.evaluate("document.querySelectorAll('[data-rotate-item].active').length")
+            if n_active != 0:
+                problems.append('freeze 后 active 残留 %d 个' % n_active)
+
+        # mend-bar：入视口页存在 mend-bar 且终态 accent（冻结后静态终态）
+        mb = page.evaluate("""() => { const b = document.querySelector('[data-anim="mend-bar"]');
+          if (!b) return null;
+          return { from: b.style.getPropertyValue('--from'), val: b.style.getPropertyValue('--val') }; }""")
+        if not mb or not mb['from'] or not mb['val']:
+            problems.append('mend-bar 缺失或 --from/--val 不全：%r' % mb)
+        page.close()
+
+        # —— 编辑器路径：nav-link 拦截 + 保存净化 ——
+        ctx2, page2 = fresh_page(browser)
+        try:
+            page2.goto(BASE + '/harness.html')
+            wait_editor_ready(page2)
+            load_deck(page2, src, deck + '/index.html')
+            df = deck_frame(page2)
+            df.evaluate("document.getElementById('deck').scrollTo({top:0,behavior:'auto'})")
+            page2.wait_for_timeout(300)
+            # (d) 编辑态点击 nav-link：不跳转
+            df.evaluate("document.querySelector('a.nav-link').click()")
+            page2.wait_for_timeout(600)
+            top = df.evaluate("document.getElementById('deck').scrollTop")
+            if top > 60:
+                problems.append('编辑态 nav-link 点击未拦截：scrollTop=%d' % top)
+            # (f) 保存产物
+            html = save_and_capture(page2)
+            for keep in ['data-chapter=', 'nav-link', '--from:']:
+                if keep not in html:
+                    problems.append('保存产物丢失 %s' % keep)
+            import re as _re
+            for m in _re.finditer(r'data-rotate-item[^>]*class="([^"]*)"', html):
+                if 'active' in m.group(1).split():
+                    problems.append('保存产物残留 .active：%s' % m.group(1))
+                    break
+            page2.close()
+        finally:
+            ctx2.close()
+        report('T22-nav-v7', '章节跳转与 v7 动效（skeleton v7）', not problems,
+               '；'.join(problems) if problems else
+               '数字键/nav-link/End 三通道跳转全过；编辑态拦截生效；rotate 轮转+freeze 清空；mend-bar 参数与净化口径正确')
+    finally:
+        ctx.close()
+
+
 def main():
     setup_serve()
     srv = subprocess.Popen([sys.executable, '-m', 'http.server', str(PORT),
@@ -2427,6 +2549,7 @@ def main():
             test_motion_v5(browser)
             test_edit_motion_v5(browser)
             test_fx_v51(browser)
+            test_nav_v7(browser)
             test_infographic_v2(browser)
             test_gallery_f2(browser)
             test_check_images()

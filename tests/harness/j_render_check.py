@@ -10,7 +10,9 @@ J 期终验渲染自检：Playwright 1920×1080 逐页检查单个 deck。
      （画布坐标系，容差 2px；装饰件 data-editable-skip 不参与）；
   2. 零重叠——同页 data-editable 元素两两交集面积 ≤16px²（画布坐标）；
   3. 正文字号 ≥18px（画布坐标 = 计算样式 px）——例外：.masthead/.mastfoot
-     框架家具（meta 槽位，typography §2 下限 14px）与 mono meta 小字（≥14px）。
+     框架家具（meta 槽位，typography §2 下限 14px）、mono meta 小字（≥14px）、
+     K 期标注层（typography §5：mono + 12–13.9px + 低明度——合成色线性亮度
+     须退到底色→墨色区间的 ≤65%，全亮小字仍判违规）。
 退出码：全过 0，任一失败 1。
 """
 import os
@@ -18,7 +20,7 @@ import sys
 
 from playwright.sync_api import sync_playwright
 
-MEASURE_JS = """(idx) => {
+MEASURE_JS = r"""(idx) => {
   const slot = document.querySelectorAll('.slide-slot')[idx];
   const slide = slot.querySelector('.slide');
   const scale = parseFloat(document.documentElement.style.getPropertyValue('--slide-scale')) || 1;
@@ -29,15 +31,47 @@ MEASURE_JS = """(idx) => {
     width: r.width / scale, height: r.height / scale,
   });
   const els = Array.from(slide.querySelectorAll('[data-editable]'));
+  function parseColor(c) {
+    if (!c) return null;
+    let m = /^rgba?\(([^)]+)\)$/.exec(c.trim());
+    if (m) {
+      const p = m[1].split(',').map((s) => parseFloat(s));
+      return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 };
+    }
+    m = /^color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+%?))?\)$/.exec(c.trim());
+    if (m) {
+      let a = 1;
+      if (m[4] != null) a = m[4].endsWith('%') ? parseFloat(m[4]) / 100 : parseFloat(m[4]);
+      return { r: parseFloat(m[1]) * 255, g: parseFloat(m[2]) * 255, b: parseFloat(m[3]) * 255, a };
+    }
+    return null;
+  }
+  function lum(rgb) {
+    const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    return 0.2126 * f(rgb.r) + 0.7152 * f(rgb.g) + 0.0722 * f(rgb.b);
+  }
+  const csSlide = getComputedStyle(slide);
+  const bgC = parseColor(csSlide.backgroundColor) || { r: 0, g: 0, b: 0, a: 1 };
+  const inkC = parseColor(csSlide.color) || { r: 255, g: 255, b: 255, a: 1 };
+  const Lbg = lum(bgC), Link = lum(inkC);
   const items = els.map((el) => {
     const cs = getComputedStyle(el);
+    const opacity = parseFloat(cs.opacity);
+    const col = parseColor(cs.color);
+    let dimT = 1;   // 合成色线性亮度在 底色→墨色 区间中的位置（0=贴底，1=全亮墨色）
+    if (col) {
+      const a = Math.max(0, Math.min(1, col.a * opacity));
+      const comp = { r: col.r * a + bgC.r * (1 - a), g: col.g * a + bgC.g * (1 - a), b: col.b * a + bgC.b * (1 - a) };
+      dimT = Link > Lbg ? (lum(comp) - Lbg) / (Link - Lbg) : 1;
+    }
     return {
       text: (el.textContent || '').trim().slice(0, 24),
       rect: toCanvas(el.getBoundingClientRect()),
       fontSize: parseFloat(cs.fontSize),
       fontFamily: cs.fontFamily,
+      dimT,
       inFurniture: !!el.closest('.masthead,.mastfoot'),
-      visible: cs.visibility !== 'hidden' && parseFloat(cs.opacity) > 0.02,
+      visible: cs.visibility !== 'hidden' && opacity > 0.02,
     };
   }).filter((it) => it.visible && it.rect.width > 0 && it.rect.height > 0);
 
@@ -61,8 +95,11 @@ MEASURE_JS = """(idx) => {
   const small = [];
   for (const it of items) {
     if (it.fontSize >= 18) continue;
-    const monoMeta = /mono/i.test(it.fontFamily) && it.fontSize >= 14;
-    if (!it.inFurniture && !monoMeta) small.push(it);
+    const mono = /mono/i.test(it.fontFamily);
+    const monoMeta = mono && it.fontSize >= 14;
+    // K 期标注层例外（typography §5）：mono + ≥12px + 低明度（dimT ≤0.65）
+    const annoLayer = mono && it.fontSize >= 12 && it.dimT <= 0.65;
+    if (!it.inFurniture && !monoMeta && !annoLayer) small.push(it);
   }
   return { overflow, overlaps, small, count: items.length, scale };
 }"""

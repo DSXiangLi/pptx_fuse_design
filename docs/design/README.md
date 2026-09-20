@@ -17,6 +17,7 @@
 | `visual-depth.md` | 视觉纵深：归藏高级感 8 要素落位、信息图/图表组件库（画廊+配方双形态）、动效词汇库 8 族与五层启用矩阵 | 2026-09-19 v2 效果诊断 + 两轮深潜调研（F1–F6 已实施完毕） |
 | `handover-theme-differentiation.md` | **session 交接文档**：进度快照 + 用户验收 comment + baoyu-design 补充调研 + 主题差异化/想象层的独立思考（七层表达力栈、隐喻库、世界采样构思法、G–J 期路线） | 2026-09-19 用户验收 comment |
 | `theme-expression-stack.md` | G+H 期设计：主题 = 七层表达力栈（L1–L7 ↔ G0–G9）；骨架 v6 主题 CSS 槽位；两级主题架构（9 重主题 + 配色变体，16 纯调色板主题诚实合并）；两两七层 diff ≥3 的机器门槛；隐喻库 + 呈现发散步 | handover §5 路线（G/H/I/J 全部实施完毕） |
+| `high-density-containers.md` | K 期：高密度表达三件套——文本容器层（components.md §13 六型 + 四层字阶纪律）、章节跳转导航（skeleton v7：data-chapter/nav-link/数字键）、动效编排纪律吸收（mend-bar 双态修复条 + data-rotate 轮转高亮 + 内容→动效对照表） | 2026-09-20 用户验收意见（高密度测试缺口 + demo1 动效复盘） |
 
 ## 决策速览
 

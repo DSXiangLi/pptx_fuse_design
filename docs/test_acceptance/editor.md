@@ -40,6 +40,10 @@
 | P1-20 | I 期撞脸矩阵：gallery 20 页同内容样张零溢出零重叠、往返幂等 | harness T18 + T1 | ✅ 2026-09-20 |
 | P1-21 | J 期同题终验：本地优先软件 × a1/e2/e6 三 deck，呈现发散三案留档（各 NOTES.md），自检全过并加入 T1 回归 | harness T1 ×3 + j_render_check.py | ✅ 2026-09-20 |
 | P1-22 | 撞脸矩阵与 J 三 deck 肉眼验收：20 主题同内容一眼可辨、三 deck 同内容一眼不同 | 人工 | ⏳ 待人工 |
+| P1-23 | K 期章节跳转：数字键/nav-link/End 三通道、编辑态拦截不跳转、老 deck 无章节无副作用 | harness T22 | ✅ 2026-09-20 |
+| P1-24 | K 期 v7 动效：mend-bar 双态修复条（--from/--val 产物内容）、data-rotate 轮转 in-view 生命周期 + freeze 清空 + 净化无残留 | harness T22 | ✅ 2026-09-20 |
+| P1-25 | K 期高密度验收 deck（smartforge-c1）：8 页高密度、六型容器全用、四层字阶、零溢出零重叠 | harness T1/T18 + k_nav_check.py | ✅ 2026-09-20 |
+| P1-26 | K 期高密度肉眼验收：smartforge-c1 层次感与跳转体验 | 人工 | ⏳ 待人工 |
 
 ## 已知限制（非缺陷）
 

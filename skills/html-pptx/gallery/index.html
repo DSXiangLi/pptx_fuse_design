@@ -174,6 +174,14 @@ body{
 /* fill-bar：横向填充（进度/占比/横条图）。 */
 .js [data-anim="fill-bar"]{transform:scaleX(0);transform-origin:left center;transition:opacity .5s var(--ease-out),transform 1s var(--ease-out);transition-delay:calc(var(--i,0)*75ms)}
 
+/* mend-bar：双态修复条（K 期 · 抄自 skeleton v7 data 族，本画廊是 v4 无此规则，
+   为 p47 指标卡实例内联于此；reduced-motion 与打印终态见对应 media 块）。
+   入视口先填充到 --from（警示渐变），1.8s 后收窄到 --val 并切换 accent 纯态。 */
+[data-anim="mend-bar"]{transform-origin:left center;transform:scaleX(calc(var(--val,100)/100));background:var(--accent)}
+.js [data-anim="mend-bar"]{transform:scaleX(0);background:linear-gradient(90deg,#ff3355,#ff6b2e 45%,#ffd93e);transition:transform 1.5s var(--ease-shift),background 1s ease 1.8s}
+.js .slide.in-view [data-anim="mend-bar"]{transform:scaleX(calc(var(--from,100)/100));background:var(--accent);animation:mend-final 1.2s var(--ease-shift) 1.8s forwards}
+@keyframes mend-final{to{transform:scaleX(calc(var(--val,100)/100))}}
+
 /* 背景 ambience：只允许背景层/水印/呼吸点，强度上限烧死在参数里
    （位移 ≤10px、不透明度摆幅 ≤.4、循环周期 ≥3s），不承载信息。 */
 @keyframes amb-pulse{0%,100%{opacity:.6}50%{opacity:1}}
@@ -187,6 +195,7 @@ body{
   .js .reveal,.js [data-anim]{opacity:1;transform:none;transition:none}
   .js .split-anim .sp-unit{opacity:1;transform:none;transition:none}
   .js .amb-pulse,.js .amb-drift,.js .amb-glow{animation:none}
+  .js [data-anim="mend-bar"]{transform:scaleX(calc(var(--val,100)/100));background:var(--accent);animation:none;transition:none}
 }
 
 /* 界面 chrome：页码指示（在缩放画布之外） */
@@ -375,6 +384,7 @@ body{
   .reveal,[data-anim]{opacity:1 !important;transform:none !important}
   .split-anim .sp-unit{opacity:1 !important;transform:none !important;transition:none !important}
   [data-anim="draw-line"]{stroke-dashoffset:0 !important}
+  [data-anim="mend-bar"]{transform:scaleX(calc(var(--val,100)/100)) !important;background:var(--accent) !important;animation:none !important;transition:none !important}
 }
 </style>
 </head>
@@ -400,7 +410,7 @@ body{
         <p data-editable class="reveal" style="--d:.15s;margin-top:36px;font-size:26px;line-height:1.8;max-width:1160px;opacity:.78">6 结构族 × 6 Item 皮肤 × 6 构图谱系 + 9 类图表配方（标注层规格）——每个组合一页高复杂度参照实例：连接件语义层次、数据墨迹、标注层、材质叠印，全部可以照抄。</p>
         <div data-editable-skip style="margin-top:88px;border-top:1px solid color-mix(in srgb, currentColor 22%, transparent);padding-top:24px;display:flex;justify-content:space-between;align-items:baseline;max-width:1680px">
           <p data-editable style="font-family:var(--font-mono);font-size:16px;font-weight:500;letter-spacing:.08em;opacity:.6">配方层 references/components.md v3 + charts.md v2 ↔ 实例层 gallery/</p>
-          <p data-editable style="font-family:var(--font-mono);font-size:16px;font-weight:500;letter-spacing:.12em;opacity:.6">2026-09 · 44 PAGES</p>
+          <p data-editable style="font-family:var(--font-mono);font-size:16px;font-weight:500;letter-spacing:.12em;opacity:.6">2026-09 · 50 PAGES</p>
         </div>
       </div>
     </section>
@@ -411,7 +421,7 @@ body{
     <section class="slide" data-slide-id="guide">
       <header class="masthead">
         <span data-editable>GUIDE · 使用说明</span>
-        <span data-editable>02 / 44</span>
+        <span data-editable>02 / 50</span>
       </header>
       <h2 data-editable class="reveal" style="font-size:64px;line-height:1.25;font-weight:300;letter-spacing:-.02em">规则管合法，实例管出色</h2>
       <div style="margin-top:48px;display:grid;grid-template-columns:repeat(3,1fr);gap:48px">
@@ -2025,10 +2035,291 @@ body{
     </section>
   </div>
 
+  <!-- ==========================================================
+       K 期 · §13 文本容器页组（45–50）：六型文本容器各一页高密度
+       实例，全部用画廊主主题 B1 渲染（无 section 级覆盖）。容器内
+       层次遵守四层字阶纪律：① eyebrow mono 低明度 → ② 题 → ③ 体
+       → ④ 注 mono 低明度。内容语境复用 SmartForge 内容包口径
+       （tests/decks/smartforge-content.md 抽象源），数值为示例。
+       ========================================================== -->
+
+  <!-- 45 · 容器 1/6 · kv-rows 字段行（系统状态字段行，6 行） -->
+  <div class="slide-slot">
+    <section class="slide" data-slide-id="container-kv-rows">
+      <header class="masthead">
+        <span data-editable>K.01 — CONTAINER / KV-ROWS</span>
+        <span data-editable style="letter-spacing:0">B1 · 文本容器</span>
+      </header>
+      <p data-editable class="reveal" style="font-family:var(--font-mono);font-size:16px;font-weight:500;letter-spacing:.12em;opacity:.55">SYSTEM STATUS · 上线前夜 · 示例数据</p>
+      <h2 data-editable class="reveal" style="--d:.08s;margin-top:16px;font-size:56px;line-height:1.25;font-weight:300;letter-spacing:-.02em">六行读完整座集群</h2>
+      <div style="margin-top:48px;display:grid;grid-template-columns:980px 1fr;gap:88px">
+        <div class="reveal" style="--d:.16s">
+          <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:500;letter-spacing:.14em;opacity:.5">SMARTFORGE-PROD-01 · LIVE</p>
+          <div style="margin-top:18px;border-top:1px solid color-mix(in srgb, var(--ink) 18%, transparent)">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:32px;padding:21px 0;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)">
+              <p data-editable style="font-family:var(--font-mono);font-size:15px;letter-spacing:.1em;opacity:.55">CLUSTER</p>
+              <p data-editable style="font-size:20px;font-weight:500">smartforge-prod-01 · 华东</p>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:32px;padding:21px 0;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)">
+              <p data-editable style="font-family:var(--font-mono);font-size:15px;letter-spacing:.1em;opacity:.55">NODES</p>
+              <p data-editable style="font-size:20px;font-weight:500">48 在线 · 2 维护</p>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:32px;padding:21px 0;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)">
+              <p data-editable style="font-family:var(--font-mono);font-size:15px;letter-spacing:.1em;opacity:.55">THROUGHPUT</p>
+              <p data-editable style="font-family:var(--font-mono);font-size:20px;font-weight:500;font-feature-settings:'tnum'">12,400 msg/s</p>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:32px;padding:21px 0;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)">
+              <p data-editable style="font-family:var(--font-mono);font-size:15px;letter-spacing:.1em;opacity:.55">P99 LATENCY</p>
+              <p data-editable style="font-family:var(--font-mono);font-size:20px;font-weight:500;font-feature-settings:'tnum'">38 ms</p>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:32px;padding:21px 0;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)">
+              <p data-editable style="font-family:var(--font-mono);font-size:15px;letter-spacing:.1em;opacity:.55">ERROR RATE</p>
+              <p data-editable style="font-family:var(--font-mono);font-size:20px;font-weight:500;font-feature-settings:'tnum'">0.02%</p>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:32px;padding:21px 0;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)">
+              <p data-editable style="font-family:var(--font-mono);font-size:15px;letter-spacing:.1em;opacity:.55">DEPLOY WINDOW</p>
+              <p data-editable style="font-family:var(--font-mono);font-size:20px;font-weight:500;font-feature-settings:'tnum'">02:00–04:00 UTC+8</p>
+            </div>
+          </div>
+          <p data-editable style="margin-top:16px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">注：2026-09-19 23:55 快照 · 采样间隔 5s · 灰度区流量已剔除</p>
+        </div>
+        <div class="reveal" style="--d:.26s">
+          <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:500;letter-spacing:.14em;color:var(--accent)">READING · 读法</p>
+          <p data-editable style="margin-top:16px;font-size:26px;font-weight:500">字段行是元信息的原生形态</p>
+          <p data-editable style="margin-top:14px;font-size:17px;line-height:1.7;opacity:.72">label 与 value 两端对齐、hairline 分行——视线沿右缘一口气扫完六个值，不需要任何卡片与图标。</p>
+          <p data-editable style="margin-top:24px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">容量：每容器 4–8 行（COMPONENTS.MD §13）</p>
+        </div>
+      </div>
+      <footer class="mastfoot">
+        <span data-editable>HTML PPTX · COMPONENT GALLERY</span>
+        <span data-editable style="letter-spacing:0">容器：KV-ROWS 字段行 · 容量 4–8 行</span>
+      </footer>
+    </section>
+  </div>
+
+  <!-- 46 · 容器 2/6 · ticker 数据带（反差数据，3 格一排） -->
+  <div class="slide-slot">
+    <section class="slide" data-slide-id="container-ticker">
+      <header class="masthead">
+        <span data-editable>K.02 — CONTAINER / TICKER</span>
+        <span data-editable style="letter-spacing:0">B1 · 文本容器</span>
+      </header>
+      <p data-editable class="reveal" style="font-family:var(--font-mono);font-size:16px;font-weight:500;letter-spacing:.12em;opacity:.55">RELEASE IMPACT · 一次发布的反差数据 · 示例数据</p>
+      <h2 data-editable class="reveal" style="--d:.08s;margin-top:16px;font-size:56px;line-height:1.25;font-weight:300;letter-spacing:-.02em">三个落差，看懂这次发布</h2>
+      <div class="reveal" style="--d:.16s;margin-top:72px;display:grid;grid-template-columns:repeat(3,1fr)">
+        <div style="padding-right:48px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <p data-editable style="font-family:var(--font-mono);font-size:15px;font-weight:600;letter-spacing:.12em;opacity:.55">01 · 响应时效</p>
+            <p data-editable style="font-family:var(--font-mono);font-size:13px;letter-spacing:.08em;opacity:.45">BEFORE → AFTER</p>
+          </div>
+          <p data-editable style="margin-top:56px;font-size:88px;line-height:1;font-weight:200;letter-spacing:-.02em">4h → 40s</p>
+          <p data-editable style="margin-top:28px;font-size:18px;line-height:1.7;opacity:.75">排障从值班群接龙，变成系统直答。</p>
+          <p data-editable style="margin-top:18px;font-family:var(--font-mono);font-size:13px;letter-spacing:.08em;opacity:.5">P99 · 2026 Q2→Q3</p>
+        </div>
+        <div style="padding:0 48px;border-left:1px solid color-mix(in srgb, var(--ink) 18%, transparent)">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <p data-editable style="font-family:var(--font-mono);font-size:15px;font-weight:600;letter-spacing:.12em;opacity:.55">02 · 人力投入</p>
+            <p data-editable style="font-family:var(--font-mono);font-size:13px;letter-spacing:.08em;opacity:.45">BEFORE → AFTER</p>
+          </div>
+          <p data-editable style="margin-top:56px;font-size:88px;line-height:1;font-weight:200;letter-spacing:-.02em">3.5 → 0.5</p>
+          <p data-editable style="margin-top:28px;font-size:18px;line-height:1.7;opacity:.75">值守人力释放，转投改进项。</p>
+          <p data-editable style="margin-top:18px;font-family:var(--font-mono);font-size:13px;letter-spacing:.08em;opacity:.5">等效 FTE · 三班制折算</p>
+        </div>
+        <div style="padding-left:48px;border-left:1px solid color-mix(in srgb, var(--ink) 18%, transparent)">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <p data-editable style="font-family:var(--font-mono);font-size:15px;font-weight:600;letter-spacing:.12em;color:var(--accent)">03 · 月差错</p>
+            <p data-editable style="font-family:var(--font-mono);font-size:13px;letter-spacing:.08em;opacity:.45">BEFORE → AFTER</p>
+          </div>
+          <p data-editable style="margin-top:56px;font-size:88px;line-height:1;font-weight:200;letter-spacing:-.02em;color:var(--accent)">27 → 2</p>
+          <p data-editable style="margin-top:28px;font-size:18px;line-height:1.7;opacity:.75">差错率落入统计噪声区。</p>
+          <p data-editable style="margin-top:18px;font-family:var(--font-mono);font-size:13px;letter-spacing:.08em;opacity:.5">起/月 · 同源口径</p>
+        </div>
+      </div>
+      <p data-editable class="reveal" style="--d:.3s;margin-top:64px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">容量：2–4 格、至多一排；格内 序号+变化标签 → 大数字 flow → 描述 → 注（COMPONENTS.MD §13）</p>
+      <footer class="mastfoot">
+        <span data-editable>HTML PPTX · COMPONENT GALLERY</span>
+        <span data-editable style="letter-spacing:0">容器：TICKER 数据带 · 容量 2–4 格</span>
+      </footer>
+    </section>
+  </div>
+
+  <!-- 47 · 容器 3/6 · metric-card 指标卡（漏洞指标卡，5 卡一排；V-01/V-03 用 mend-bar 双态修复条） -->
+  <div class="slide-slot">
+    <section class="slide" data-slide-id="container-metric-card">
+      <header class="masthead">
+        <span data-editable>K.03 — CONTAINER / METRIC-CARD</span>
+        <span data-editable style="letter-spacing:0">B1 · 文本容器</span>
+      </header>
+      <p data-editable class="reveal" style="font-family:var(--font-mono);font-size:16px;font-weight:500;letter-spacing:.12em;opacity:.55">SECURITY AUDIT · 漏洞清单 · 示例数据</p>
+      <h2 data-editable class="reveal" style="--d:.08s;margin-top:16px;font-size:56px;line-height:1.25;font-weight:300;letter-spacing:-.02em">五个漏洞，两个清零</h2>
+      <div class="reveal" style="--d:.16s;margin-top:56px;display:grid;grid-template-columns:repeat(5,1fr);gap:24px">
+        <div style="background:var(--paper-tint);padding:30px 26px">
+          <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:600;letter-spacing:.14em;opacity:.5">V-01</p>
+          <p data-editable style="margin-top:14px;font-size:23px;font-weight:500">会话固定</p>
+          <p data-editable style="margin-top:12px;font-size:15px;line-height:1.65;opacity:.72">旧会话可重放登录态，波及全部 Web 端。</p>
+          <div data-editable-skip style="margin-top:26px;height:8px;background:color-mix(in srgb, var(--ink) 12%, transparent)"><span data-anim="mend-bar" style="--from:88;--val:0;display:block;height:100%"></span></div>
+          <p data-editable style="margin-top:12px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">残留 88% → 0 · 已清零</p>
+        </div>
+        <div style="background:var(--paper-tint);padding:30px 26px">
+          <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:600;letter-spacing:.14em;opacity:.5">V-02</p>
+          <p data-editable style="margin-top:14px;font-size:23px;font-weight:500">越权读取</p>
+          <p data-editable style="margin-top:12px;font-size:15px;line-height:1.65;opacity:.72">报表接口缺租户校验，可跨域拉取。</p>
+          <div data-editable-skip style="margin-top:26px;height:8px;background:color-mix(in srgb, var(--ink) 12%, transparent)"><span data-anim="fill-bar" style="display:block;height:100%;width:62%;background:color-mix(in srgb, var(--ink) 72%, transparent)"></span></div>
+          <p data-editable style="margin-top:12px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">残留 62% · 修复中</p>
+        </div>
+        <div style="background:var(--paper-tint);padding:30px 26px">
+          <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:600;letter-spacing:.14em;opacity:.5">V-03</p>
+          <p data-editable style="margin-top:14px;font-size:23px;font-weight:500">注入面</p>
+          <p data-editable style="margin-top:12px;font-size:15px;line-height:1.65;opacity:.72">规则编辑器存在拼接查询，已改预编译。</p>
+          <div data-editable-skip style="margin-top:26px;height:8px;background:color-mix(in srgb, var(--ink) 12%, transparent)"><span data-anim="mend-bar" style="--from:94;--val:0;display:block;height:100%"></span></div>
+          <p data-editable style="margin-top:12px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">残留 94% → 0 · 已清零</p>
+        </div>
+        <div style="background:var(--paper-tint);padding:30px 26px">
+          <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:600;letter-spacing:.14em;opacity:.5">V-04</p>
+          <p data-editable style="margin-top:14px;font-size:23px;font-weight:500">弱凭据</p>
+          <p data-editable style="margin-top:12px;font-size:15px;line-height:1.65;opacity:.72">服务账号口令超 180 天未轮换。</p>
+          <div data-editable-skip style="margin-top:26px;height:8px;background:color-mix(in srgb, var(--ink) 12%, transparent)"><span data-anim="fill-bar" style="display:block;height:100%;width:35%;background:color-mix(in srgb, var(--ink) 72%, transparent)"></span></div>
+          <p data-editable style="margin-top:12px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">残留 35% · 轮换中</p>
+        </div>
+        <div style="background:var(--paper-tint);padding:30px 26px">
+          <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:600;letter-spacing:.14em;opacity:.5">V-05</p>
+          <p data-editable style="margin-top:14px;font-size:23px;font-weight:500">日志泄漏</p>
+          <p data-editable style="margin-top:12px;font-size:15px;line-height:1.65;opacity:.72">调试日志含脱敏前字段，仅内网可达。</p>
+          <div data-editable-skip style="margin-top:26px;height:8px;background:color-mix(in srgb, var(--ink) 12%, transparent)"><span data-anim="fill-bar" style="display:block;height:100%;width:12%;background:color-mix(in srgb, var(--ink) 72%, transparent)"></span></div>
+          <p data-editable style="margin-top:12px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">残留 12% · 已收敛</p>
+        </div>
+      </div>
+      <p data-editable class="reveal" style="--d:.3s;margin-top:48px;font-size:16px;line-height:1.7;opacity:.55">mend-bar 双态修复条（skeleton v7）：先入警示渐变建立张力，再收窄归零并切换 accent 纯态——条宽即指标，色迁移即状态迁移。</p>
+      <footer class="mastfoot">
+        <span data-editable>HTML PPTX · COMPONENT GALLERY</span>
+        <span data-editable style="letter-spacing:0">容器：METRIC-CARD 指标卡 · 容量 3–5 卡/排</span>
+      </footer>
+    </section>
+  </div>
+
+  <!-- 48 · 容器 4/6 · versus-cols 对照列（DEEP/WIDE 对照，列头异色：墨档 vs accent 档单焦点） -->
+  <div class="slide-slot">
+    <section class="slide" data-slide-id="container-versus-cols">
+      <header class="masthead">
+        <span data-editable>K.04 — CONTAINER / VERSUS-COLS</span>
+        <span data-editable style="letter-spacing:0">B1 · 文本容器</span>
+      </header>
+      <p data-editable class="reveal" style="font-family:var(--font-mono);font-size:16px;font-weight:500;letter-spacing:.12em;opacity:.55">INTEGRATION MODES · 二元对照 · 示例数据</p>
+      <h2 data-editable class="reveal" style="--d:.08s;margin-top:16px;font-size:56px;line-height:1.25;font-weight:300;letter-spacing:-.02em">DEEP 还是 WIDE，先选边</h2>
+      <div class="reveal" style="--d:.16s;margin-top:48px;display:grid;grid-template-columns:260px 1fr 1fr">
+        <div></div>
+        <div style="background:var(--ink);color:var(--paper);padding:22px 32px">
+          <p data-editable style="font-family:var(--font-mono);font-size:13px;font-weight:500;letter-spacing:.14em;color:color-mix(in srgb, var(--paper) 60%, transparent)">MODE A</p>
+          <p data-editable style="margin-top:8px;font-size:26px;font-weight:500">DEEP · 深集成</p>
+        </div>
+        <div style="background:var(--accent);color:var(--accent-on);padding:22px 32px">
+          <p data-editable style="font-family:var(--font-mono);font-size:13px;font-weight:500;letter-spacing:.14em;color:color-mix(in srgb, var(--accent-on) 70%, transparent)">MODE B</p>
+          <p data-editable style="margin-top:8px;font-size:26px;font-weight:500">WIDE · 广覆盖</p>
+        </div>
+        <div style="display:flex;align-items:center;padding:19px 32px 19px 0;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)"><p data-editable style="font-family:var(--font-mono);font-size:15px;letter-spacing:.1em;opacity:.55">接入周期</p></div>
+        <div style="display:flex;align-items:center;padding:19px 32px;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)"><p data-editable style="font-size:19px;font-weight:500">6 周 · 字段级映射</p></div>
+        <div style="display:flex;align-items:center;padding:19px 32px;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)"><p data-editable style="font-size:19px;font-weight:500">3 天 · 标准模板</p></div>
+        <div style="display:flex;align-items:center;padding:19px 32px 19px 0;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)"><p data-editable style="font-family:var(--font-mono);font-size:15px;letter-spacing:.1em;opacity:.55">运维责任</p></div>
+        <div style="display:flex;align-items:center;padding:19px 32px;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)"><p data-editable style="font-size:19px;font-weight:500">我方托管</p></div>
+        <div style="display:flex;align-items:center;padding:19px 32px;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)"><p data-editable style="font-size:19px;font-weight:500">客户自管</p></div>
+        <div style="display:flex;align-items:center;padding:19px 32px 19px 0;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)"><p data-editable style="font-family:var(--font-mono);font-size:15px;letter-spacing:.1em;opacity:.55">数据口径</p></div>
+        <div style="display:flex;align-items:center;padding:19px 32px;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)"><p data-editable style="font-size:19px;font-weight:500">按客户 schema 定制</p></div>
+        <div style="display:flex;align-items:center;padding:19px 32px;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)"><p data-editable style="font-size:19px;font-weight:500">统一内置口径</p></div>
+        <div style="display:flex;align-items:center;padding:19px 32px 19px 0;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)"><p data-editable style="font-family:var(--font-mono);font-size:15px;letter-spacing:.1em;opacity:.55">适用客户</p></div>
+        <div style="display:flex;align-items:center;padding:19px 32px;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)"><p data-editable style="font-size:19px;font-weight:500">旗舰 · 年框</p></div>
+        <div style="display:flex;align-items:center;padding:19px 32px;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)"><p data-editable style="font-size:19px;font-weight:500">长尾 · 自助开通</p></div>
+        <div style="display:flex;align-items:center;padding:19px 32px 19px 0;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)"><p data-editable style="font-family:var(--font-mono);font-size:15px;letter-spacing:.1em;opacity:.55">毛利率</p></div>
+        <div style="display:flex;align-items:center;padding:19px 32px;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)"><p data-editable style="font-family:var(--font-mono);font-size:19px;font-weight:500;font-feature-settings:'tnum'">41%</p></div>
+        <div style="display:flex;align-items:center;padding:19px 32px;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)"><p data-editable style="font-family:var(--font-mono);font-size:19px;font-weight:500;font-feature-settings:'tnum'">68%</p></div>
+      </div>
+      <p data-editable class="reveal" style="--d:.3s;margin-top:36px;font-size:16px;line-height:1.7;opacity:.55">列头异色守 §12 单焦点：墨档为锚、accent 档为本页唯一焦点；对照列是数据级对比，叙事级对撞另用裂屏对开（§11）。</p>
+      <footer class="mastfoot">
+        <span data-editable>HTML PPTX · COMPONENT GALLERY</span>
+        <span data-editable style="letter-spacing:0">容器：VERSUS-COLS 对照列 · 容量每列 3–6 项</span>
+      </footer>
+    </section>
+  </div>
+
+  <!-- 49 · 容器 5/6 · stack-rows 堆栈层（三层架构堆栈，全宽横层） -->
+  <div class="slide-slot">
+    <section class="slide" data-slide-id="container-stack-rows">
+      <header class="masthead">
+        <span data-editable>K.05 — CONTAINER / STACK-ROWS</span>
+        <span data-editable style="letter-spacing:0">B1 · 文本容器</span>
+      </header>
+      <p data-editable class="reveal" style="font-family:var(--font-mono);font-size:16px;font-weight:500;letter-spacing:.12em;opacity:.55">ARCHITECTURE · 系统分层 · 示例数据</p>
+      <h2 data-editable class="reveal" style="--d:.08s;margin-top:16px;font-size:56px;line-height:1.25;font-weight:300;letter-spacing:-.02em">三层，各管一件事</h2>
+      <div class="reveal" style="--d:.16s;margin-top:64px;border-bottom:1px solid color-mix(in srgb, var(--ink) 18%, transparent)">
+        <div style="display:grid;grid-template-columns:220px 1fr 340px;gap:48px;align-items:baseline;padding:38px 0;border-top:1px solid color-mix(in srgb, var(--ink) 18%, transparent)">
+          <div>
+            <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:600;letter-spacing:.14em;opacity:.5">L1</p>
+            <p data-editable style="margin-top:10px;font-size:28px;font-weight:500">接入层</p>
+          </div>
+          <p data-editable style="font-size:18px;line-height:1.7;opacity:.78">MQTT / HTTP / OPC-UA 三协议接入，边缘网关本地缓冲，断网续传 72 小时。</p>
+          <p data-editable style="text-align:right;font-family:var(--font-mono);font-size:14px;letter-spacing:.06em;opacity:.5">延迟预算 5ms · 网关 214 台</p>
+        </div>
+        <div style="display:grid;grid-template-columns:220px 1fr 340px;gap:48px;align-items:baseline;padding:38px 0;border-top:1px solid color-mix(in srgb, var(--ink) 18%, transparent)">
+          <div>
+            <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:600;letter-spacing:.14em;color:var(--accent)">L2</p>
+            <p data-editable style="margin-top:10px;font-size:28px;font-weight:500">规则层</p>
+          </div>
+          <p data-editable style="font-size:18px;line-height:1.7;opacity:.78">流式规则引擎，窗口聚合 + 阈值判定，规则热加载不中断流水。</p>
+          <p data-editable style="text-align:right;font-family:var(--font-mono);font-size:14px;letter-spacing:.06em;opacity:.5">规则 1,240 条在线 · P99 判定 9ms</p>
+        </div>
+        <div style="display:grid;grid-template-columns:220px 1fr 340px;gap:48px;align-items:baseline;padding:38px 0;border-top:1px solid color-mix(in srgb, var(--ink) 18%, transparent)">
+          <div>
+            <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:600;letter-spacing:.14em;opacity:.5">L3</p>
+            <p data-editable style="margin-top:10px;font-size:28px;font-weight:500">应用层</p>
+          </div>
+          <p data-editable style="font-size:18px;line-height:1.7;opacity:.78">看板、告警与开放 API 输出，双向对接 MES 与 ERP。</p>
+          <p data-editable style="text-align:right;font-family:var(--font-mono);font-size:14px;letter-spacing:.06em;opacity:.5">SLA 99.95% · 调用 2.1 亿次/月</p>
+        </div>
+      </div>
+      <p data-editable class="reveal" style="--d:.3s;margin-top:44px;font-size:16px;line-height:1.7;opacity:.55">层内固定三段：层号/名称 → 内容清单 → 右侧注记；accent 只给当前论述主角层（L2 规则层，单焦点）。</p>
+      <footer class="mastfoot">
+        <span data-editable>HTML PPTX · COMPONENT GALLERY</span>
+        <span data-editable style="letter-spacing:0">容器：STACK-ROWS 堆栈层 · 容量 3–5 层</span>
+      </footer>
+    </section>
+  </div>
+
+  <!-- 50 · 容器 6/6 · note-block 注记块（来源注记，3 块，左边线 + 引线同源图表标注层） -->
+  <div class="slide-slot">
+    <section class="slide" data-slide-id="container-note-block">
+      <header class="masthead">
+        <span data-editable>K.06 — CONTAINER / NOTE-BLOCK</span>
+        <span data-editable style="letter-spacing:0">B1 · 文本容器</span>
+      </header>
+      <p data-editable class="reveal" style="font-family:var(--font-mono);font-size:16px;font-weight:500;letter-spacing:.12em;opacity:.55">PROVENANCE · 来源与口径</p>
+      <h2 data-editable class="reveal" style="--d:.08s;margin-top:16px;font-size:56px;line-height:1.25;font-weight:300;letter-spacing:-.02em">每个数字都能追到源头</h2>
+      <div class="reveal" style="--d:.16s;margin-top:64px;max-width:1240px">
+        <div style="border-left:3px solid var(--ink);padding:10px 0 10px 28px">
+          <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:600;letter-spacing:.14em;opacity:.5">SOURCE · 数据来源</p>
+          <p data-editable style="margin-top:12px;font-size:19px;line-height:1.7">本页组全部数值来自 SmartForge 生产集群 2026-09-19 23:55 快照，指标口径见附录 A。</p>
+          <p data-editable style="margin-top:10px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">复核：数据组 · 2026-09-20</p>
+        </div>
+        <div style="margin-top:40px;border-left:3px solid color-mix(in srgb, var(--ink) 35%, transparent);padding:10px 0 10px 28px">
+          <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:600;letter-spacing:.14em;opacity:.5">EXCEPTION · 例外说明</p>
+          <p data-editable style="margin-top:12px;font-size:19px;line-height:1.7;opacity:.85">华东二区采集中断 4 小时，缺失段以前周同时段插值，趋势线对应区间以虚线标出。</p>
+          <p data-editable style="margin-top:10px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">影响面：p45 字段行 THROUGHPUT 一项</p>
+        </div>
+        <div style="margin-top:40px;border-left:3px solid color-mix(in srgb, var(--ink) 35%, transparent);padding:10px 0 10px 28px">
+          <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:600;letter-spacing:.14em;opacity:.5">SCOPE · 统计口径</p>
+          <p data-editable style="margin-top:12px;font-size:19px;line-height:1.7;opacity:.85">差错率不含灰度区流量；响应时效取 P99；人力投入按三班制折算为等效 FTE。</p>
+          <p data-editable style="margin-top:10px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">口径版本：v2026.09 · 与审计共用</p>
+        </div>
+      </div>
+      <footer class="mastfoot">
+        <span data-editable>HTML PPTX · COMPONENT GALLERY</span>
+        <span data-editable style="letter-spacing:0">容器：NOTE-BLOCK 注记块 · 容量 1–3 行</span>
+      </footer>
+    </section>
+  </div>
+
 </div>
 
 <!-- SLOT: 页码初始文本——生成时把 "1 / 1" 改为 "1 / N"（N=总页数） -->
-<div class="deck-chrome" id="chrome">1 / 44</div>
+<div class="deck-chrome" id="chrome">1 / 50</div>
 
 <script>
 /* ============================================================

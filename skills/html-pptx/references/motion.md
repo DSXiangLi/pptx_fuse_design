@@ -33,7 +33,7 @@ v3 把"动效怎么被触发"提升为一等维度。**族前缀即触发器自�
 | 触发器 | 承载标记 | 驱动方 | 族 |
 |---|---|---|---|
 | **inview**（入视口一次性） | `data-anim="..."` | CSS 过渡 + 框架 JS 引擎 | enter / text / data / link（draw-line） |
-| **loop**（持续循环） | `amb-*` / `light-*` / `dash-flow` / `flow-dot` class | 纯 CSS 动画 | amb / light / link（循环款） |
+| **loop**（持续循环） | `amb-*` / `light-*` / `dash-flow` / `flow-dot` class；`data-rotate` 容器（v7，JS 轮转 .active，in-view 生命周期） | 纯 CSS 动画 / 框架 JS 轮转 | amb / light / link（循环款） |
 | **scroll**（滚动驱动） | `data-scroll="..."` | 框架 JS 滚动驱动（--sp 进度变量，rAF 节流）+ 纯 CSS scroll-timeline（read-progress）+ sticky 纯 CSS（页间效果） | scroll |
 | **pointer**（指针驱动） | `data-ptr="..."` / `.spotlight` | 框架 JS pointer tracker（rAF 节流，只写 CSS 变量） | ptr / light（spotlight） |
 | **canvas**（in-view 生命周期，v5.1） | `<canvas data-fx="...">` | 框架 JS canvas FX runtime（rAF，离屏停帧，参数烧死） | fx 仪式层（§4 fx 小节，8 族之外，默认关） |
@@ -54,6 +54,22 @@ v3 把"动效怎么被触发"提升为一等维度。**族前缀即触发器自�
 其他内容页             → 不写 data-animate（默认 cascade 阶梯）
 完全不想动             → 不写任何标记（该页静止，也是合法选择）
 ```
+
+### 内容→动效对照表（K 期新增，查询手册）
+
+| 你在写什么 | 首选 | 备选 | 不要 |
+|---|---|---|---|
+| Hero 标题（品牌名/宣言） | chars / mask-lines / shatter | typewriter（techy 限定） | 简单 fade（浪费首屏） |
+| 反差数字（¥2000→¥0） | count-up（落差即叙事） | 巨字直排（不用动效） | 多数字同屏全 count-up（配额指纹病） |
+| "问题→解决"指标 | mend-bar 双态修复条 | fill-bar + 注释 | 静态百分比 |
+| 进度/占比 | fill-bar / fill-bar-y / ring | count-up | 静态数字 |
+| 流程/管道 | draw-line 描绘 + flow-dot 沿线粒子 | data-rotate 轮转各阶段 | 静态箭头链 |
+| 对照（A vs B） | 左右镜像异步入场 | 裂屏色场对撞 | 两方同时出现 |
+| 卡片/清单列 | stagger 阶梯（≤6 个/组） | scale-pop（playful 主题） | 同步出现 |
+| 金句/引文 | quote 配方 + mask-lines | blur-in | count-up 等数据款 |
+| 章节切换/封面 | hero 配方 +（主题 fx 许可内）canvas 仪式层 | 页间 cover/stack（sticky） | 硬切之外的过度编排 |
+
+与 `references/motifs.md` 互引：motifs 管"静态呈现隐喻"（选什么图形关系），本表管"动态过程隐喻"（图形怎么动）；选定隐喻后从本表配动效，而不是反过来。
 
 ## 4. 词汇表：8 族 39 recipe（枚举，带规则）
 
@@ -92,6 +108,7 @@ v3 把"动效怎么被触发"提升为一等维度。**族前缀即触发器自�
 | `fill-bar` 横向填充 | transform | 进度/占比/横条图 | 800–1200ms | 全主题 | scaleX 0→目标；条内数值另用 count-up 或静态文本 |
 | `fill-bar-y` 竖柱生长 | transform | 柱状图、竖向进度 | 800–1200ms | 全主题 | scaleY 0→1，原点底部（v5 补全 v2 的已知限制） |
 | `ring` 环形进度 | transform | 占比环、完成度 | ~1200ms | 全主题 | 纯 CSS：SVG circle 写 `pathLength="100"` + `style="--val:N"`，dashoffset 100→100−N |
+| `mend-bar` 双态修复条（v7） | transform（状态迁移） | "问题→解决"指标（漏损率/错误率/风险敞口） | 两段：1.5s 填充 + 1.2s 收窄 | dramatic/professional 亲和；calm 慎用 | 填充条标 `data-anim="mend-bar"` + `style="--from:N;--val:M"`——先填充到 --from（警示渐变建立张力），再收窄到 --val 并切 accent 纯态；纯 CSS .in-view 触发；--from/--val 是产物内容 |
 
 ### link 族（连接件 · inview / loop）
 
@@ -100,6 +117,7 @@ v3 把"动效怎么被触发"提升为一等维度。**族前缀即触发器自�
 | `draw-line` 描绘 | causality | 流程连线/箭头/图表折线 | 800–1500ms | techy 亲和 | stroke-dasharray 描绘，框架 JS 量长藏线；元素同时标 `data-editable-skip` |
 | `dash-flow` 流动虚线 | causality（持续） | 循环流程、数据流、进行中状态 | 循环 1.6s | techy 亲和；calm 禁（持续运动扰静） | class `dash-flow`，dasharray 默认 6 10 可覆盖；装饰件标 skip |
 | `flow-dot` 沿线粒子 | causality（持续） |  Pipeline、传输、能量流 | 循环 ≥4.5s | techy/dramatic 亲和；calm 禁 | class `flow-dot` 的 HTML 圆点 + `style="--flow-path:path('…')"`（与可见线同份路径数据）；offset-path 不支持时藏点留线 |
+| `data-rotate` 轮转高亮（v7，loop） | ambience + causality | 流水线各阶段、轮值状态、"各环节都在工作"的活态 | 轮转 2.4s/格 | techy/professional 亲和；calm 禁（持续运动扰静） | 容器标 `data-rotate`，子项标 `data-rotate-item`；骨架 JS 轮转 .active（in-view 启动/离屏停帧/freeze 摘除清空）；active 加强造型由产物/主题定义；active class 是运行时状态 |
 
 ### amb 族（环境氛围 · loop，只许背景层）
 
@@ -184,6 +202,16 @@ canvas FX 是**页面级仪式效果**，不是元素级 recipe——8 族词汇
 【硬规则】**华丽档相邻页锚点 recipe 不重复**：相邻两页的锚点动效（每页那个"独有的主角动效"）不得是同一个 recipe——连续两页都 count-up 等于没有锚点。选型时先排锚点序列再填常规款。
 
 ## 6. 与主题/图表/编辑的接口
+
+**高密度档的动效配额**（K 期注记，demo1 复盘）：密度升高时注意力预算不变——每屏主动效仍只有 1 个；变化的是**容器级微动效**：随容器数增加，每容器至多 1 个、语义型优先（mend-bar 修复 / data-rotate 轮转 / count-up 落差），循环类氛围微动效全屏 ≤2。密度越高，动效越往语义型集中、越远离氛围型——高密度页的"丰富"由标注层和容器结构承担，动效只点关键节点。
+
+**标题动效两档制**（K 期深化，demo1 代码级复盘）【默认】：
+
+- **仪式页标题**（封面/章节/收束）：用最强锚点款——chars / shatter / mask-lines / typewriter（techy 限定），每页不重样；
+- **章节/内容页标题**：同 deck 内**统一用一款质感化文字动效**（系统感来自一致）——但必须是文字款（chars 小步错峰 / mask-lines / rise-in），**禁止用 wipe-clip 这类色块揭示款充当标题动效**（职能混淆：wipe 的对象是色块不是文字）；与正文的 reveal 阶梯区分（标题动效必须比正文入场"贵"）；
+- **错误模式**：全 deck 所有标题同一款通用入场（如清一色 wipe-clip 或清一色默认 reveal）——标题是每页的仪式起点，与正文同待遇即无仪式。
+
+**背景与装饰层的隐性运动**（K 期深化）【默认】：标准档以上，L4 环境层的那个代表**优先选全局隐性运动**——amb/light 族循环款（drift/noise/gradient-blob/light-leak，周期 ≥8s、幅度极小）或主题质感层的缓慢漂移（gridDrift 教训：background-position 60s 漂移是底纹最便宜的活态），一次选型全 deck 生效，比"只在封面放氛围"更值。装饰家具层（Ghost 字/巨号页码/刊头/水印）可挂低频呼吸（amb-pulse/amb-glow，opacity 摆幅 ≤.08），计入每屏背景动效 ≤2–3 的既有注意力预算，不与 fx 仪式层叠加。"活着的密度"= 标注层（静态）+ 装饰呼吸（低频）+ 语义微动效（容器级）三层叠加。
 
 **气质对照表（Effect → Feeling）**：选配方前先对齐"这页想要什么感觉"（也是主题 G5 字段与编辑器面板的语义基础）：
 

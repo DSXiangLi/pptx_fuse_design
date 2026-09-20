@@ -76,6 +76,7 @@ grep -o 'src="[^"]*"' index.html | grep -v 'src="assets/'   # 应为空
 | `data-anim="count-up"` / `typewriter` / `scramble` 元素的进行中文本、`tw-live` 光标 class | 还原为终值文本（调用 `__pptxMotion.restoreAll()`），移除 `tw-live` |
 | `data-anim="draw-line"` 元素内联 style 的 `stroke-dasharray` / `stroke-dashoffset` | 移除这两个 style 属性 |
 | `canvas[data-fx]` 的 `width` / `height` 属性（v6.1，fx 运行时 DPR 修正） | 移除这两个属性（freeze 主责，序列化兜底；canvas 像素不属 DOM 状态） |
+| `[data-rotate-item]` 的 `.active` class（v6.3，轮转运行时） | 移除（freeze 主责，序列化兜底） |
 
 无 JS / `prefers-reduced-motion` 环境下产物天然完整可读（文件里本来就是纯文本与完整图形），不需要任何降级代码。
 
@@ -142,6 +143,13 @@ grep -o 'src="[^"]*"' index.html | grep -v 'src="assets/'   # 应为空
 
 编辑器写主题相关值时优先写 token 引用（如 `color:var(--accent)`、`font-family:var(--font-display)`），使后续换主题时用户样式仍跟随主题。
 
+## 章节跳转与 v7 动效（契约级，v6.3 新增，skeleton v7）
+
+1. **章节跳转标记是产物内容**：章节页 `.slide` 上的 `data-chapter="章节名"` 与 `id`（与 `data-slide-id` 同值）、目录链接 `<a class="nav-link" href="#id">` 全部原样保留，编辑器不消费。链接文字照常 `data-editable`。
+2. **编辑器义务**：编辑态拦截 `.nav-link` 的点击跳转（preventDefault）——用户点击目录文字是为了编辑，不是为了跳转；预览态滚动跳转无害。
+3. **mend-bar（双态修复条）**：`--from`/`--val` 是产物内容（同 fill-bar `--val` 口径，净化【禁止】移除）；动画由 `.in-view` 纯 CSS 触发，无运行时残留。
+4. **data-rotate（轮转高亮）**：`.active` class 是运行时状态——`__pptxMotion.freeze()` 摘除轮转并清空 `.active`；序列化净化兜底移除（与 `.in-view` 同口径）。
+
 ## 主题 CSS 块与母题件（契约级，v6.2 新增，skeleton v6）
 
 1. **主题 CSS 块**：骨架 `SLOT: theme css`（框架层之后的 `<style>` 区段，承载主题 G9 装饰母题与缓动签名）是产物的一部分——编辑器不消费、不修改；序列化只动 body DOM，`<style>` 区天然原样保留。
@@ -150,6 +158,8 @@ grep -o 'src="[^"]*"' index.html | grep -v 'src="assets/'   # 应为空
 
 ## 版本
 
+契约 v6.4（2026-09-20，K 期深化 / skeleton v7.1）：文字效果词汇 `.tt-*`（outline/strike/mark/uline）是静态 CSS 类——文字保持纯文本可编辑；`.tt-outline` 描边字（color:transparent）编辑态还原本色（编辑器注入样式强制还原本色 + 去描边，随净化剔除，同 gradient-flow 条款口径）；无运行时状态，净化无新增。
+契约 v6.3（2026-09-20，K 期 / skeleton v7）：新增"章节跳转与 v7 动效"节——data-chapter/nav-link/id 为产物内容、编辑态拦截 nav-link 点击、mend-bar 的 --from/--val 为产物内容、data-rotate 的 .active 为运行时状态净化移除。
 契约 v6.2（2026-09-19，G 期 / skeleton v6）：新增"主题 CSS 块与母题件"节——`SLOT: theme css` 原样保留、`.mt-*` 母题件 skip、文本载体类母题的文本保持可编辑、主题块 `:root{}` token 重定义不得净化。
 契约 v6.1（2026-09-19，迭代 F5 / skeleton v5.1）：canvas FX 仪式层净化条款——`canvas[data-fx]` 产物中为空元素（无 width/height、无内容、一律 data-editable-skip）；运行时 width/height（DPR 修正）由 `__pptxMotion.freeze()` 摘除、序列化净化兜底；首次入视口才初始化，从未入视口零残留。契约 v6（2026-09-19，迭代 F4 / visual-depth.md §三）："动效与编辑"节扩展 skeleton v5 新族——typewriter/scramble 纳入运行时化条款；mask-lines 分行结构归属产物（.ml-inner 是 data-editable 叶子，其 --i 为运行时）；gradient-flow 透明填充类效果的编辑态强制还原本色规则；pointer tracker CSS 变量（--mx/--my/--mxr/--myr/--rx/--ry/--mgx/--mgy）与 scroll 族 --sp 进度变量列入净化清单；新增 __pptxMotion.freeze() 编辑态冻结交互层约定。
 契约 v5（2026-09-18，迭代 E / illustration-pipeline.md）：新增"图片槽位契约"节——`data-editable-image` 图位必携 `data-image-slot`（语义名+宽高比）/ `data-image-intent`（内容意图）/ `data-image-state`（placeholder→generated→uploaded 状态机）三属性；槽位比例 ↔ 构图尺寸 ↔ 生图比例三方绑定（容差 5%）；编辑器上传置换置 `uploaded` 并保留 slot/intent；pptx 转换原图补 slot/intent 且置 `uploaded`；存量无槽位 deck 兼容（校验器警告不报错）；插画模式反降级（禁 placeholder 残留，失败诚实回退）。
