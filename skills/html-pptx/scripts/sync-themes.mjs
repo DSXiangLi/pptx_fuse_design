@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* sync-themes.mjs —— 主题数据单源化同步 + Schema 校验
  *
- * 数据源：skills/html-pptx/references/themes.md（9 套七层重主题 + 配色变体，
+ * 数据源：skills/html-pptx/references/themes.md（20 套七层重主题 + 配色变体，
  *         Schema 化 G0–G9 字段组，唯一事实源；Schema 规范见
  *         docs/design/theme-schema.md 与 docs/design/theme-expression-stack.md）
  * 目标：  editor.html 内 PANEL_DATA.questions[0].options（面板主题卡片，
@@ -49,7 +49,7 @@ import { dirname, join } from 'node:path';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const THEMES_MD = join(ROOT, 'skills/html-pptx/references/themes.md');
 const EDITOR = join(ROOT, 'editor.html');
-const EXPECTED_COUNT = 9;
+const EXPECTED_COUNT = 20;
 const COLOR_TOKENS = ['--paper', '--paper-tint', '--ink', '--ink-tint', '--accent', '--accent-on'];
 const FONT_TOKENS = ['--font-display', '--font-body', '--font-mono'];
 const TEXTURE_TOKENS = ['--texture-type', '--texture-layer', '--texture-scope'];
@@ -87,7 +87,7 @@ const md = readFileSync(THEMES_MD, 'utf8');
 const segments = [];
 let cur = null;
 for (const line of md.split('\n')) {
-  const h = /^### ([A-D]\d)\s+(.+?)\s*$/.exec(line);
+  const h = /^### ([A-E]\d+)\s+(.+?)\s*$/.exec(line);
   if (h) { cur = { hid: h[1], heading: h[2], lines: [] }; segments.push(cur); continue; }
   if (/^## /.test(line) || /^---\s*$/.test(line)) { cur = null; continue; }
   if (cur) cur.lines.push(line);
@@ -206,7 +206,7 @@ for (const t of themes) {
   /* 分化声明：格式 与 <id> 分化于 Lx/Ly/Lz（≥3 层），二阶段逐层核验 */
   {
     const d = t.g0['分化声明'] || '';
-    const m = /与\s*([a-dA-D]\d)\s*分化于\s*([L\d\/、,，\s]+)/.exec(d);
+    const m = /与\s*([a-eA-E]\d+)\s*分化于\s*([L\d\/、,，\s]+)/.exec(d);
     if (!m) err(`${t.id}: 分化声明格式应为「与 <id> 分化于 Lx/Ly/Lz：说明」，实为：${d.slice(0, 40)}…`);
     else {
       const layers = [...new Set(m[2].match(/L[1-7]/g) || [])];

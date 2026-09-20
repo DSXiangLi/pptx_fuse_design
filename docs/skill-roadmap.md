@@ -113,7 +113,7 @@
 | 方向 | 设计文档 | 要点 | 状态 |
 |---|---|---|---|
 | 主题 Schema 化 | `design/theme-schema.md` | 主题定义升级为显式 Schema（G0–G8 字段组）+ focus 重点/辅助项机制 + 缺省推导规则 | ✅ 已完成（迭代 B） |
-| 主题差异化与想象层 | `design/theme-expression-stack.md` | G 期：七层表达力栈（L1–L7 ↔ G0–G9）+ skeleton v6 主题 CSS 槽位 + 两级架构（9 重主题 × ≥3 配色变体，16 纯配色主题诚实合并）+ 两两七层 diff ≥3 机器门槛；H 期：motifs.md 隐喻库 + SKILL.md 呈现发散步 | ✅ G/H 已完成（2026-09-19）；I（20 主题建库+撞脸矩阵）/J（同题重制终验）待办 |
+| 主题差异化与想象层 | `design/theme-expression-stack.md` | G 期：七层表达力栈（L1–L7 ↔ G0–G9）+ skeleton v6 主题 CSS 槽位 + 两级架构（重主题 × ≥3 配色变体）+ 两两七层 diff ≥3 机器门槛；H 期：motifs.md 隐喻库 + SKILL.md 呈现发散步；I 期：世界采样建库 20 重主题 + 撞脸矩阵；J 期：同题三主题终验 | ✅ 全部完成（2026-09-19/20）；肉眼验收待用户 |
 | 动效系统 v2 | `design/motion-system.md` | 拆字禁令改为"运行时拆字"（产物文字永远是纯文本节点）；motion_gudie 三原理六原则入库；recipe 词汇扩展（shatter/count-up/draw-line 等） | ✅ 已完成（迭代 C） |
 | 信息图组合衍生 | `design/infographic-system.md` | 结构族 × Item 皮肤 × 参数变体正交模型（借鉴 antv-infographic 架构，不引入库）；数据字段与结构族硬约定 | ✅ 已完成（迭代 D） |
 | AI 插画管线 | `design/illustration-pipeline.md` | 内容验收后统一补齐插画；`data-image-slot` 槽位契约；反降级静态校验 | ✅ 已完成（迭代 E） |

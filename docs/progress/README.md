@@ -4,6 +4,7 @@
 
 ## 最近更新
 
+- 2026-09-20 · [0920_iter_i_j.md](0920_iter_i_j.md) — I+J 期：世界采样法建库（E 系 11 新主题，9→20 重主题 × ≥3 变体；两两 190 对七层 diff 全过）+ 撞脸矩阵（gallery 样张 20 页同内容）+ 同题重制终验（本地优先软件 × a1/e2/e6 三 deck，呈现发散步首次真实走通）
 - 2026-09-19 · [0919_iter_g.md](0919_iter_g.md) — G+H 期：主题表达力栈（七层 L1–L7 ↔ G0–G9、skeleton v6 主题 CSS 槽位、16 纯配色主题诚实合并为 9 重主题+变体、两两七层 diff 机器门槛）+ 想象层（motifs.md 隐喻库 + SKILL.md 呈现发散步），editor v2.3（变体色点 + 双 SLOT 导出），契约 v6.2，40/40 E2E PASS
 - 2026-09-18 · [0918_iter_e_illustration.md](0918_iter_e_illustration.md) — 迭代 E：AI 插画管线（契约 v5 图片槽位三属性、SKILL.md Step 5.5 插画 pass、editor v1.9 上传置 uploaded、check-images.mjs 静态校验器、oai生图真实冒烟），28/28 E2E PASS
 - 2026-09-18 · [0918_iter_d_infographic.md](0918_iter_d_infographic.md) — 迭代 D：信息图系统 v2（components.md 结构族×皮肤×变体、契约 v4 信息图分层、新 deck infographic-d1 + T15 标记合规），26/26 E2E PASS

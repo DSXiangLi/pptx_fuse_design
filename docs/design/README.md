@@ -16,7 +16,7 @@
 | `compat-roadmap.md` | 未来规划：向上兼容（页面级全图化：HTML 截图 / AI 重绘）与向下兼容（html2pptx）的形态、契约与排序 | 意见 7 |
 | `visual-depth.md` | 视觉纵深：归藏高级感 8 要素落位、信息图/图表组件库（画廊+配方双形态）、动效词汇库 8 族与五层启用矩阵 | 2026-09-19 v2 效果诊断 + 两轮深潜调研（F1–F6 已实施完毕） |
 | `handover-theme-differentiation.md` | **session 交接文档**：进度快照 + 用户验收 comment + baoyu-design 补充调研 + 主题差异化/想象层的独立思考（七层表达力栈、隐喻库、世界采样构思法、G–J 期路线） | 2026-09-19 用户验收 comment |
-| `theme-expression-stack.md` | G+H 期设计：主题 = 七层表达力栈（L1–L7 ↔ G0–G9）；骨架 v6 主题 CSS 槽位；两级主题架构（9 重主题 + 配色变体，16 纯调色板主题诚实合并）；两两七层 diff ≥3 的机器门槛；隐喻库 + 呈现发散步 | handover §5 路线（G/H 已实施，I/J 待办） |
+| `theme-expression-stack.md` | G+H 期设计：主题 = 七层表达力栈（L1–L7 ↔ G0–G9）；骨架 v6 主题 CSS 槽位；两级主题架构（9 重主题 + 配色变体，16 纯调色板主题诚实合并）；两两七层 diff ≥3 的机器门槛；隐喻库 + 呈现发散步 | handover §5 路线（G/H/I/J 全部实施完毕） |
 
 ## 决策速览
 

@@ -1278,6 +1278,845 @@ var PANEL_DATA = {
                 }
               }
             ]
+          },
+          {
+            "id": "e1",
+            "label": "孔版印刷",
+            "series": "E",
+            "vibe": "大豆油墨 + 荧光专色 + 套色错位，独立出版 zine 的手工印刷感与不完美的生命力",
+            "description": "创意/设计/艺术分享、青年文化与亚文化主题、工作坊与社区活动、独立出版、任何\"反精致\"立场的表达；大豆油墨 + 荧光专色 + 套色错位，独立出版 zine 的手工印刷感与不完美的生命力",
+            "focus": [
+              "G3",
+              "G9"
+            ],
+            "focus_label": "质感 + 装饰",
+            "group": "texture",
+            "group_label": "质感主导",
+            "visual": {
+              "paper": "#f7f2e6",
+              "ink": "#221d16",
+              "accent": "#FF48B0",
+              "font_display": "sans",
+              "font_body": "sans"
+            },
+            "tokens": {
+              "--paper": "#f7f2e6",
+              "--paper-tint": "#ece5d3",
+              "--ink": "#221d16",
+              "--ink-tint": "#332c22",
+              "--accent": "#FF48B0",
+              "--accent-on": "#fdfaf3",
+              "--font-display": "\"Helvetica Neue\",\"Arial Black\",\"PingFang SC\",\"Noto Sans SC\",sans-serif",
+              "--font-body": "\"Helvetica Neue\",\"PingFang SC\",\"Noto Sans SC\",\"Microsoft YaHei\",sans-serif",
+              "--font-mono": "\"Courier New\",\"SF Mono\",\"JetBrains Mono\",monospace",
+              "--texture-type": "grain",
+              "--texture-layer": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E\"), radial-gradient(70% 60% at 75% 85%, color-mix(in srgb, var(--accent) 4%, transparent), transparent 65%)",
+              "--texture-scope": "all"
+            },
+            "theme_css": "/* E1 孔版印刷 · 装饰母题 + 缓动签名 */\n:root{--ease-out:cubic-bezier(.3,1.4,.4,1)}\n.mt-ris-misreg{position:relative;isolation:isolate}\n.mt-ris-misreg::before,.mt-ris-misreg::after{content:\"\";position:absolute;inset:-.12em -.3em;z-index:-1;mix-blend-mode:multiply}\n.mt-ris-misreg::before{background:color-mix(in srgb,var(--accent) 80%,transparent);transform:translate(-2.5px,2px)}\n.mt-ris-misreg::after{background:color-mix(in srgb,var(--accent) 40%,var(--paper));transform:translate(2.5px,-2px)}\n.mt-ris-cut{border:none;border-top:1px dashed color-mix(in srgb,var(--ink) 38%,transparent)}\n.mt-ris-halftone{position:absolute;pointer-events:none;background-image:radial-gradient(color-mix(in srgb,var(--accent) 55%,transparent) 1.2px,transparent 1.7px);background-size:9px 9px;opacity:.5}",
+            "variants": [
+              {
+                "id": "e1-v1",
+                "label": "Riso 蓝",
+                "vibe": "只换墨辊——荧光粉滚筒换成 Riso 蓝，同一台机器同一批纸，冷静清爽——技术社区、独立杂志、音乐与现场文化",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#f7f2e6",
+                  "--paper-tint": "#ece5d3",
+                  "--ink": "#221d16",
+                  "--ink-tint": "#332c22",
+                  "--accent": "#0078BF",
+                  "--accent-on": "#f2f8fc"
+                },
+                "visual": {
+                  "paper": "#f7f2e6",
+                  "ink": "#221d16",
+                  "accent": "#0078BF"
+                }
+              },
+              {
+                "id": "e1-v2",
+                "label": "向日葵黄",
+                "vibe": "只换墨辊——向日葵黄专色，最\"印刷车间\"的一档，明度高、噪点下最出颗粒——青年文化、市集/展览、轻品牌",
+                "accent_note": "荧光黄明度饱和双高——错位块/半调块面积再收一半（内容页 ≤5%），满屏黄仅封面；黄底上的文字一律 ink 不用 accent-on；其余同基底口径",
+                "tokens": {
+                  "--paper": "#f7f2e6",
+                  "--paper-tint": "#ece5d3",
+                  "--ink": "#221d16",
+                  "--ink-tint": "#332c22",
+                  "--accent": "#FFB511",
+                  "--accent-on": "#221d16"
+                },
+                "visual": {
+                  "paper": "#f7f2e6",
+                  "ink": "#221d16",
+                  "accent": "#FFB511"
+                }
+              }
+            ]
+          },
+          {
+            "id": "e2",
+            "label": "蓝图",
+            "series": "E",
+            "vibe": "硫酸纸深蓝底 + 白线 + 尺寸标注，工程制图的精确、复写感与\"可施工\"的权威",
+            "description": "工程/建筑/制造、技术方案与架构汇报、基础设施、产品规格书、流程严谨的交付文档；硫酸纸深蓝底 + 白线 + 尺寸标注，工程制图的精确、复写感与\"可施工\"的权威",
+            "focus": [
+              "G3",
+              "G9"
+            ],
+            "focus_label": "质感 + 装饰",
+            "group": "texture",
+            "group_label": "质感主导",
+            "visual": {
+              "paper": "#14304a",
+              "ink": "#f2f6f9",
+              "accent": "#35C8E8",
+              "font_display": "sans",
+              "font_body": "sans"
+            },
+            "tokens": {
+              "--paper": "#14304a",
+              "--paper-tint": "#1b3d5c",
+              "--ink": "#f2f6f9",
+              "--ink-tint": "#0f2438",
+              "--accent": "#35C8E8",
+              "--accent-on": "#0e2a3f",
+              "--font-display": "\"Helvetica Neue\",\"PingFang SC\",\"Noto Sans SC\",\"Microsoft YaHei\",sans-serif",
+              "--font-body": "\"Helvetica Neue\",\"PingFang SC\",\"Noto Sans SC\",\"Microsoft YaHei\",sans-serif",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "paper",
+              "--texture-layer": "repeating-linear-gradient(0deg, color-mix(in srgb, var(--ink) 5%, transparent) 0 1px, transparent 1px 7px), repeating-linear-gradient(90deg, color-mix(in srgb, var(--ink) 5%, transparent) 0 1px, transparent 1px 7px), repeating-linear-gradient(0deg, color-mix(in srgb, var(--ink) 12%, transparent) 0 1px, transparent 1px 35px), repeating-linear-gradient(90deg, color-mix(in srgb, var(--ink) 12%, transparent) 0 1px, transparent 1px 35px)",
+              "--texture-scope": "all"
+            },
+            "theme_css": "/* E2 蓝图 · 装饰母题 */\n.mt-bp-frame{position:relative;border:1px solid color-mix(in srgb,var(--ink) 55%,transparent)}\n.mt-bp-frame::before{content:\"\";position:absolute;inset:5px;border:1px solid color-mix(in srgb,var(--ink) 32%,transparent);pointer-events:none}\n.mt-bp-tag{position:absolute;right:-1px;bottom:-1px;display:flex;font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:color-mix(in srgb,var(--ink) 82%,transparent);border:1px solid color-mix(in srgb,var(--ink) 55%,transparent);background:var(--paper)}\n.mt-bp-tag>span{padding:.35em .9em;border-left:1px solid color-mix(in srgb,var(--ink) 32%,transparent)}\n.mt-bp-tag>span:first-child{border-left:none}\n.mt-bp-dim{display:flex;align-items:center;gap:.8em;font-family:var(--font-mono);font-size:12px;letter-spacing:.12em;color:color-mix(in srgb,var(--ink) 75%,transparent)}\n.mt-bp-dim i{flex:1;position:relative;height:1px;font-style:normal;background:color-mix(in srgb,var(--ink) 55%,transparent)}\n.mt-bp-dim i::before,.mt-bp-dim i::after{content:\"\";position:absolute;top:-3px;width:0;height:0;border:3.5px solid transparent}\n.mt-bp-dim i::before{left:0;border-right:6px solid color-mix(in srgb,var(--ink) 55%,transparent)}\n.mt-bp-dim i::after{right:0;border-left:6px solid color-mix(in srgb,var(--ink) 55%,transparent)}",
+            "variants": [
+              {
+                "id": "e2-v1",
+                "label": "反相蓝图",
+                "vibe": "蓝线白底的晒图反相——从硫酸纸回到绘图板，更亮更文档化，适合打印交付与正式评审",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#f4f7f9",
+                  "--paper-tint": "#e5ecf1",
+                  "--ink": "#14304a",
+                  "--ink-tint": "#27455e",
+                  "--accent": "#0E7D99",
+                  "--accent-on": "#f4f7f9"
+                },
+                "visual": {
+                  "paper": "#f4f7f9",
+                  "ink": "#14304a",
+                  "accent": "#0E7D99"
+                }
+              },
+              {
+                "id": "e2-v2",
+                "label": "黑板粉笔",
+                "vibe": "深灰黑板 + 白粉笔线 + 粉笔黄标注——制图前的推演现场，适合方案推演、教学、头脑风暴复盘",
+                "accent_note": "粉笔黄是黑板上唯一的彩色粉笔——标注纪律不变（≤5%），粉笔尘颗粒感强于基底网格；其余同基底口径",
+                "tokens": {
+                  "--paper": "#232a30",
+                  "--paper-tint": "#2d353c",
+                  "--ink": "#e9edf0",
+                  "--ink-tint": "#161b1f",
+                  "--accent": "#E3C85C",
+                  "--accent-on": "#232a30",
+                  "--texture-type": "grain",
+                  "--texture-layer": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E\"), repeating-linear-gradient(0deg, color-mix(in srgb, var(--ink) 6%, transparent) 0 1px, transparent 1px 7px), repeating-linear-gradient(90deg, color-mix(in srgb, var(--ink) 6%, transparent) 0 1px, transparent 1px 7px)"
+                },
+                "visual": {
+                  "paper": "#232a30",
+                  "ink": "#e9edf0",
+                  "accent": "#E3C85C"
+                }
+              }
+            ]
+          },
+          {
+            "id": "e3",
+            "label": "装饰艺术 Art Deco",
+            "series": "E",
+            "vibe": "墨黑底 + 金线扇形放射，爵士时代的对称奢华与隆重",
+            "description": "品牌发布、晚宴/庆典/颁奖典礼、奢侈品、金融、历史文化、需要仪式感与华丽记忆的场合；墨黑底 + 金线扇形放射，爵士时代的对称奢华与隆重",
+            "focus": [
+              "G9",
+              "G1"
+            ],
+            "focus_label": "装饰 + 配色",
+            "group": "motif",
+            "group_label": "装饰主导",
+            "visual": {
+              "paper": "#111110",
+              "ink": "#f0e9d6",
+              "accent": "#c9a227",
+              "font_display": "serif",
+              "font_body": "sans"
+            },
+            "tokens": {
+              "--paper": "#111110",
+              "--paper-tint": "#1b1b18",
+              "--ink": "#f0e9d6",
+              "--ink-tint": "#0a0a09",
+              "--accent": "#c9a227",
+              "--accent-on": "#111110",
+              "--font-display": "\"Songti SC\",\"Noto Serif SC\",\"STSong\",serif",
+              "--font-body": "\"PingFang SC\",\"Noto Sans SC\",\"Microsoft YaHei\",sans-serif",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "flat",
+              "--texture-layer": "none",
+              "--texture-scope": "cover"
+            },
+            "theme_css": "/* E3 装饰艺术 · 装饰母题 */\n.mt-deco-sun{width:min(56vw,480px);height:calc(min(56vw,480px)/2);border-radius:999px 999px 0 0;overflow:hidden;pointer-events:none;background:repeating-conic-gradient(from -90deg at 50% 100%,color-mix(in srgb,var(--accent) 60%,transparent) 0deg 1.5deg,transparent 1.5deg 9deg)}\n.mt-deco-frame{border:1px solid color-mix(in srgb,var(--accent) 70%,transparent);outline:1px solid color-mix(in srgb,var(--accent) 70%,transparent);outline-offset:5px}\n.mt-deco-divider{display:flex;align-items:center;justify-content:center;gap:14px;pointer-events:none}\n.mt-deco-divider::before,.mt-deco-divider::after{content:\"\";width:72px;height:1px;background:color-mix(in srgb,var(--accent) 65%,transparent)}\n.mt-deco-rhombus{display:inline-block;width:8px;height:8px;background:var(--accent);transform:rotate(45deg)}",
+            "variants": [
+              {
+                "id": "e3-v1",
+                "label": "墨绿金",
+                "vibe": "深墨绿 + 金，老钱俱乐部与丝绒帷幕——金融、家族传承、威士忌、私享晚宴",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#0e1a14",
+                  "--paper-tint": "#16241c",
+                  "--ink": "#f0e9d6",
+                  "--ink-tint": "#080f0b",
+                  "--accent": "#c9a227",
+                  "--accent-on": "#0e1a14"
+                },
+                "visual": {
+                  "paper": "#0e1a14",
+                  "ink": "#f0e9d6",
+                  "accent": "#c9a227"
+                }
+              },
+              {
+                "id": "e3-v2",
+                "label": "珍珠白银",
+                "vibe": "珍珠浅底 + 深墨 + 银灰金，日间舞会与珠宝图册——时尚、美妆、婚礼、轻奢华品牌",
+                "accent_note": "浅底下银灰金明度差弱于暗底金——金线加倍克制（面积 ≤6%），满屏特权改为深墨反白页 + 银灰金双线框；其余同基底口径",
+                "tokens": {
+                  "--paper": "#ece9e2",
+                  "--paper-tint": "#e0dcd2",
+                  "--ink": "#17181c",
+                  "--ink-tint": "#26272c",
+                  "--accent": "#8c7a4f",
+                  "--accent-on": "#ece9e2"
+                },
+                "visual": {
+                  "paper": "#ece9e2",
+                  "ink": "#17181c",
+                  "accent": "#8c7a4f"
+                }
+              }
+            ]
+          },
+          {
+            "id": "e4",
+            "label": "包豪斯 Bauhaus",
+            "series": "E",
+            "vibe": "米白纸 + 墨黑 + 原色，圆/三角/方基本形的构成游戏，理性而有玩心",
+            "description": "设计、教育、文化、产品方法论、品牌故事，任何\"形式追随功能\"立场的场合；米白纸 + 墨黑 + 原色，圆/三角/方基本形的构成游戏，理性而有玩心",
+            "focus": [
+              "G9",
+              "G4"
+            ],
+            "focus_label": "装饰 + 形态",
+            "group": "motif",
+            "group_label": "装饰主导",
+            "visual": {
+              "paper": "#f4f0e4",
+              "ink": "#141412",
+              "accent": "#D1342B",
+              "font_display": "sans",
+              "font_body": "sans"
+            },
+            "tokens": {
+              "--paper": "#f4f0e4",
+              "--paper-tint": "#e9e3d3",
+              "--ink": "#141412",
+              "--ink-tint": "#26241f",
+              "--accent": "#D1342B",
+              "--accent-on": "#f4f0e4",
+              "--font-display": "\"Helvetica Neue\",\"PingFang SC\",\"Noto Sans SC\",sans-serif",
+              "--font-body": "\"Helvetica Neue\",\"PingFang SC\",\"Noto Sans SC\",sans-serif",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "flat",
+              "--texture-layer": "none",
+              "--texture-scope": "cover"
+            },
+            "theme_css": "/* E4 包豪斯 · 装饰母题 */\n.mt-bau-circle,.mt-bau-tri,.mt-bau-square{position:absolute;pointer-events:none;user-select:none}\n.mt-bau-circle{border-radius:50%}\n.mt-bau-tri{clip-path:polygon(50% 0,100% 100%,0 100%)}\n.mt-bau-fill-accent{background:var(--accent)}\n.mt-bau-fill-ink{background:var(--ink)}\n.mt-bau-tint{background:color-mix(in srgb,var(--ink) 10%,transparent)}\n.mt-bau-line{display:block;height:2px;background:var(--ink)}",
+            "variants": [
+              {
+                "id": "e4-v1",
+                "label": "原色黄",
+                "vibe": "原色黄 + 墨黑，乐观明亮，教室里的构成练习——教育、儿童、科普、生活方式品牌",
+                "accent_note": "黄底配深字（accent-on 用 ink）；满版黄封面投影场景注意亮度，正文页黄面积仍 ≤10%；其余同基底口径",
+                "tokens": {
+                  "--paper": "#f4f0e4",
+                  "--paper-tint": "#e9e3d3",
+                  "--ink": "#141412",
+                  "--ink-tint": "#26241f",
+                  "--accent": "#F2A600",
+                  "--accent-on": "#141412"
+                },
+                "visual": {
+                  "paper": "#f4f0e4",
+                  "ink": "#141412",
+                  "accent": "#F2A600"
+                }
+              },
+              {
+                "id": "e4-v2",
+                "label": "原色蓝",
+                "vibe": "原色蓝 + 墨黑，冷静理性，最贴近瑞士邻居的一种光——科技、建筑、机构发布",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#f4f0e4",
+                  "--paper-tint": "#e9e3d3",
+                  "--ink": "#141412",
+                  "--ink-tint": "#26241f",
+                  "--accent": "#0057A8",
+                  "--accent-on": "#f4f0e4"
+                },
+                "visual": {
+                  "paper": "#f4f0e4",
+                  "ink": "#141412",
+                  "accent": "#0057A8"
+                }
+              }
+            ]
+          },
+          {
+            "id": "e5",
+            "label": "构成主义 Constructivism",
+            "series": "E",
+            "vibe": "米纸 + 墨黑 + 革命红，对角线劈开版面的宣传画压强",
+            "description": "宣言式发布、动员/号召、变革叙事、观点鲜明的演讲、需要鼓动性的场合；米纸 + 墨黑 + 革命红，对角线劈开版面的宣传画压强",
+            "focus": [
+              "G9",
+              "G5"
+            ],
+            "focus_label": "装饰 + 动效",
+            "group": "motif",
+            "group_label": "装饰主导",
+            "visual": {
+              "paper": "#eadfc4",
+              "ink": "#171310",
+              "accent": "#9E1B1E",
+              "font_display": "sans",
+              "font_body": "sans"
+            },
+            "tokens": {
+              "--paper": "#eadfc4",
+              "--paper-tint": "#ddd0b0",
+              "--ink": "#171310",
+              "--ink-tint": "#2b241a",
+              "--accent": "#9E1B1E",
+              "--accent-on": "#eadfc4",
+              "--font-display": "\"Arial Black\",\"PingFang SC\",\"Noto Sans SC\",sans-serif",
+              "--font-body": "\"PingFang SC\",\"Noto Sans SC\",\"Microsoft YaHei\",sans-serif",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "grain",
+              "--texture-layer": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E\")",
+              "--texture-scope": "cover"
+            },
+            "theme_css": "/* E5 构成主义 · 装饰母题 + 缓动签名 */\n:root{--ease-out:cubic-bezier(.8,0,.2,1)}\n.mt-con-diag{position:absolute;left:-15%;width:130%;height:14vh;pointer-events:none;transform:rotate(-12deg);background:var(--accent)}\n.mt-con-diag--ink{background:var(--ink)}\n.mt-con-bar{display:inline-block;width:1.6em;height:.28em;background:var(--ink)}\n.mt-con-bar--accent{background:var(--accent)}",
+            "variants": [
+              {
+                "id": "e5-v1",
+                "label": "工业蓝",
+                "vibe": "米纸 + 墨黑 + 工业蓝，五年计划与建设题材——工业、基建、工程、组织变革叙事",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#eadfc4",
+                  "--paper-tint": "#ddd0b0",
+                  "--ink": "#171310",
+                  "--ink-tint": "#2b241a",
+                  "--accent": "#1E4E8C",
+                  "--accent-on": "#eadfc4"
+                },
+                "visual": {
+                  "paper": "#eadfc4",
+                  "ink": "#171310",
+                  "accent": "#1E4E8C"
+                }
+              },
+              {
+                "id": "e5-v2",
+                "label": "全墨",
+                "vibe": "单色石印——米纸 + 墨黑两色印刷，最朴素也最锋利——档案、历史、极简宣言",
+                "accent_note": "accent 与 ink 同色——强调靠字重与对角结构，\"满屏 accent\"体现为满版墨底反白宣言页（封面/收束特权）；其余同基底口径",
+                "tokens": {
+                  "--paper": "#eadfc4",
+                  "--paper-tint": "#ddd0b0",
+                  "--ink": "#171310",
+                  "--ink-tint": "#2b241a",
+                  "--accent": "#171310",
+                  "--accent-on": "#eadfc4"
+                },
+                "visual": {
+                  "paper": "#eadfc4",
+                  "ink": "#171310",
+                  "accent": "#171310"
+                }
+              }
+            ]
+          },
+          {
+            "id": "e6",
+            "label": "Memphis 孟菲斯",
+            "series": "E",
+            "vibe": "纯白底 + 墨黑粗描边 + 糖果色几何碎形，1980s Memphis 的戏谑与高能量",
+            "description": "年轻消费品牌、活动发布、创意行业、教育科普、潮流零售、节庆营销；纯白底 + 墨黑粗描边 + 糖果色几何碎形，1980s Memphis 的戏谑与高能量",
+            "focus": [
+              "G9",
+              "G5"
+            ],
+            "focus_label": "装饰 + 动效",
+            "group": "motif",
+            "group_label": "装饰主导",
+            "visual": {
+              "paper": "#FFF8EE",
+              "ink": "#1A1A2E",
+              "accent": "#FF3DA5",
+              "font_display": "sans",
+              "font_body": "sans"
+            },
+            "tokens": {
+              "--paper": "#FFF8EE",
+              "--paper-tint": "#FFE9C7",
+              "--ink": "#1A1A2E",
+              "--ink-tint": "#3A3A55",
+              "--accent": "#FF3DA5",
+              "--accent-on": "#FFF8EE",
+              "--font-display": "\"Futura\",\"Century Gothic\",\"PingFang SC\",\"Noto Sans SC\",\"Microsoft YaHei\",sans-serif",
+              "--font-body": "\"PingFang SC\",\"Noto Sans SC\",\"Microsoft YaHei\",sans-serif",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "flat",
+              "--texture-layer": "none",
+              "--texture-scope": "cover"
+            },
+            "theme_css": "/* E6 Memphis 孟菲斯 · 装饰母题 + 缓动签名 */\n:root{--ease-out:cubic-bezier(.5,1.7,.4,1)}\n.mt-mem-confetti{position:absolute;inset:0;pointer-events:none;user-select:none;overflow:hidden}\n.mt-mem-confetti i{position:absolute;display:block}\n.mt-mem-dot{width:14px;height:14px;border-radius:50%;background:var(--accent)}\n.mt-mem-tri{width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:15px solid color-mix(in srgb,var(--accent) 55%,var(--paper))}\n.mt-mem-ring{width:16px;height:16px;border:3px solid var(--ink);border-radius:50%}\n.mt-mem-zig{height:12px;pointer-events:none;background-image:linear-gradient(135deg,var(--ink) 25%,transparent 25%),linear-gradient(225deg,var(--ink) 25%,transparent 25%);background-size:16px 12px;background-repeat:repeat-x}\n.mt-mem-card{border:3px solid var(--ink);border-radius:14px;background:var(--paper);box-shadow:8px 8px 0 color-mix(in srgb,var(--accent) 85%,var(--ink))}",
+            "variants": [
+              {
+                "id": "e6-v1",
+                "label": "电光蓝",
+                "vibe": "糖果罐换成电光蓝——更冷更锐的孟菲斯，科技馆与极客活动感——科技产品、赛事、潮流数码",
+                "accent_note": "电光蓝明度高，accent-on 反深字（墨黑）才读得清；其余同基底口径",
+                "tokens": {
+                  "--paper": "#FFF8EE",
+                  "--paper-tint": "#FFE9C7",
+                  "--ink": "#1A1A2E",
+                  "--ink-tint": "#3A3A55",
+                  "--accent": "#00B8D9",
+                  "--accent-on": "#1A1A2E"
+                },
+                "visual": {
+                  "paper": "#FFF8EE",
+                  "ink": "#1A1A2E",
+                  "accent": "#00B8D9"
+                }
+              },
+              {
+                "id": "e6-v2",
+                "label": "柠檬黄",
+                "vibe": "柠檬黄糖果罐——最闹最节庆的一罐，黑白网格底的经典孟菲斯海报感——节庆营销、儿童教育、活动邀请",
+                "accent_note": "柠檬黄明度最高——accent-on 必须反深字；硬偏移投影由 `.mt-mem-card` 的 color-mix(accent 85%, ink) 自动压暗，无需另处理；其余同基底口径",
+                "tokens": {
+                  "--paper": "#FFF8EE",
+                  "--paper-tint": "#FFE9C7",
+                  "--ink": "#1A1A2E",
+                  "--ink-tint": "#3A3A55",
+                  "--accent": "#FFD93D",
+                  "--accent-on": "#1A1A2E"
+                },
+                "visual": {
+                  "paper": "#FFF8EE",
+                  "ink": "#1A1A2E",
+                  "accent": "#FFD93D"
+                }
+              }
+            ]
+          },
+          {
+            "id": "e7",
+            "label": "浮世绘",
+            "series": "E",
+            "vibe": "宣纸米底 + 墨线平涂 + 印泥红落款，浮世绘版画的平面秩序与东方余白",
+            "description": "文化艺术、东方美学、展览与博物馆、品牌故事、茶/器物/旅行、人文叙事；宣纸米底 + 墨线平涂 + 印泥红落款，浮世绘版画的平面秩序与东方余白",
+            "focus": [
+              "G3",
+              "G9"
+            ],
+            "focus_label": "质感 + 装饰",
+            "group": "texture",
+            "group_label": "质感主导",
+            "visual": {
+              "paper": "#F5EFE2",
+              "ink": "#23201B",
+              "accent": "#B03A2E",
+              "font_display": "serif",
+              "font_body": "serif"
+            },
+            "tokens": {
+              "--paper": "#F5EFE2",
+              "--paper-tint": "#E9DFC9",
+              "--ink": "#23201B",
+              "--ink-tint": "#3D3A33",
+              "--accent": "#B03A2E",
+              "--accent-on": "#F5EFE2",
+              "--font-display": "\"Songti SC\",\"Noto Serif SC\",\"STSong\",serif",
+              "--font-body": "\"Songti SC\",\"Noto Serif SC\",\"STSong\",serif",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "paper",
+              "--texture-layer": "radial-gradient(90% 70% at 20% 15%, color-mix(in srgb, var(--ink) 3%, transparent), transparent 60%), radial-gradient(80% 70% at 80% 90%, color-mix(in srgb, var(--ink) 2%, transparent), transparent 65%)",
+              "--texture-scope": "all"
+            },
+            "theme_css": "/* E7 浮世绘 · 装饰母题 */\n.mt-uki-seal{display:inline-flex;align-items:center;justify-content:center;width:2.4em;height:2.4em;background:var(--accent);color:var(--accent-on);font-family:var(--font-display);font-weight:700;font-size:.5em;line-height:1.15;text-align:center;writing-mode:vertical-rl;letter-spacing:.08em;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--accent-on) 40%,transparent)}\n.mt-uki-wave{height:26px;pointer-events:none;user-select:none;background-image:radial-gradient(circle at 13px 26px,transparent 9px,color-mix(in srgb,var(--ink) 55%,transparent) 9px 10.5px,transparent 10.5px),radial-gradient(circle at 13px 26px,transparent 4px,color-mix(in srgb,var(--ink) 55%,transparent) 4px 5.5px,transparent 5.5px);background-size:26px 26px;background-repeat:repeat-x}\n.mt-uki-cloud{height:10px;pointer-events:none;user-select:none;background-image:repeating-linear-gradient(90deg,color-mix(in srgb,var(--accent) 70%,var(--paper)) 0 60px,transparent 60px 88px),repeating-linear-gradient(90deg,color-mix(in srgb,var(--ink) 25%,transparent) 0 34px,transparent 34px 88px);background-position:0 0,14px 5px;background-size:88px 4px,88px 4px;background-repeat:repeat-x}\n.mt-uki-inscription{writing-mode:vertical-rl;font-family:var(--font-display);font-size:.5em;letter-spacing:.35em;color:color-mix(in srgb,var(--ink) 70%,transparent);border-left:1px solid color-mix(in srgb,var(--ink) 40%,transparent);padding-left:.6em}",
+            "variants": [
+              {
+                "id": "e7-v1",
+                "label": "北斋蓝",
+                "vibe": "普鲁士蓝（ベロ藍）入画——《神奈川冲浪里》的蓝浪世界，冷静、深邃、构图感最强——海洋、旅行、设计史、沉静叙事",
+                "accent_note": "蓝变体的 accent 是主役色而非落款色——内容页面积放宽至 ≤10%（浪花带/色面可用 accent 派生），姓名印保持 accent 实色不变；满屏仍禁止",
+                "tokens": {
+                  "--paper": "#F5EFE2",
+                  "--paper-tint": "#E9DFC9",
+                  "--ink": "#23201B",
+                  "--ink-tint": "#3D3A33",
+                  "--accent": "#2B4B6F",
+                  "--accent-on": "#F5EFE2"
+                },
+                "visual": {
+                  "paper": "#F5EFE2",
+                  "ink": "#23201B",
+                  "accent": "#2B4B6F"
+                }
+              },
+              {
+                "id": "e7-v2",
+                "label": "藤紫",
+                "vibe": "藤紫落款——平安贵族色的余韵，比红更幽更文——文学、香道花道、雅集、女性向文化品牌",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#F5EFE2",
+                  "--paper-tint": "#E9DFC9",
+                  "--ink": "#23201B",
+                  "--ink-tint": "#3D3A33",
+                  "--accent": "#7A5C8E",
+                  "--accent-on": "#F5EFE2"
+                },
+                "visual": {
+                  "paper": "#F5EFE2",
+                  "ink": "#23201B",
+                  "accent": "#7A5C8E"
+                }
+              }
+            ]
+          },
+          {
+            "id": "e8",
+            "label": "号外报纸",
+            "series": "E",
+            "vibe": "纸白 + 油墨黑 + 号外红，超粗黑标题压顶、通栏粗细双线、多栏小字的新闻冲击力",
+            "description": "新闻/资讯/时事评论、数据简报与行业观察、战报式项目汇报、危机通报、复古 editorial 叙事；纸白 + 油墨黑 + 号外红，超粗黑标题压顶、通栏粗细双线、多栏小字的新闻冲击力",
+            "focus": [
+              "G2",
+              "G9"
+            ],
+            "focus_label": "字排 + 装饰",
+            "group": "motif",
+            "group_label": "装饰主导",
+            "visual": {
+              "paper": "#f4f1ea",
+              "ink": "#111111",
+              "accent": "#C8102E",
+              "font_display": "sans",
+              "font_body": "serif"
+            },
+            "tokens": {
+              "--paper": "#f4f1ea",
+              "--paper-tint": "#e8e4da",
+              "--ink": "#111111",
+              "--ink-tint": "#232323",
+              "--accent": "#C8102E",
+              "--accent-on": "#fdf9f4",
+              "--font-display": "\"Arial Black\",\"Impact\",\"SimHei\",\"PingFang SC\",\"Noto Sans SC\",sans-serif",
+              "--font-body": "\"Georgia\",\"Times New Roman\",\"Songti SC\",\"SimSun\",serif",
+              "--font-mono": "\"Consolas\",\"Courier New\",\"SF Mono\",monospace",
+              "--texture-type": "paper",
+              "--texture-layer": "radial-gradient(85% 60% at 15% 8%, color-mix(in srgb, var(--ink) 4%, transparent), transparent 60%)",
+              "--texture-scope": "cover"
+            },
+            "theme_css": "/* E8 号外报纸 · 装饰母题 */\n.mt-news-rule{height:5px;border:none;border-top:3px solid var(--ink);border-bottom:1px solid var(--ink)}\n.mt-news-mast{display:flex;align-items:baseline;justify-content:space-between;gap:1.2em;padding:.55em 0;border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);font-family:var(--font-mono);font-size:12px;letter-spacing:.26em;text-transform:uppercase}\n.mt-news-cols{columns:3;column-gap:2.2em;column-rule:1px solid color-mix(in srgb,var(--ink) 22%,transparent);text-align:justify}\n.mt-news-pull{border-top:3px solid var(--ink);border-bottom:1px solid var(--ink);padding:.7em 0;font-family:var(--font-body);font-style:italic;font-size:1.45em;line-height:1.6}",
+            "variants": [
+              {
+                "id": "e8-v1",
+                "label": "财经蓝",
+                "vibe": "号外红换藏蓝——从街头号外走进金融版，权威、克制、数据感——财报、行业研报、机构简报",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#f4f1ea",
+                  "--paper-tint": "#e8e4da",
+                  "--ink": "#111111",
+                  "--ink-tint": "#232323",
+                  "--accent": "#1E3A6E",
+                  "--accent-on": "#f4f1ea"
+                },
+                "visual": {
+                  "paper": "#f4f1ea",
+                  "ink": "#111111",
+                  "accent": "#1E3A6E"
+                }
+              },
+              {
+                "id": "e8-v2",
+                "label": "泛黄旧报",
+                "vibe": "旧报纸泛黄 + 墨褐标题——档案馆里的合订本，年代感与史料感——历史回顾、编年叙事、纪念专题",
+                "accent_note": "墨褐饱和度低，礼仪性使用口径不变（≤5%）；\"号外\"封面的满版特权改为半版旧化晕染；其余同基底口径",
+                "tokens": {
+                  "--paper": "#ece2c6",
+                  "--paper-tint": "#ded2b2",
+                  "--ink": "#241d14",
+                  "--ink-tint": "#352a1c",
+                  "--accent": "#6B4A2F",
+                  "--accent-on": "#f0e8d2",
+                  "--texture-layer": "radial-gradient(60% 50% at 20% 15%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 60%), radial-gradient(70% 60% at 80% 90%, color-mix(in srgb, var(--ink) 6%, transparent), transparent 65%)"
+                },
+                "visual": {
+                  "paper": "#ece2c6",
+                  "ink": "#241d14",
+                  "accent": "#6B4A2F"
+                }
+              }
+            ]
+          },
+          {
+            "id": "e9",
+            "label": "地质地层",
+            "series": "E",
+            "vibe": "白昼大地剖面——纸米底上铺开赭石层理与等高线，像摊开一张地质调查图：精确、沉稳、有岩石的时间厚度",
+            "description": "地质/考古/历史纵深、组织架构与层级、演进与成因类内容，研究型叙事，自然与人文地理；白昼大地剖面——纸米底上铺开赭石层理与等高线，像摊开一张地质调查图：精确、沉稳、有岩石的时间厚度",
+            "focus": [
+              "G3",
+              "G9"
+            ],
+            "focus_label": "质感 + 装饰",
+            "group": "texture",
+            "group_label": "质感主导",
+            "visual": {
+              "paper": "#f0e9d8",
+              "ink": "#2c251d",
+              "accent": "#a85a2a",
+              "font_display": "sans",
+              "font_body": "sans"
+            },
+            "tokens": {
+              "--paper": "#f0e9d8",
+              "--paper-tint": "#e3d9c3",
+              "--ink": "#2c251d",
+              "--ink-tint": "#413729",
+              "--accent": "#a85a2a",
+              "--accent-on": "#f0e9d8",
+              "--font-display": "\"Avenir Next\",\"Helvetica Neue\",\"PingFang SC\",\"Noto Sans SC\",sans-serif",
+              "--font-body": "\"PingFang SC\",\"Noto Sans SC\",\"Microsoft YaHei\",sans-serif",
+              "--font-mono": "\"JetBrains Mono\",\"SF Mono\",\"Menlo\",monospace",
+              "--texture-type": "grain",
+              "--texture-layer": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E\")",
+              "--texture-scope": "all"
+            },
+            "theme_css": "/* E9 地质地层 · 装饰母题 */\n.mt-geo-strata{position:absolute;left:0;right:0;bottom:0;height:10%;pointer-events:none;border-top:1px solid color-mix(in srgb,var(--ink) 34%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 28%,var(--paper)) 0 24%,color-mix(in srgb,var(--ink) 14%,var(--paper)) 24% 42%,color-mix(in srgb,var(--accent) 48%,var(--paper)) 42% 55%,var(--paper-tint) 55% 78%,color-mix(in srgb,var(--ink) 30%,var(--paper)) 78%)}\n.mt-geo-core{width:20px;border-radius:10px;border:1px solid color-mix(in srgb,var(--ink) 32%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 62%,var(--paper)),color-mix(in srgb,var(--accent) 26%,var(--paper)) 38%,color-mix(in srgb,var(--ink) 18%,var(--paper)) 62%,color-mix(in srgb,var(--ink) 40%,var(--paper)))}\n.mt-geo-contour{position:absolute;pointer-events:none;width:340px;height:340px;border-radius:50%;opacity:.5;background:repeating-radial-gradient(circle at 50% 50%,transparent 0 27px,color-mix(in srgb,var(--ink) 20%,transparent) 27px 28px)}\n.mt-geo-tag{display:inline-flex;align-items:center;gap:.6em;font-family:var(--font-mono);font-size:12px;letter-spacing:.2em;color:color-mix(in srgb,var(--ink) 66%,transparent)}\n.mt-geo-tag::before{content:\"\";width:14px;height:1px;background:var(--accent)}",
+            "variants": [
+              {
+                "id": "e9-v1",
+                "label": "岩灰蓝",
+                "vibe": "灰蓝色调的石灰岩与页岩层——更冷、更克制，像阴天野外的测绘现场，适合工程/基建/数据基础设施叙事",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#eeebdf",
+                  "--paper-tint": "#e1dcc9",
+                  "--ink": "#2c2b26",
+                  "--ink-tint": "#403e35",
+                  "--accent": "#5f7482",
+                  "--accent-on": "#eeebdf"
+                },
+                "visual": {
+                  "paper": "#eeebdf",
+                  "ink": "#2c2b26",
+                  "accent": "#5f7482"
+                }
+              },
+              {
+                "id": "e9-v2",
+                "label": "红土",
+                "vibe": "红土高原与氧化铁层——更暖、更荒原，适合考古/文明/迁徙/远征类叙事",
+                "accent_note": "红土红与层理色带同属暖域，色带淡阶与 accent 标注的明度差要拉大（淡阶混色 ≤35%），其余同基底口径",
+                "tokens": {
+                  "--paper": "#f2e6d2",
+                  "--paper-tint": "#e5d6ba",
+                  "--ink": "#2e211a",
+                  "--ink-tint": "#453024",
+                  "--accent": "#a63f2a",
+                  "--accent-on": "#f2e6d2"
+                },
+                "visual": {
+                  "paper": "#f2e6d2",
+                  "ink": "#2e211a",
+                  "accent": "#a63f2a"
+                }
+              }
+            ]
+          },
+          {
+            "id": "e10",
+            "label": "星图",
+            "series": "E",
+            "vibe": "深夜蓝天球上，银白星点以金色虚线缝成星座——浩瀚、精确，有观星手册的浪漫",
+            "description": "愿景/战略/路线图、关系图谱与生态位叙事、科技与人文交叉主题，晚间发布与沉浸暗场；深夜蓝天球上，银白星点以金色虚线缝成星座——浩瀚、精确，有观星手册的浪漫",
+            "focus": [
+              "G9",
+              "G5"
+            ],
+            "focus_label": "装饰 + 动效",
+            "group": "motif",
+            "group_label": "装饰主导",
+            "visual": {
+              "paper": "#0b1426",
+              "ink": "#dfe7f2",
+              "accent": "#e8b64c",
+              "font_display": "serif",
+              "font_body": "sans"
+            },
+            "tokens": {
+              "--paper": "#0b1426",
+              "--paper-tint": "#152138",
+              "--ink": "#dfe7f2",
+              "--ink-tint": "#1d2c47",
+              "--accent": "#e8b64c",
+              "--accent-on": "#0b1426",
+              "--font-display": "\"Songti SC\",\"Noto Serif SC\",\"STSong\",serif",
+              "--font-body": "\"PingFang SC\",\"Noto Sans SC\",\"Microsoft YaHei\",sans-serif",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "grain",
+              "--texture-layer": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E\")",
+              "--texture-scope": "cover"
+            },
+            "theme_css": "/* E10 星图 · 装饰母题 */\n.mt-star-dot{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--ink);box-shadow:0 0 6px color-mix(in srgb,var(--accent) 60%,transparent)}\n.mt-star-dot::before,.mt-star-dot::after{content:\"\";position:absolute;left:50%;top:50%;background:color-mix(in srgb,var(--ink) 80%,transparent)}\n.mt-star-dot::before{width:13px;height:1px;transform:translate(-50%,-50%)}\n.mt-star-dot::after{width:1px;height:13px;transform:translate(-50%,-50%)}\n.mt-star-link{position:absolute;height:0;border-top:1px dashed color-mix(in srgb,var(--accent) 55%,transparent);transform-origin:left center;pointer-events:none}\n.mt-star-grid{position:absolute;inset:0;pointer-events:none;opacity:.5;background:repeating-linear-gradient(0deg,transparent 0 47px,color-mix(in srgb,var(--ink) 10%,transparent) 47px 48px),repeating-linear-gradient(90deg,transparent 0 47px,color-mix(in srgb,var(--ink) 10%,transparent) 47px 48px)}\n.mt-star-name{font-family:var(--font-display);font-style:italic;letter-spacing:.06em;color:color-mix(in srgb,var(--ink) 75%,transparent)}\n.mt-star-mag{font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;color:color-mix(in srgb,var(--ink) 52%,transparent)}",
+            "variants": [
+              {
+                "id": "e10-v1",
+                "label": "星云紫",
+                "vibe": "银河深处的星云紫调——更神秘、更内省，适合 AI/深科技/哲学与宇宙学叙事",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#100c22",
+                  "--paper-tint": "#1a1433",
+                  "--ink": "#e2dcf2",
+                  "--ink-tint": "#261d47",
+                  "--accent": "#9b7fd4",
+                  "--accent-on": "#100c22"
+                },
+                "visual": {
+                  "paper": "#100c22",
+                  "ink": "#e2dcf2",
+                  "accent": "#9b7fd4"
+                }
+              },
+              {
+                "id": "e10-v2",
+                "label": "极夜蓝白",
+                "vibe": "极夜下的蓝白星光——最冷、最素，接近天文台观测记录纸，适合科研/数据/天文与极地叙事",
+                "accent_note": "蓝白 accent 与 ink 近色——点状纪律不变，强调靠明度差与连线结构而非色相；其余同基底口径",
+                "tokens": {
+                  "--paper": "#0a111c",
+                  "--paper-tint": "#131e2d",
+                  "--ink": "#e8eef5",
+                  "--ink-tint": "#1b2939",
+                  "--accent": "#cfe0f0",
+                  "--accent-on": "#0a111c"
+                },
+                "visual": {
+                  "paper": "#0a111c",
+                  "ink": "#e8eef5",
+                  "accent": "#cfe0f0"
+                }
+              }
+            ]
+          },
+          {
+            "id": "e11",
+            "label": "票据",
+            "series": "E",
+            "vibe": "纸白票纸 + 墨黑字段 + 航司蓝 accent，登机牌与票根的工业浪漫与出发感",
+            "description": "旅行与出行、活动票务、产品发布（\"启程/上线\"叙事）、物流交通行业、流程与清单型内容；纸白票纸 + 墨黑字段 + 航司蓝 accent，登机牌与票根的工业浪漫与出发感",
+            "focus": [
+              "G9",
+              "G2"
+            ],
+            "focus_label": "装饰 + 字排",
+            "group": "motif",
+            "group_label": "装饰主导",
+            "visual": {
+              "paper": "#FDFCF9",
+              "ink": "#1D2129",
+              "accent": "#0F4C81",
+              "font_display": "sans",
+              "font_body": "sans"
+            },
+            "tokens": {
+              "--paper": "#FDFCF9",
+              "--paper-tint": "#F2F0E8",
+              "--ink": "#1D2129",
+              "--ink-tint": "#3A3F4A",
+              "--accent": "#0F4C81",
+              "--accent-on": "#FDFCF9",
+              "--font-display": "\"Arial Black\",\"Avenir Next Heavy\",\"PingFang SC\",\"Noto Sans SC\",\"Microsoft YaHei\",sans-serif",
+              "--font-body": "\"PingFang SC\",\"Noto Sans SC\",\"Microsoft YaHei\",sans-serif",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "flat",
+              "--texture-layer": "none",
+              "--texture-scope": "cover"
+            },
+            "theme_css": "/* E11 票据 · 装饰母题 */\n.mt-tix-perf{position:relative;border-top:2px dashed color-mix(in srgb,var(--ink) 50%,transparent)}\n.mt-tix-perf::before,.mt-tix-perf::after{content:\"\";position:absolute;top:-10px;width:20px;height:20px;border-radius:50%;background:var(--paper)}\n.mt-tix-perf::before{left:-10px}\n.mt-tix-perf::after{right:-10px}\n.mt-tix-barcode{height:44px;pointer-events:none;user-select:none;background-image:repeating-linear-gradient(90deg,var(--ink) 0 2px,transparent 2px 5px,var(--ink) 5px 6px,transparent 6px 11px,var(--ink) 11px 14px,transparent 14px 17px,var(--ink) 17px 18px,transparent 18px 23px)}\n.mt-tix-field{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.08em;line-height:1.4}\n.mt-tix-field small{display:block;font-size:.55em;font-weight:500;color:color-mix(in srgb,var(--ink) 55%,transparent);letter-spacing:.18em}\n.mt-tix-field b{font-weight:700;color:var(--ink)}\n.mt-tix-stub{background:color-mix(in srgb,var(--accent) 8%,var(--paper));border-left:1px solid color-mix(in srgb,var(--ink) 35%,transparent);padding:1em 1.2em}",
+            "variants": [
+              {
+                "id": "e11-v1",
+                "label": "铁路绿",
+                "vibe": "绿皮车与 JR 线路色——铁道票的怀旧工业感，比航司蓝更慢更有人情——铁路/公路旅行、城市漫游、复古交通主题",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#FDFCF9",
+                  "--paper-tint": "#F2F0E8",
+                  "--ink": "#1D2129",
+                  "--ink-tint": "#3A3F4A",
+                  "--accent": "#2F6B4F",
+                  "--accent-on": "#FDFCF9"
+                },
+                "visual": {
+                  "paper": "#FDFCF9",
+                  "ink": "#1D2129",
+                  "accent": "#2F6B4F"
+                }
+              },
+              {
+                "id": "e11-v2",
+                "label": "演出粉",
+                "vibe": "livehouse 与音乐节热敏票根——高饱和演出粉，票务的躁动与收藏欲——演出、赛事、潮流活动、青年文化",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#FDFCF9",
+                  "--paper-tint": "#F2F0E8",
+                  "--ink": "#1D2129",
+                  "--ink-tint": "#3A3F4A",
+                  "--accent": "#D6336C",
+                  "--accent-on": "#FDFCF9"
+                },
+                "visual": {
+                  "paper": "#FDFCF9",
+                  "ink": "#1D2129",
+                  "accent": "#D6336C"
+                }
+              }
+            ]
           }
         ]
       /*__THEMES_JSON_END__*/

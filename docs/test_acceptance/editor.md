@@ -1,7 +1,7 @@
 # 编辑器验收文档（test_acceptance）
 
 > 对应模块：`editor.html` · 设计文档 `docs/design-editor.md` §11 · 自动化 harness `tests/harness/run_e2e.py`
-> 最近全量执行：2026-09-19（G/H 期），40/40 PASS（Chromium 145 headless；含更新后 T9 变体切换断言与 T18 33 页画廊）
+> 最近全量执行：2026-09-20（I/J 期），43/43 PASS（Chromium 145 headless；T9 断言 20 主题卡、T18 覆盖 44 页画廊、T1 新增 3 个 J 期终验 deck）
 
 ## P0（核心路径，失败即功能不可用）
 
@@ -36,6 +36,10 @@
 | P1-16 | G 期面板：主题卡变体色点切换、装饰主导分组、导出意图含变体合并 tokens + theme_css + 双 SLOT 文案 | harness T9 | ✅ 2026-09-19 |
 | P1-17 | G 期画廊主题样张：9 页同内容不同主题渲染，零溢出零重叠、编辑器往返幂等 | harness T18 + T1-components-gallery | ✅ 2026-09-19 |
 | P1-18 | G 期样张肉眼验收：9 主题同一封面内容一眼可辨（装饰/容器/质感/字体分化） | 人工 | ⏳ 待人工 |
+| P1-19 | I 期主题库：20 重主题两两 190 对七层 diff ≥3 全过；变体/G9 css/类名唯一性校验 | sync-themes.mjs | ✅ 2026-09-20 |
+| P1-20 | I 期撞脸矩阵：gallery 20 页同内容样张零溢出零重叠、往返幂等 | harness T18 + T1 | ✅ 2026-09-20 |
+| P1-21 | J 期同题终验：本地优先软件 × a1/e2/e6 三 deck，呈现发散三案留档（各 NOTES.md），自检全过并加入 T1 回归 | harness T1 ×3 + j_render_check.py | ✅ 2026-09-20 |
+| P1-22 | 撞脸矩阵与 J 三 deck 肉眼验收：20 主题同内容一眼可辨、三 deck 同内容一眼不同 | 人工 | ⏳ 待人工 |
 
 ## 已知限制（非缺陷）
 
