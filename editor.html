@@ -4,11 +4,25 @@
 <!--
   ============================================================================
   HTML PPTX 编辑器 · editor.html
-  版本：v2.4（2026-09-20）
+  版本：v2.5（2026-09-21）
   实现依据：docs/design-editor.md v0.3（评审修订稿）+ docs/design/editor-v2.md
   标记契约：skills/html-pptx/references/editing-contract.md v6.4（本页是消费侧实现）
 
   变更记录：
+  - v2.5（需求脑暴页，对应技能 Step 0.5 / references/briefing.md）：
+    顶栏新增「需求脑暴」按钮 → 全屏覆盖层向导（制作新 deck 的场景，
+    与设计决策抽屉互不共享状态：briefAnswers 独立于 answers）。
+    按 briefing.md 八组问题渲染——场景/受众/内容来源与切分（叙事弧
+    条件显示）/页数预算/视觉风格（buildThemeCard 重构为可指定目标状态
+    与容器的工厂函数，脑暴页复用主题卡渲染，抽屉行为不变）/字体偏好/
+    动效档（复用五层启用矩阵选项）/明暗/封面元素多选 chips（章节目录
+    默认勾）/插画模式 + 自由补充；每组带 briefing.md"影响"一句话说明，
+    缺省项带「缺省」标注。「生成需求简报」按 briefing.md 简报模板输出
+    文本（未作答组标（缺省），开头带给 agent 的冻结指令）+ 结构化 JSON
+    （kind:'design-brief'），只读预览 + 复制；嵌入态额外 postMessage
+    {type:'pptx-html:brief', text, json}。覆盖层内容首次打开时才渲染
+    （不与抽屉的 .theme-card 计数相互干扰）。
+  - v2.4（K 期：高密度表达，docs/design/high-density-containers.md）：
   - v2.4（K 期：高密度表达，docs/design/high-density-containers.md）：
     适配 skeleton v7——编辑态拦截 .nav-link 目录锚点点击跳转（契约 v6.3）；
     序列化净化新增 data-rotate 轮转的 .active 运行时 class 移除；
@@ -358,12 +372,50 @@
   .ver-item .vh{font-size:11px;color:var(--muted);font-family:"SF Mono","Menlo",monospace;margin-top:2px}
   .ver-item>button{flex:none;padding:3px 10px;font-size:12px}
   .ver-empty{padding:16px 8px;color:var(--muted);font-size:12px;text-align:center}
+
+  /* ── 需求脑暴覆盖层（v2.5，Step 0.5 / briefing.md） ────────── */
+  #briefOverlay{
+    position:fixed;inset:0;z-index:80;background:var(--bg);
+    display:none;overflow-y:auto;
+  }
+  #briefOverlay.show{display:block}
+  .brief-wrap{max-width:940px;margin:0 auto;padding:28px 24px 96px}
+  .brief-head{display:flex;align-items:flex-start;gap:14px}
+  .brief-head h2{font-size:16px;font-weight:600;flex:none;margin-top:2px}
+  .brief-head p{font-size:12px;color:var(--muted);line-height:1.7}
+  #btnBriefClose{flex:none;margin-left:auto;font-size:15px;padding:2px 10px}
+  .brief-group{margin-top:16px;border:1px solid var(--border);border-radius:10px;background:var(--bar);padding:14px 16px}
+  .brief-group>h3{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;margin-bottom:4px}
+  .brief-impact{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:10px}
+  .brief-opts{flex-wrap:wrap}
+  .brief-opts .opt{flex:1 1 150px;max-width:280px}
+  .def-tag{font-size:10px;font-weight:400;color:var(--muted);
+    border:1px solid var(--border);border-radius:4px;padding:0 4px;margin-left:6px;vertical-align:1px}
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1px solid var(--border);border-radius:999px;padding:5px 14px;cursor:pointer;background:#fff;font-size:12px}
+  .chip:hover{border-color:#b9b9b3}
+  .chip.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);background:var(--accent-soft)}
+  .brief-topic{width:100%;font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--border);border-radius:8px}
+  .brief-group textarea{width:100%;font:inherit;font-size:12px;line-height:1.7;padding:8px;
+    border:1px solid var(--border);border-radius:8px;resize:vertical;min-height:64px}
+  .brief-sub{margin-top:12px;padding-top:10px;border-top:1px dashed var(--border)}
+  .brief-sub h4{font-size:12px;font-weight:600;margin-bottom:8px}
+  .brief-foot{margin-top:20px;display:flex;align-items:center;gap:12px}
+  .brief-foot .hint{font-size:11px;color:var(--muted);line-height:1.6}
+  .brief-result{margin-top:16px}
+  .brief-result pre{
+    background:#262624;color:#e8e8e6;font-family:"SF Mono","Menlo",monospace;
+    font-size:12px;line-height:1.7;padding:14px 16px;border-radius:8px;
+    overflow:auto;white-space:pre-wrap;word-break:break-all;max-height:46vh;
+  }
+  .brief-result-bar{display:flex;gap:10px;margin-top:10px;align-items:center}
+  .brief-result-bar .hint{font-size:11px;color:var(--muted)}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="brand">HTML PPTX 编辑器<small>v1.9</small></div>
+  <div class="brand">HTML PPTX 编辑器<small>v2.5</small></div>
   <button id="btnOpen">打开文件</button>
   <button id="btnSave" class="primary" disabled title="将修改写回原文件">保存 (⌘S)</button>
   <div class="sep"></div>
@@ -392,6 +444,7 @@
   <button id="btnReplaceImg" disabled title="替换当前选中图片（等价手势：选中图片后再点击一次）">替换图片</button>
   <button id="btnHistory" disabled title="未检测到伴随服务：运行 python3 tools/edit.py 启动后可获得 git 版本记录">历史</button>
   <button id="btnPanel" aria-pressed="false">设计面板</button>
+  <button id="btnBrief" title="制作新 deck 的需求对齐向导（技能 Step 0.5）">需求脑暴</button>
 </header>
 
 <div class="warn-banner" id="warnBanner">
@@ -513,6 +566,28 @@
     <div class="btns">
       <button id="confirmCancel">取消</button>
       <button id="confirmOk" class="primary">确定</button>
+    </div>
+  </div>
+</div>
+
+<div id="briefOverlay">
+  <div class="brief-wrap">
+    <div class="brief-head">
+      <h2>需求脑暴</h2>
+      <p>制作新 deck 前的需求对齐（技能 Step 0.5 / references/briefing.md）——脑暴是对齐不是问卷：答几组算几组，没答的走缺省（标「缺省」）。生成的简报交给 AI coding agent，直接进入 Step 1 页计划表。</p>
+      <button id="btnBriefClose" title="关闭（Esc）">✕</button>
+    </div>
+    <div id="briefBody"></div>
+    <div class="brief-foot">
+      <button class="primary" id="btnBriefGen">生成需求简报</button>
+      <span class="hint">输出 = 简报文本（briefing.md 模板）+ 结构化 JSON；嵌入态同时 postMessage 给宿主。</span>
+    </div>
+    <div class="brief-result" id="briefResult" hidden>
+      <pre id="briefPreview"></pre>
+      <div class="brief-result-bar">
+        <button class="primary" id="btnBriefCopy">复制简报</button>
+        <span class="hint">粘贴给 AI coding agent 即可开始制作。</span>
+      </div>
     </div>
   </div>
 </div>
@@ -3272,33 +3347,12 @@ window.addEventListener('keydown', function(e){
 var answers = { theme:null, themeVariant:null, rhythm:'moderate', motion:'standard', density:'low', custom:'' };
 var FONT_PREVIEW = { serif:'serif', sans:'sans-serif', mono:'monospace' };
 
+/* 主题卡选中态宿主（v2.5 重构）：buildThemeCard 是工厂函数，通过 sel 绑定
+   目标状态与刷新回调——抽屉绑 answers，需求脑暴页绑 briefAnswers，互不干扰。 */
+var drawerThemeSel = { state: answers, refresh: function(){ refreshThemeSelection($('themeGrid'), answers); } };
+
 function renderPanel(){
-  var themeQ = PANEL_DATA.questions[0];
-  var grid = $('themeGrid');
-  /* 主题卡按 focus 分组展示（theme-schema.md §6「看着重点选」）：分组归属
-     由 sync-themes.mjs 按"最差异化优先"（质感>字排>形态>配色）写入
-     group_label，这里只按固定顺序摆组、渲染卡片。 */
-  var GROUP_ORDER = ['配色主导', '质感主导', '装饰主导', '字排主导', '形态主导'];
-  var byGroup = {};
-  themeQ.options.forEach(function(opt){
-    var g = opt.group_label || '配色主导';
-    if (!byGroup[g]) byGroup[g] = [];
-    byGroup[g].push(opt);
-  });
-  var groups = GROUP_ORDER.filter(function(g){ return byGroup[g]; });
-  Object.keys(byGroup).forEach(function(g){
-    if (GROUP_ORDER.indexOf(g) < 0) groups.push(g);
-  });
-  groups.forEach(function(g){
-    var sec = document.createElement('div');
-    sec.className = 'theme-group';
-    sec.innerHTML = '<div class="theme-group-title">' + g + '</div>';
-    var cards = document.createElement('div');
-    cards.className = 'theme-group-cards';
-    byGroup[g].forEach(function(opt){ cards.appendChild(buildThemeCard(opt)); });
-    sec.appendChild(cards);
-    grid.appendChild(sec);
-  });
+  renderThemeGroups($('themeGrid'), drawerThemeSel);
 
   buildOptRow('rhythmOpts', PANEL_DATA.questions[1], 'rhythm');
   buildOptRow('motionOpts', PANEL_DATA.questions[2], 'motion');
@@ -3306,7 +3360,35 @@ function renderPanel(){
 
   $('customText').addEventListener('input', function(){ answers.custom = this.value; });
 }
-function buildThemeCard(opt){
+/* 主题卡按 focus 分组展示（theme-schema.md §6「看着重点选」）：分组归属
+   由 sync-themes.mjs 按"最差异化优先"（质感>字排>形态>配色）写入
+   group_label，这里只按固定顺序摆组、渲染卡片。抽屉与脑暴页共用。 */
+var THEME_GROUP_ORDER = ['配色主导', '质感主导', '装饰主导', '字排主导', '形态主导'];
+function renderThemeGroups(grid, sel){
+  var themeQ = PANEL_DATA.questions[0];
+  var byGroup = {};
+  themeQ.options.forEach(function(opt){
+    var g = opt.group_label || '配色主导';
+    if (!byGroup[g]) byGroup[g] = [];
+    byGroup[g].push(opt);
+  });
+  var groups = THEME_GROUP_ORDER.filter(function(g){ return byGroup[g]; });
+  Object.keys(byGroup).forEach(function(g){
+    if (THEME_GROUP_ORDER.indexOf(g) < 0) groups.push(g);
+  });
+  groups.forEach(function(g){
+    var sec = document.createElement('div');
+    sec.className = 'theme-group';
+    sec.innerHTML = '<div class="theme-group-title">' + g + '</div>';
+    var cards = document.createElement('div');
+    cards.className = 'theme-group-cards';
+    byGroup[g].forEach(function(opt){ cards.appendChild(buildThemeCard(opt, sel)); });
+    sec.appendChild(cards);
+    grid.appendChild(sec);
+  });
+}
+function buildThemeCard(opt, sel){
+  sel = sel || drawerThemeSel;
   var card = document.createElement('div');
   card.className = 'theme-card';
   card.dataset.id = opt.id;
@@ -3337,28 +3419,28 @@ function buildThemeCard(opt){
       dot.dataset.vid = va.id;
       dot.addEventListener('click', function(ev){
         ev.stopPropagation();
-        var turnOff = (answers.theme === opt.id && answers.themeVariant === va.id);
-        answers.theme = turnOff ? null : opt.id;
-        answers.themeVariant = turnOff ? null : va.id;
-        refreshThemeSelection();
+        var turnOff = (sel.state.theme === opt.id && sel.state.themeVariant === va.id);
+        sel.state.theme = turnOff ? null : opt.id;
+        sel.state.themeVariant = turnOff ? null : va.id;
+        sel.refresh();
       });
       vrow.appendChild(dot);
     });
     card.appendChild(vrow);
   }
   card.addEventListener('click', function(){
-    var turnOff = (answers.theme === opt.id && !answers.themeVariant);
-    answers.theme = turnOff ? null : opt.id;
-    answers.themeVariant = null;
-    refreshThemeSelection();
+    var turnOff = (sel.state.theme === opt.id && !sel.state.themeVariant);
+    sel.state.theme = turnOff ? null : opt.id;
+    sel.state.themeVariant = null;
+    sel.refresh();
   });
   return card;
 }
-function refreshThemeSelection(){
-  Array.prototype.forEach.call(document.querySelectorAll('#themeGrid .theme-card'), function(c){
-    c.classList.toggle('selected', c.dataset.id === answers.theme);
+function refreshThemeSelection(root, st){
+  Array.prototype.forEach.call(root.querySelectorAll('.theme-card'), function(c){
+    c.classList.toggle('selected', c.dataset.id === st.theme);
     Array.prototype.forEach.call(c.querySelectorAll('.variants i'), function(dot){
-      dot.classList.toggle('selected', c.dataset.id === answers.theme && dot.dataset.vid === answers.themeVariant);
+      dot.classList.toggle('selected', c.dataset.id === st.theme && dot.dataset.vid === st.themeVariant);
     });
   });
 }
@@ -3464,6 +3546,372 @@ $('btnPanel').addEventListener('click', function(){
   var drawer = $('drawer');
   drawer.classList.toggle('open');
   this.setAttribute('aria-pressed', drawer.classList.contains('open') ? 'true' : 'false');
+});
+
+/* ============================================================
+   需求脑暴页（v2.5，技能 Step 0.5 / references/briefing.md）
+   「制作新 deck」的向导，与设计决策抽屉（改现有 deck）是两个场景：
+   状态独立（briefAnswers），覆盖层内容首次打开时才渲染（避免与抽屉
+   的 .theme-card 计数相互干扰）。问题组与简报格式以 briefing.md 为准。
+   ============================================================ */
+var briefAnswers = {
+  topic:'', scene:null, audience:null, source:null, narrative:null, pages:null,
+  theme:null, themeVariant:null, font:null, motion:null, brightness:null,
+  cover:['toc'], coverTouched:false, illust:null, custom:''
+};
+var briefRendered = false;
+var briefLast = null;   // {text, json} 最近一次生成的简报
+var briefThemeSel = { state: briefAnswers, refresh: function(){
+  refreshThemeSelection($('briefThemeGrid'), briefAnswers);
+} };
+
+/* 场景 → 密度/动效缺省锚点（briefing.md ①） */
+var BRIEF_SCENE_DENSITY = { keynote:'低密度', reading:'高密度', defense:'低密度', booth:'低密度', embed:'高密度' };
+var BRIEF_SCENE_MOTION  = { keynote:'标准', reading:'克制', defense:'标准', booth:'华丽', embed:'标准' };
+
+var BRIEF_GROUPS = [
+  { id:'scene', title:'① 使用场景', impact:'决定密度与动效的默认锚点。', options:[
+    { id:'keynote', label:'现场演讲', d:'keynote 登台 → 缺省：低密度 + 标准动效 + 明暗节奏强', def:true },
+    { id:'reading', label:'阅读分发', d:'报告/文档 → 缺省：高密度 + 克制动效' },
+    { id:'defense', label:'汇报答辩', d:'限时讲完 → 缺省：低密度 + 标准动效 + 页数经济' },
+    { id:'booth',   label:'大屏/展台循环', d:'缺省：低密度 + 华丽动效 + 高对比' },
+    { id:'embed',   label:'网页嵌入/分享链接', d:'缺省：高密度 + 标准动效' }
+  ]},
+  { id:'audience', title:'② 受众', impact:'影响语言深度与「呈现发散」的隐喻选型（管理层偏结论先行 + 数据英雄页；技术受众可上架构堆栈与终端系主题）。', options:[
+    { id:'tech',   label:'技术同行', def:true },
+    { id:'mgmt',   label:'管理层' },
+    { id:'public', label:'大众科普' },
+    { id:'client', label:'客户或甲方' }
+  ]},
+  { id:'source', title:'③ 内容来源与切分', impact:'决定从哪条通道进入工作流。', options:[
+    { id:'scratch', label:'从 0 到 1', d:'主题/资料 → 追问叙事弧偏好', def:true },
+    { id:'pptx',    label:'现成 pptx 转换', d:'走 Step 0 转换通道（内容重组非逐页复刻）' },
+    { id:'outline', label:'已有大纲/文稿', d:'直接进页计划表' }
+  ]},
+  { id:'pages', title:'④ 页数/时长预算', impact:'与密度档联动校验：高密度 + ≤8 页且内容多 → 提示加页或升密度。', options:[
+    { id:'p8',  label:'≤8 页' },
+    { id:'p15', label:'8–15 页', def:true },
+    { id:'p25', label:'15–25 页' },
+    { id:'free', label:'不限' }
+  ]},
+  { id:'font', title:'⑥ 字体偏好', impact:'系统栈离线可用；联网字体解锁主题 G2「display 联网备选」；指定气质映射到主题 L2 字排层差异。', options:[
+    { id:'system', label:'系统栈默认', d:'离线可用', def:true },
+    { id:'web',    label:'接受联网字体', d:'解锁主题 G2 display 联网备选' },
+    { id:'vibe',   label:'指定气质', d:'衬线人文 / 黑体现代 / 手写温度' }
+  ]},
+  { id:'brightness', title:'⑦b 明暗', impact:'亮底/暗底/混合节奏——缺省按主题世界决定。', options:[
+    { id:'light', label:'亮底' },
+    { id:'dark',  label:'暗底' },
+    { id:'mixed', label:'混合节奏' }
+  ]},
+  { id:'illust', title:'⑧b 插画模式', impact:'AI 插画进入 Step 5.5 管线（盘点槽位 → 风格规划 → 逐槽生图 → 回归校验）；纯 HTML 不生成插画。', options:[
+    { id:'html', label:'纯 HTML', def:true },
+    { id:'ai',   label:'AI 插画', d:'Step 5.5 管线' }
+  ]}
+];
+var BRIEF_NARRATIVES = [
+  { id:'problem',  label:'问题-方案-证据' },
+  { id:'timeline', label:'时间线演进' },
+  { id:'zfz',      label:'总-分-总' },
+  { id:'compare',  label:'对比论证' }
+];
+var BRIEF_COVER = [
+  { id:'title',   label:'主标题' },
+  { id:'sub',     label:'副题' },
+  { id:'date',    label:'日期' },
+  { id:'speaker', label:'演讲人' },
+  { id:'brand',   label:'品牌位' },
+  { id:'toc',     label:'章节目录', def:true }
+];
+
+function briefGroupShell(title, impact){
+  var sec = document.createElement('section');
+  sec.className = 'brief-group';
+  var h = document.createElement('h3'); h.textContent = title;
+  var p = document.createElement('p'); p.className = 'brief-impact'; p.textContent = impact;
+  sec.appendChild(h); sec.appendChild(p);
+  return sec;
+}
+function briefOptRow(group, opts){
+  var row = document.createElement('div');
+  row.className = 'opt-row brief-opts';
+  opts.forEach(function(opt){
+    var div = document.createElement('div');
+    div.className = 'opt' + (briefAnswers[group.id] === opt.id ? ' selected' : '');
+    div.dataset.id = opt.id;
+    div.innerHTML = '<div class="t">' + opt.label +
+      (opt.def ? '<span class="def-tag">缺省</span>' : '') + '</div>' +
+      (opt.d ? '<div class="d">' + opt.d + '</div>' : '');
+    div.addEventListener('click', function(){
+      briefAnswers[group.id] = opt.id;
+      Array.prototype.forEach.call(row.children, function(c){
+        c.classList.toggle('selected', c.dataset.id === opt.id);
+      });
+      if (group.id === 'source') updateNarrativeVis();
+    });
+    row.appendChild(div);
+  });
+  return row;
+}
+function updateNarrativeVis(){
+  $('briefNarrative').style.display = briefAnswers.source === 'scratch' ? '' : 'none';
+}
+
+function renderBrief(){
+  var body = $('briefBody');
+
+  /* 一句话主题（简报首行需要） */
+  var topicSec = briefGroupShell('这份 deck 讲什么', '一句话主题——写进简报首行；不写则标（未命名主题）。');
+  var topic = document.createElement('input');
+  topic.className = 'brief-topic'; topic.id = 'briefTopic';
+  topic.placeholder = '例如：智能客服系统年度复盘';
+  topic.addEventListener('input', function(){ briefAnswers.topic = this.value; });
+  topicSec.appendChild(topic);
+  body.appendChild(topicSec);
+
+  BRIEF_GROUPS.slice(0, 3).forEach(function(g){
+    var sec = briefGroupShell(g.title, g.impact);
+    sec.appendChild(briefOptRow(g, g.options));
+    if (g.id === 'source'){
+      /* 叙事弧追问：仅「从 0 到 1」时显示（缺省：从内容里长出来，不套模板） */
+      var sub = document.createElement('div');
+      sub.className = 'brief-sub'; sub.id = 'briefNarrative';
+      sub.style.display = 'none';
+      var h = document.createElement('h4');
+      h.textContent = '叙事弧偏好（缺省：从内容里长出来，不套模板）';
+      sub.appendChild(h);
+      sub.appendChild(briefOptRow({ id:'narrative' }, BRIEF_NARRATIVES));
+      sec.appendChild(sub);
+    }
+    body.appendChild(sec);
+  });
+
+  /* ④ 页数预算 */
+  var gPages = BRIEF_GROUPS[3];
+  var secPages = briefGroupShell(gPages.title, gPages.impact);
+  secPages.appendChild(briefOptRow(gPages, gPages.options));
+  body.appendChild(secPages);
+
+  /* ⑤ 视觉风格：复用主题卡渲染（两级主题冻结 = 重主题 + 配色变体） */
+  var themeSec = briefGroupShell('⑤ 视觉风格',
+    '问法不是"选哪个主题"而是"这份内容应该是什么气质"。缺省：由 agent 按内容气质推荐 2–3 套候选。品牌 VI 色不自定义 hex——选色距最近的变体并在简报声明映射。');
+  var tgrid = document.createElement('div');
+  tgrid.className = 'theme-grid'; tgrid.id = 'briefThemeGrid';
+  themeSec.appendChild(tgrid);
+  body.appendChild(themeSec);
+  renderThemeGroups(tgrid, briefThemeSel);
+
+  /* ⑥ 字体偏好 */
+  var gFont = BRIEF_GROUPS[4];
+  var secFont = briefGroupShell(gFont.title, gFont.impact);
+  secFont.appendChild(briefOptRow(gFont, gFont.options));
+  body.appendChild(secFont);
+
+  /* ⑦a 动效档：复用五层启用矩阵选项（语义源 motion.md v3 §5），缺省=标准 */
+  var motionQ = PANEL_DATA.questions[2];
+  var motionOpts = motionQ.options.map(function(o){
+    return { id:o.id, label:o.label, d:o.description, def:o.id === 'standard' };
+  });
+  var secMotion = briefGroupShell('⑦a 动效档', '五层启用矩阵语义：档间差异是机制类别（L1 入场/L2 文字/L3 数据/L4 环境/L5 交互），不是强度。');
+  secMotion.appendChild(briefOptRow({ id:'motion' }, motionOpts));
+  body.appendChild(secMotion);
+
+  /* ⑦b 明暗 */
+  var gBri = BRIEF_GROUPS[5];
+  var secBri = briefGroupShell(gBri.title, gBri.impact);
+  secBri.appendChild(briefOptRow(gBri, gBri.options));
+  body.appendChild(secBri);
+
+  /* ⑧a 封面元素（多选 chips，章节目录默认勾）+ 插画模式 + 尺寸声明 */
+  var coverSec = briefGroupShell('⑧ 封面与交付',
+    '封面元素多选（高密度档章节目录默认必载）；尺寸固定 16:9 网页版（声明项，不是选项）。');
+  var chips = document.createElement('div');
+  chips.className = 'chip-row';
+  BRIEF_COVER.forEach(function(c){
+    var chip = document.createElement('span');
+    chip.className = 'chip' + (briefAnswers.cover.indexOf(c.id) >= 0 ? ' selected' : '');
+    chip.dataset.id = c.id;
+    chip.textContent = c.label;
+    if (c.def){
+      var tag = document.createElement('span');
+      tag.className = 'def-tag'; tag.textContent = '缺省';
+      chip.appendChild(tag);
+    }
+    chip.addEventListener('click', function(){
+      briefAnswers.coverTouched = true;
+      var i = briefAnswers.cover.indexOf(c.id);
+      if (i >= 0) briefAnswers.cover.splice(i, 1); else briefAnswers.cover.push(c.id);
+      chip.classList.toggle('selected', i < 0);
+    });
+    chips.appendChild(chip);
+  });
+  coverSec.appendChild(chips);
+  var gIll = BRIEF_GROUPS[6];
+  var illSub = document.createElement('div');
+  illSub.className = 'brief-sub';
+  var illH = document.createElement('h4'); illH.textContent = gIll.title + '——' + gIll.impact;
+  illSub.appendChild(illH);
+  illSub.appendChild(briefOptRow(gIll, gIll.options));
+  coverSec.appendChild(illSub);
+  body.appendChild(coverSec);
+
+  /* 自由补充 */
+  var customSec = briefGroupShell('自由补充', '任何不在上面的要求（口头禅、禁忌、参考物）。');
+  var ta = document.createElement('textarea');
+  ta.id = 'briefCustom';
+  ta.placeholder = '例如：CEO 坚持封面要有那句 slogan；禁用粉色；参考苹果发布会的节奏……';
+  ta.addEventListener('input', function(){ briefAnswers.custom = this.value; });
+  customSec.appendChild(ta);
+  body.appendChild(customSec);
+}
+
+function openBrief(){
+  if (!briefRendered){ renderBrief(); briefRendered = true; }
+  $('briefOverlay').classList.add('show');
+}
+function closeBrief(){ $('briefOverlay').classList.remove('show'); }
+$('btnBrief').addEventListener('click', openBrief);
+$('btnBriefClose').addEventListener('click', closeBrief);
+window.addEventListener('keydown', function(e){
+  if (e.key === 'Escape' && $('briefOverlay').classList.contains('show')){
+    e.preventDefault(); closeBrief();
+  }
+});
+
+function briefOptLabel(opts, id){
+  for (var i = 0; i < opts.length; i++) if (opts[i].id === id) return opts[i].label;
+  return null;
+}
+function briefDefLabel(groupId){
+  var g = BRIEF_GROUPS.filter(function(x){ return x.id === groupId; })[0];
+  var d = g.options.filter(function(o){ return o.def; })[0];
+  return d ? d.label : null;
+}
+
+/* 简报生成（briefing.md「简报输出格式」）：未作答组走缺省并标注（缺省） */
+function buildBriefExport(){
+  var themeQ = PANEL_DATA.questions[0];
+  var theme = null, variant = null;
+  if (briefAnswers.theme){
+    for (var i = 0; i < themeQ.options.length; i++)
+      if (themeQ.options[i].id === briefAnswers.theme) theme = themeQ.options[i];
+  }
+  if (theme && briefAnswers.themeVariant){
+    for (var j = 0; j < (theme.variants || []).length; j++)
+      if (theme.variants[j].id === briefAnswers.themeVariant) variant = theme.variants[j];
+  }
+  var themeTokens = theme ? Object.assign({}, theme.tokens, variant ? variant.tokens : null) : null;
+
+  var sceneLab = briefOptLabel(BRIEF_GROUPS[0].options, briefAnswers.scene);
+  var audLab   = briefOptLabel(BRIEF_GROUPS[1].options, briefAnswers.audience);
+  var srcLab   = briefOptLabel(BRIEF_GROUPS[2].options, briefAnswers.source);
+  var pageLab  = briefOptLabel(BRIEF_GROUPS[3].options, briefAnswers.pages);
+  var fontLab  = briefOptLabel(BRIEF_GROUPS[4].options, briefAnswers.font);
+  var briLab   = briefOptLabel(BRIEF_GROUPS[5].options, briefAnswers.brightness);
+  var illLab   = briefOptLabel(BRIEF_GROUPS[6].options, briefAnswers.illust);
+  var motionLab = briefOptLabel(PANEL_DATA.questions[2].options, briefAnswers.motion);
+  var narrLab  = briefOptLabel(BRIEF_NARRATIVES, briefAnswers.narrative);
+  var coverLabs = BRIEF_COVER.filter(function(c){
+    return briefAnswers.cover.indexOf(c.id) >= 0;
+  }).map(function(c){ return c.label; });
+
+  /* ③ 内容来源行：含叙事弧 */
+  var srcLine;
+  if (briefAnswers.source === 'scratch'){
+    srcLine = '从 0 到 1（叙事弧：' + (narrLab || '从内容里长出来，不套模板（缺省）') + '）';
+  } else if (briefAnswers.source === 'pptx'){
+    srcLine = '现成 pptx 转换（走 Step 0 转换通道，内容重组非逐页复刻）';
+  } else if (briefAnswers.source === 'outline'){
+    srcLine = '已有大纲/文稿（直接进页计划表）';
+  } else {
+    srcLine = '从 0 到 1（缺省；叙事弧缺省：从内容里长出来，不套模板）';
+  }
+
+  /* 密度/动效：密度由场景锚点推导；动效未答时按场景缺省，场景也未答则标准（缺省） */
+  var densityLine = briefAnswers.scene
+    ? BRIEF_SCENE_DENSITY[briefAnswers.scene] + '（场景缺省推导）'
+    : '（缺省）';
+  var motionLine = motionLab
+    ? motionLab
+    : (briefAnswers.scene ? BRIEF_SCENE_MOTION[briefAnswers.scene] + '（缺省·场景推导）' : '标准（缺省）');
+
+  var themeLine = theme
+    ? theme.id.toUpperCase() + ' ' + theme.label +
+      (variant ? '（变体：' + variant.label + '）' : '（基底配色）') +
+      '——tokens 与 theme_css 见下方 JSON answers.theme：落码时分别注入骨架 SLOT: theme tokens 与 SLOT: theme css（变体 token 已合并），禁止混搭、禁止修改色值'
+    : '（缺省）由 agent 按内容气质推荐 2–3 套候选（全库见 references/themes.md）';
+
+  var lines = [];
+  lines.push('请按以下需求简报制作 HTML 幻灯片（技能：skills/html-pptx，Step 0.5 已冻结，直接进入 Step 1 页计划表）。');
+  lines.push('');
+  lines.push('需求简报 · ' + (briefAnswers.topic.trim() || '（未命名主题）'));
+  lines.push('场景：' + (sceneLab || briefDefLabel('scene') + '（缺省）') +
+    ' ｜ 受众：' + (audLab || briefDefLabel('audience') + '（缺省）') +
+    ' ｜ 页数预算：' + (pageLab || briefDefLabel('pages') + '（缺省）'));
+  lines.push('内容来源：' + srcLine);
+  lines.push('密度：' + densityLine + ' ｜ 动效：' + motionLine +
+    ' ｜ 明暗：' + (briLab || '按主题世界决定（缺省）'));
+  lines.push('主题：' + themeLine);
+  lines.push('字体：' + (fontLab || briefDefLabel('font') + '（缺省）') +
+    ' ｜ 插画：' + (illLab || briefDefLabel('illust') + '（缺省）'));
+  lines.push('封面元素：' + (coverLabs.length ? coverLabs.join('、') : '无') +
+    (briefAnswers.coverTouched ? '' : '（缺省）') + ' ｜ 尺寸：16:9 网页版（固定）');
+  if (briefAnswers.custom.trim()) lines.push('自由补充：' + briefAnswers.custom.trim());
+
+  var json = {
+    version: 1,
+    kind: 'design-brief',
+    created_at: localIso(),
+    answers: {
+      topic: briefAnswers.topic.trim() || null,
+      scene:    { choice: briefAnswers.scene,    label: sceneLab || briefDefLabel('scene'),    defaulted: !briefAnswers.scene },
+      audience: { choice: briefAnswers.audience, label: audLab || briefDefLabel('audience'),   defaulted: !briefAnswers.audience },
+      source:   { choice: briefAnswers.source,   label: srcLab || briefDefLabel('source'),     defaulted: !briefAnswers.source,
+                  narrative: briefAnswers.source === 'scratch'
+                    ? { choice: briefAnswers.narrative, label: narrLab || '从内容里长出来，不套模板', defaulted: !briefAnswers.narrative }
+                    : null },
+      pages:    { choice: briefAnswers.pages,    label: pageLab || briefDefLabel('pages'),     defaulted: !briefAnswers.pages },
+      theme: theme
+        ? { choice: theme.id, label: theme.label, defaulted: false,
+            variant: variant ? { choice: variant.id, label: variant.label } : null,
+            tokens: themeTokens, theme_css: theme.theme_css || '' }
+        : { choice: null, defaulted: true },
+      font:       { choice: briefAnswers.font,       label: fontLab || briefDefLabel('font'),   defaulted: !briefAnswers.font },
+      motion:     { choice: briefAnswers.motion || 'standard',
+                    label: motionLab || '标准', defaulted: !briefAnswers.motion },
+      brightness: { choice: briefAnswers.brightness, label: briLab || '按主题世界决定',          defaulted: !briefAnswers.brightness },
+      cover:      { choices: briefAnswers.cover.slice(), labels: coverLabs, defaulted: !briefAnswers.coverTouched },
+      illustration: { choice: briefAnswers.illust,   label: illLab || briefDefLabel('illust'),  defaulted: !briefAnswers.illust },
+      density_derived: { choice: briefAnswers.scene ? BRIEF_SCENE_DENSITY[briefAnswers.scene] : null,
+                         defaulted: !briefAnswers.scene }
+    }
+  };
+  if (briefAnswers.custom.trim()) json.answers.custom = { text: briefAnswers.custom.trim() };
+
+  lines.push('');
+  lines.push('结构化简报（JSON）：');
+  lines.push('```json');
+  lines.push(JSON.stringify(json, null, 2));
+  lines.push('```');
+  return { text: lines.join('\n'), json: json };
+}
+
+$('btnBriefGen').addEventListener('click', function(){
+  briefLast = buildBriefExport();
+  $('briefPreview').textContent = briefLast.text;
+  $('briefResult').hidden = false;
+  /* 嵌入态：简报交给宿主（沿用 §8 postMessage 协议风格） */
+  if (state.embedded){
+    try { window.parent.postMessage({ type:'pptx-html:brief', text: briefLast.text, json: briefLast.json }, '*'); }
+    catch(e){}
+  }
+  toast(state.embedded ? '简报已生成，并已发送宿主' : '简报已生成');
+  $('briefResult').scrollIntoView({ behavior:'smooth', block:'nearest' });
+});
+$('btnBriefCopy').addEventListener('click', async function(){
+  if (!briefLast) return;
+  var ok = await copyText(briefLast.text);
+  toast(ok ? '需求简报已复制到剪贴板' : '复制失败，请检查浏览器剪贴板权限');
 });
 
 /* ============================================================
@@ -3887,6 +4335,7 @@ async function rollbackTo(hash){
    入：{type:"pptx-html:load", html, name?, assetsUrl?}
    出：{type:"pptx-html:save", html, name} / {type:"pptx-html:dirty", dirty}
        / {type:"pptx-html:annotations", payload}（批注导出，§10.4）
+       / {type:"pptx-html:brief", text, json}（需求脑暴简报，v2.5 / briefing.md）
    ============================================================ */
 window.addEventListener('message', async function(e){
   var d = e.data;

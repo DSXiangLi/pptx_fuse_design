@@ -29,6 +29,7 @@
 | open-design | 单 HTML deck + 桌面编辑器 | 固定骨架 SLOT 逐字复制 + 提示词即代码 | 骨架防漂移模式、编辑桥架构、编辑模式七轮实测坑清单 |
 | baoyu-design（2026-09-19 补） | Claude Design 系统提示词的 Skill 化 | 设计系统文件夹约定 + 编译绑定 + 发散质量标尺 | 主题完备性问卷、差异轴纪律、unforgettable 一问——见 `../design/handover-theme-differentiation.md` §四 |
 | html-ppt-skill（2026-09-19 补） | 多文件 HTML deck 播放器 | 36 轻主题 + 15 重主题双层架构 + 主题热插拔 | 主题双层分级、撞脸检测 showcase、语义化 FX——见 `../design/handover-theme-differentiation.md` §四 |
+| demo1（2026-09-20 补，用户提供） | omelette 系设计-交付框架的长滚动落地页 | 一方向一文件手工定制 + image-slot Web Component + sidecar 持久化 + 13 组 bespoke 动效 | 密度解剖（`demo1-density-analysis.md`）、框架对比（`demo1-framework-comparison.md`：reframe 裁剪/sidecar 模式/hover 反色可学；运行时拆字等五项收敛同构） |
 
 ## 二、关键发现（按主题归并）
 

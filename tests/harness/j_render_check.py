@@ -62,7 +62,9 @@ MEASURE_JS = r"""(idx) => {
     if (col) {
       const a = Math.max(0, Math.min(1, col.a * opacity));
       const comp = { r: col.r * a + bgC.r * (1 - a), g: col.g * a + bgC.g * (1 - a), b: col.b * a + bgC.b * (1 - a) };
-      dimT = Link > Lbg ? (lum(comp) - Lbg) / (Link - Lbg) : 1;
+      // 亮度位置 t 与底色/墨色极性无关：亮底深墨（分母为负）与暗底浅墨同样成立，
+      // 仅当底色与墨色等亮（非法主题）时退化为 1（全亮，不放过小字）。
+      dimT = Link !== Lbg ? (lum(comp) - Lbg) / (Link - Lbg) : 1;
     }
     return {
       text: (el.textContent || '').trim().slice(0, 24),

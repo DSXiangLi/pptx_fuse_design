@@ -35,7 +35,7 @@ PORT = 8925
 BASE = 'http://127.0.0.1:%d' % PORT
 RESULTS = os.path.join(ROOT, 'tests/harness/results')
 
-DECKS = ['tech-ikb', 'culture-kraft', 'launch-mono', 'art-botanical', 'density-low', 'density-high', 'infographic-b2', 'charts-a3', 'motion-d2', 'motion-v5', 'infographic-d1', 'tech-ikb-v2', 'culture-kraft-v2', 'launch-mono-v2', 'components-gallery', 'tech-ikb-v3', 'culture-kraft-v3', 'launch-mono-v3', 'j-localfirst-a1', 'j-localfirst-e2', 'j-localfirst-e6', 'smartforge-c1']
+DECKS = ['tech-ikb', 'culture-kraft', 'launch-mono', 'art-botanical', 'density-low', 'density-high', 'infographic-b2', 'charts-a3', 'motion-d2', 'motion-v5', 'infographic-d1', 'tech-ikb-v2', 'culture-kraft-v2', 'launch-mono-v2', 'components-gallery', 'tech-ikb-v3', 'culture-kraft-v3', 'launch-mono-v3', 'j-localfirst-a1', 'j-localfirst-e2', 'j-localfirst-e6', 'smartforge-c1', 'smartforge-e8']
 VIEW_W, VIEW_H = 1440, 900          # harness 视口
 
 RESULTS_LIST = []
@@ -2101,7 +2101,7 @@ CHART_IGS = {'chart-progress', 'chart-stacked', 'chart-grouped', 'chart-area',
              'chart-funnel', 'chart-heatmap'}
 
 def test_gallery_f2(browser):
-    """gallery/index.html（skeleton v4，50 页，多主题 sampler + 20 主题样张 + §13 六型容器页组）：
+    """gallery/index.html（skeleton v4，52 页，多主题 sampler + 20 主题样张 + §13 六型容器 + v7.2 文字呈现/装饰线页组）：
     (a) 零溢出：每页全部 [data-editable] 元素矩形落在画布内（±2px）；
     (b) 零重叠：同页可编辑元素两两矩形不相交（>16px² 才算，排除祖先包含）；
     (c) data-ig 根：族×皮肤 ∈ 白名单、项数 ∈ 区间（复用 T15 镜像表，chart- 前缀跳过）；
@@ -2284,7 +2284,7 @@ def test_gallery_f2(browser):
 
         report('T18-gallery-f2', '组件画廊 F2+F3', not problems,
                '；'.join(problems) if problems else
-               '50 页零溢出零重叠；13 族根 + 10 图表根白名单/分层全过；6 族 × 6 皮肤全覆盖；6 谱系无连续 3 页同谱系；'
+               '52 页零溢出零重叠；13 族根 + 10 图表根白名单/分层全过；6 族 × 6 皮肤全覆盖；6 谱系无连续 3 页同谱系；'
                '瀑布水位/雷达顶点/斜率端点几何抽验通过')
     finally:
         ctx.close()

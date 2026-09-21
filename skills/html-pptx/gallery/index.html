@@ -182,6 +182,29 @@ body{
 .js .slide.in-view [data-anim="mend-bar"]{transform:scaleX(calc(var(--from,100)/100));background:var(--accent);animation:mend-final 1.2s var(--ease-shift) 1.8s forwards}
 @keyframes mend-final{to{transform:scaleX(calc(var(--val,100)/100))}}
 
+/* 文字效果词汇 .tt-*（v7.1/v7.2，逐字抄自骨架——本画廊是 v4 无此规则，
+   为 p51 文字呈现实例内联于此；规则见 references/typography.md §7）。
+   纯 CSS、文字保持纯文本可编辑；--tt-c 是效果色槽位。 */
+.tt-outline{--tt-c:var(--ink);color:transparent;-webkit-text-stroke:1.5px var(--tt-c)}
+.tt-strike{text-decoration:line-through;text-decoration-thickness:.07em;text-decoration-color:var(--tt-c,currentColor)}
+.tt-mark{background:linear-gradient(transparent 62%,color-mix(in srgb,var(--accent) 45%,transparent) 62%)}
+.tt-uline{box-shadow:inset 0 -.12em 0 0 var(--accent)}
+.tt-shadow{--tt-c:var(--accent);text-shadow:.05em .05em 0 var(--tt-c)}
+.tt-glow{text-shadow:0 0 .4em color-mix(in srgb,var(--accent) 55%,transparent)}
+.tt-cond{display:inline-block;transform:scaleY(1.22);transform-origin:bottom left}
+
+/* 装饰线词汇 .rl-*（v7.2，逐字抄自骨架——同上，为 p52 装饰线实例内联；
+   规则见 references/components.md §14。全部装饰件，产物标 data-editable-skip）。 */
+.rl-dashed{height:0;border-top:1px dashed color-mix(in srgb,var(--ink) 35%,transparent)}
+.rl-ticks{height:10px;background-image:repeating-linear-gradient(90deg,color-mix(in srgb,var(--ink) 45%,transparent) 0 1px,transparent 1px 12px);background-size:100% 6px;background-repeat:no-repeat;background-position:bottom}
+.rl-leader{display:flex;align-items:baseline;gap:.5em}
+.rl-leader::before{content:"";order:2;flex:1;border-bottom:2px dotted color-mix(in srgb,var(--ink) 35%,transparent);transform:translateY(-.2em)}
+.rl-fade{height:1px;border:none;background:linear-gradient(90deg,color-mix(in srgb,var(--ink) 35%,transparent),transparent)}
+.rl-corners{position:relative}
+.rl-corners::before,.rl-corners::after{content:"";position:absolute;width:14px;height:14px;border-color:color-mix(in srgb,var(--ink) 45%,transparent);border-style:solid}
+.rl-corners::before{top:-1px;left:-1px;border-width:1px 0 0 1px}
+.rl-corners::after{bottom:-1px;right:-1px;border-width:0 1px 1px 0}
+
 /* 背景 ambience：只允许背景层/水印/呼吸点，强度上限烧死在参数里
    （位移 ≤10px、不透明度摆幅 ≤.4、循环周期 ≥3s），不承载信息。 */
 @keyframes amb-pulse{0%,100%{opacity:.6}50%{opacity:1}}
@@ -410,7 +433,7 @@ body{
         <p data-editable class="reveal" style="--d:.15s;margin-top:36px;font-size:26px;line-height:1.8;max-width:1160px;opacity:.78">6 结构族 × 6 Item 皮肤 × 6 构图谱系 + 9 类图表配方（标注层规格）——每个组合一页高复杂度参照实例：连接件语义层次、数据墨迹、标注层、材质叠印，全部可以照抄。</p>
         <div data-editable-skip style="margin-top:88px;border-top:1px solid color-mix(in srgb, currentColor 22%, transparent);padding-top:24px;display:flex;justify-content:space-between;align-items:baseline;max-width:1680px">
           <p data-editable style="font-family:var(--font-mono);font-size:16px;font-weight:500;letter-spacing:.08em;opacity:.6">配方层 references/components.md v3 + charts.md v2 ↔ 实例层 gallery/</p>
-          <p data-editable style="font-family:var(--font-mono);font-size:16px;font-weight:500;letter-spacing:.12em;opacity:.6">2026-09 · 50 PAGES</p>
+          <p data-editable style="font-family:var(--font-mono);font-size:16px;font-weight:500;letter-spacing:.12em;opacity:.6">2026-09 · 52 PAGES</p>
         </div>
       </div>
     </section>
@@ -421,7 +444,7 @@ body{
     <section class="slide" data-slide-id="guide">
       <header class="masthead">
         <span data-editable>GUIDE · 使用说明</span>
-        <span data-editable>02 / 50</span>
+        <span data-editable>02 / 52</span>
       </header>
       <h2 data-editable class="reveal" style="font-size:64px;line-height:1.25;font-weight:300;letter-spacing:-.02em">规则管合法，实例管出色</h2>
       <div style="margin-top:48px;display:grid;grid-template-columns:repeat(3,1fr);gap:48px">
@@ -2316,10 +2339,142 @@ body{
     </section>
   </div>
 
+  <!-- 51 · K 期 v7.2 · 文字呈现页：.tt-* 七款 + 混排手法（B1 主主题；规则 typography.md §7） -->
+  <div class="slide-slot">
+    <section class="slide" data-slide-id="typo-treatments">
+      <header class="masthead">
+        <span data-editable>K.07 — TYPE / TT-* ×7 ＋ 混排</span>
+        <span data-editable style="letter-spacing:0">B1 · 文字呈现</span>
+      </header>
+      <p data-editable class="reveal" style="font-family:var(--font-mono);font-size:16px;font-weight:500;letter-spacing:.12em;opacity:.55">TYPE TREATMENTS · 字内填充 / 字外装饰 / 尺度形态 · 示例文案</p>
+      <h2 data-editable class="reveal" style="--d:.08s;margin-top:16px;font-size:56px;line-height:1.25;font-weight:300;letter-spacing:-.02em">七款效果，一条纪律：字还是字</h2>
+      <div style="margin-top:40px;display:grid;grid-template-columns:1fr 1fr;gap:36px 72px">
+        <div class="reveal" style="--d:.12s">
+          <p data-editable style="font-size:64px;line-height:1.15;font-weight:600">SMART <span class="tt-outline">FORGE</span></p>
+          <p data-editable style="margin-top:12px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">混排手法 · 填充词是焦点，描边词祭献给氛围（同标题内 填充 + .tt-outline）</p>
+        </div>
+        <div class="reveal" style="--d:.16s">
+          <p data-editable style="font-size:56px;line-height:1.15;font-weight:300"><span class="tt-strike">¥2,000</span> → ¥0</p>
+          <p data-editable style="margin-top:12px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">.tt-strike · 只删「被取代物」（反差带的 from 值），禁删正文句子</p>
+        </div>
+        <div class="reveal" style="--d:.2s">
+          <p data-editable style="font-size:30px;line-height:1.6;font-weight:400">差错率落入<span class="tt-mark">统计噪声区</span>，不再开事故会。</p>
+          <p data-editable style="margin-top:12px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">.tt-mark · 荧光标记每段至多一处，计入 accent 预算</p>
+        </div>
+        <div class="reveal" style="--d:.24s">
+          <p data-editable style="font-size:44px;line-height:1.3;font-weight:400">规则进<span class="tt-uline">系统</span>，响应进秒级</p>
+          <p data-editable style="margin-top:12px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">.tt-uline · 粗下划线给标题内 accent 关键词；与链接样式混淆处禁用</p>
+        </div>
+        <div class="reveal" style="--d:.28s">
+          <p data-editable style="font-size:60px;line-height:1.15;font-weight:800"><span class="tt-shadow">套色之外</span></p>
+          <p data-editable style="margin-top:12px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">.tt-shadow · 错版叠印 ≥32px 才用；暗底慎用（叠印发脏）</p>
+        </div>
+        <div class="reveal" style="--d:.32s">
+          <div data-editable-skip style="display:inline-block;background:var(--ink);padding:22px 40px">
+            <p data-editable class="tt-glow" style="font-size:52px;line-height:1.15;font-weight:500;color:var(--accent)">0.02%</p>
+          </div>
+          <p data-editable style="margin-top:12px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">.tt-glow · 亮底禁用——发光只属暗底（示例放墨档小区）；每页至多一处</p>
+        </div>
+        <div class="reveal" style="--d:.36s">
+          <p data-editable style="font-size:60px;line-height:1.2;font-weight:700;letter-spacing:.02em"><span class="tt-cond">GALLERY</span></p>
+          <p data-editable style="margin-top:12px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">.tt-cond · 窄体拉伸 scaleY(1.22)；transform 互斥——不与 data-anim/ptr/scroll 同元素</p>
+        </div>
+        <div class="reveal" style="--d:.4s">
+          <p data-editable class="tt-outline" style="font-size:72px;line-height:1.1;font-weight:600">PIPELINE</p>
+          <p data-editable style="margin-top:12px;font-family:var(--font-mono);font-size:13px;letter-spacing:.06em;opacity:.5">.tt-outline · 描边字 ≥64px（小了描边糊）；正文禁用；每页至多一处</p>
+        </div>
+      </div>
+      <footer class="mastfoot">
+        <span data-editable>HTML PPTX · COMPONENT GALLERY</span>
+        <span data-editable style="letter-spacing:0">词汇：TT-* 文字效果 · 7 款 + 混排（TYPOGRAPHY.MD §7）</span>
+      </footer>
+    </section>
+  </div>
+
+  <!-- 52 · K 期 v7.2 · 装饰线页：.rl-* 五款 + 装饰元素三族（B1 主主题；规则 components.md §14） -->
+  <div class="slide-slot">
+    <section class="slide" data-slide-id="decor-rules">
+      <header class="masthead">
+        <span data-editable>K.08 — DECOR / RL-* ×5 ＋ 装饰元素三族</span>
+        <span data-editable style="letter-spacing:0">B1 · 装饰线</span>
+      </header>
+      <p data-editable class="reveal" style="font-family:var(--font-mono);font-size:16px;font-weight:500;letter-spacing:.12em;opacity:.55">DECOR RULES · 通用语法层 · 线型共享、词汇归主题</p>
+      <h2 data-editable class="reveal" style="--d:.08s;margin-top:16px;font-size:56px;line-height:1.25;font-weight:300;letter-spacing:-.02em">线是语法，母题是词汇</h2>
+      <div style="margin-top:44px;display:grid;grid-template-columns:1fr 1fr;gap:40px 88px">
+        <div>
+          <div class="reveal" style="--d:.12s">
+            <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:600;letter-spacing:.14em;opacity:.5">RL-DASHED · 虚线分区</p>
+            <p data-editable style="margin-top:14px;font-size:19px;font-weight:500">上半区：结论</p>
+            <hr class="rl-dashed" data-editable-skip style="margin:16px 0">
+            <p data-editable style="font-size:17px;line-height:1.7;opacity:.72">下半区：佐证。松散分区用虚线，不用实线墙。</p>
+          </div>
+          <div class="reveal" style="--d:.2s;margin-top:40px">
+            <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:600;letter-spacing:.14em;opacity:.5">RL-TICKS · 刻度尺（数据页底缘）</p>
+            <div data-editable-skip style="margin-top:14px;display:flex;align-items:flex-end;gap:18px;height:64px">
+              <span style="width:36px;height:22px;background:color-mix(in srgb, var(--ink) 72%, transparent)"></span>
+              <span style="width:36px;height:40px;background:color-mix(in srgb, var(--ink) 72%, transparent)"></span>
+              <span style="width:36px;height:56px;background:var(--accent)"></span>
+              <span style="width:36px;height:34px;background:color-mix(in srgb, var(--ink) 72%, transparent)"></span>
+            </div>
+            <div class="rl-ticks" data-editable-skip style="margin-top:6px"></div>
+            <div style="margin-top:6px;display:flex;justify-content:space-between">
+              <span data-editable style="font-family:var(--font-mono);font-size:13px;opacity:.5">0</span>
+              <span data-editable style="font-family:var(--font-mono);font-size:13px;opacity:.5">25</span>
+              <span data-editable style="font-family:var(--font-mono);font-size:13px;opacity:.5">50</span>
+              <span data-editable style="font-family:var(--font-mono);font-size:13px;opacity:.5">75</span>
+              <span data-editable style="font-family:var(--font-mono);font-size:13px;opacity:.5">100</span>
+            </div>
+          </div>
+          <div class="reveal" style="--d:.28s;margin-top:40px">
+            <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:600;letter-spacing:.14em;opacity:.5">RL-LEADER · 引线点线（目录清单）</p>
+            <div style="margin-top:14px">
+              <p class="rl-leader" style="font-size:18px"><span data-editable style="font-weight:500">背景与痛点</span><span data-editable style="order:3;font-family:var(--font-mono);opacity:.55">03</span></p>
+              <p class="rl-leader" style="margin-top:10px;font-size:18px"><span data-editable style="font-weight:500">系统架构</span><span data-editable style="order:3;font-family:var(--font-mono);opacity:.55">07</span></p>
+              <p class="rl-leader" style="margin-top:10px;font-size:18px"><span data-editable style="font-weight:500">上线与复盘</span><span data-editable style="order:3;font-family:var(--font-mono);opacity:.55">12</span></p>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="reveal" style="--d:.16s">
+            <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:600;letter-spacing:.14em;opacity:.5">RL-FADE · 渐隐线（收束）</p>
+            <p data-editable style="margin-top:14px;font-size:19px;line-height:1.7">到此为止，剩下的交给运行。</p>
+            <hr class="rl-fade" data-editable-skip style="margin-top:16px">
+          </div>
+          <div class="reveal" style="--d:.24s;margin-top:40px">
+            <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:600;letter-spacing:.14em;opacity:.5">RL-CORNERS · 角括号取景</p>
+            <div class="rl-corners" data-editable-skip style="margin-top:14px;background:var(--paper-tint);padding:24px 28px">
+              <p data-editable style="font-size:17px;line-height:1.7">被取景的容器：角标只给对角两枚，与描边框不同时用。</p>
+            </div>
+          </div>
+          <div class="reveal" style="--d:.32s;margin-top:40px">
+            <p data-editable style="font-family:var(--font-mono);font-size:14px;font-weight:600;letter-spacing:.14em;opacity:.5">装饰元素三族（无类，生成侧按 §14 纪律落码）</p>
+            <div style="margin-top:14px">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span data-editable-skip style="width:10px;height:10px;background:var(--accent)"></span>
+                <p data-editable style="font-size:17px">几何小件作列表符号（8–16px，accent 计入预算）</p>
+              </div>
+              <div style="margin-top:10px;display:flex;align-items:center;gap:12px">
+                <span data-editable-skip style="width:10px;height:10px;border:1.5px solid var(--ink);border-radius:50%"></span>
+                <p data-editable style="font-size:17px">描边小圆点作次级项符号</p>
+              </div>
+              <p data-editable style="margin-top:16px;font-family:var(--font-mono);font-size:17px;letter-spacing:.08em">№ 20 · § 13 · ¶ 4<span style="opacity:.5">　——符号字符族，每页至多一族</span></p>
+              <div data-editable-skip style="margin-top:16px;height:14px;width:340px;background:repeating-linear-gradient(45deg,color-mix(in srgb, var(--ink) 28%, transparent) 0 2px,transparent 2px 10px)"></div>
+              <p data-editable style="margin-top:8px;font-size:15px;opacity:.6">纹样带属主题 G9 母题词汇（e7 浪花带 / e11 齿孔带），不通用化——此处仅以斜纹示意。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="mastfoot">
+        <span data-editable>HTML PPTX · COMPONENT GALLERY</span>
+        <span data-editable style="letter-spacing:0">词汇：RL-* 装饰线 5 款 + 装饰元素三族（§14；本页集齐是陈列，真实页面 ≤3 款）</span>
+      </footer>
+    </section>
+  </div>
+
 </div>
 
 <!-- SLOT: 页码初始文本——生成时把 "1 / 1" 改为 "1 / N"（N=总页数） -->
-<div class="deck-chrome" id="chrome">1 / 50</div>
+<div class="deck-chrome" id="chrome">1 / 52</div>
 
 <script>
 /* ============================================================

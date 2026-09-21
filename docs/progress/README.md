@@ -4,7 +4,8 @@
 
 ## 最近更新
 
-- 2026-09-20 · [0920_iter_k.md](0920_iter_k.md) — K 期：高密度表达——文本容器层（components §13 六型 + 四层字阶硬规则）、章节跳转（skeleton v7：data-chapter/nav-link/数字键）、动效编排吸收（mend-bar 双态修复条 + data-rotate 轮转 + 内容→动效对照表）、smartforge-c1 高密度验收 deck
+- 2026-09-21 · [0921_iter_n.md](0921_iter_n.md) — N 期：需求脑暴环节——briefing.md 八组问题 + SKILL.md Step 0.5 + 编辑器 v2.5 需求脑暴页（向导收集 → 格式化简报给 agent，嵌入态 postMessage），46/46 + 19/19
+- 2026-09-20 · [0920_iter_k.md](0920_iter_k.md) — K 期：高密度表达——文本容器层（components §13 六型 + 四层字阶硬规则）、章节跳转（skeleton v7：data-chapter/nav-link/数字键）、动效编排吸收（mend-bar 双态修复条 + data-rotate 轮转 + 内容→动效对照表）、smartforge-c1 高密度验收 deck；L 期泛化（字体呈现五轴 + tt/rl 词汇）；M 期容器边界义务 + 主题立场三元模型
 - 2026-09-20 · [0920_iter_i_j.md](0920_iter_i_j.md) — I+J 期：世界采样法建库（E 系 11 新主题，9→20 重主题 × ≥3 变体；两两 190 对七层 diff 全过）+ 撞脸矩阵（gallery 样张 20 页同内容）+ 同题重制终验（本地优先软件 × a1/e2/e6 三 deck，呈现发散步首次真实走通）
 - 2026-09-19 · [0919_iter_g.md](0919_iter_g.md) — G+H 期：主题表达力栈（七层 L1–L7 ↔ G0–G9、skeleton v6 主题 CSS 槽位、16 纯配色主题诚实合并为 9 重主题+变体、两两七层 diff 机器门槛）+ 想象层（motifs.md 隐喻库 + SKILL.md 呈现发散步），editor v2.3（变体色点 + 双 SLOT 导出），契约 v6.2，40/40 E2E PASS
 - 2026-09-18 · [0918_iter_e_illustration.md](0918_iter_e_illustration.md) — 迭代 E：AI 插画管线（契约 v5 图片槽位三属性、SKILL.md Step 5.5 插画 pass、editor v1.9 上传置 uploaded、check-images.mjs 静态校验器、oai生图真实冒烟），28/28 E2E PASS

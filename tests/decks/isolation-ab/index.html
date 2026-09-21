@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="skeleton-version" content="7.2">
-<title><!-- SLOT: 文档标题 --></title>
+<title>隔离方式 A/B/C 对照 · SmartForge 四大漏洞</title>
 <style>
 /* ============================================================
    SLOT: theme tokens
@@ -15,19 +15,23 @@
    --texture-scope 是许可声明，配给机制见框架层"背景配给制"）。
    ============================================================ */
 :root{
-  /* 主题色（默认：墨水经典） */
-  --paper:#f1efea;
-  --paper-tint:#e8e5de;
-  --ink:#0a0a0b;
-  --ink-tint:#18181a;
-  --accent:#0a0a0b;
-  --accent-on:#f1efea;
+  /* 主题色（C1 信号黑 · 基底变体） */
+  --paper:#1a1a1a;
+  --paper-tint:#242424;
+  --ink:#ffffff;
+  --ink-tint:#0f0f0f;
+  --accent:#FF5722;
+  --accent-on:#1a1a1a;
   /* 字体栈（系统栈，离线可用） */
-  --font-display:"Songti SC","Noto Serif SC","STSong",serif;
+  --font-display:"Arial Black","PingFang SC","Noto Sans SC",sans-serif;
   --font-body:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
   --font-mono:"SF Mono","JetBrains Mono","Menlo",monospace;
   /* 画布内边距（画布坐标系 px） */
   --slide-pad:96px 120px;
+  /* G3 质感立场：flat */
+  --texture-type:flat;
+  --texture-layer:none;
+  --texture-scope:cover;
 }
 
 /* ============================================================
@@ -388,6 +392,11 @@ body{
    颜色只许 var(--*)/color-mix() 引用 token，禁字面 hex；
    禁外部 url()；禁覆盖框架选择器（.slide/.masthead 等）。
    ============================================================ */
+/* C1 信号黑 · 装饰母题 + 缓动签名 */
+:root{--ease-out:cubic-bezier(.2,1.25,.3,1)}
+.mt-sig-bar{display:block;width:64px;height:10px;background:var(--accent)}
+.mt-sig-folio{position:absolute;right:2%;bottom:-.16em;z-index:0;pointer-events:none;user-select:none;font-family:var(--font-display);font-weight:900;font-size:30vh;line-height:.8;color:color-mix(in srgb,var(--ink) 7%,transparent)}
+.mt-sig-mark{display:inline-block;width:.55em;height:.55em;background:var(--accent)}
 
 </style>
 </head>
@@ -443,24 +452,294 @@ body{
        - 词汇表与纪律（五层启用矩阵/主题限定/注意力预算）见 references/motion.md。
        ========================================================== -->
 
+  <style>
+  /* ===== 产物样式 · isolation-ab（A/B/C 隔离方式对照 deck 私有，非框架层、非主题 SLOT）=====
+     三页共享同一套结构/字阶/标注层/动效参数——唯一变量是漏洞卡容器的隔离手段：
+       .iso-a = 线隔离（卡间 hairline 分隔 + 裸排，无面无框；现状代表）
+       .iso-b = 框隔离（每卡 1px 描边框，无填充）
+       .iso-c = 面+框（--paper-tint 灰档面 + 1px hairline 框，demo 式；
+                暗底面+框叠加依 components.md §12 例外条款）
+     三页卡片 box 几何完全一致（border-box：A 页以透明边框占位）。
+     颜色一律 var(--*)/color-mix() 引用 token，无字面 hex，无外部 url()。 */
+  .pg-title{font-family:var(--font-display);font-weight:900;line-height:1.15}
+  .eyebrow{display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:15px;font-weight:500;letter-spacing:0;color:color-mix(in srgb,var(--ink) 50%,transparent)}
+  .note-line{font-family:var(--font-mono);font-size:15px;font-weight:500;letter-spacing:0;line-height:1.6;color:color-mix(in srgb,var(--ink) 50%,transparent)}
+  /* 标注层（typography §5：mono 12–16px + 低明度 + 短文本） */
+  .anno{font-family:var(--font-mono);font-size:13px;font-weight:500;letter-spacing:.08em;line-height:1.55;color:color-mix(in srgb,var(--ink) 46%,transparent)}
+  .anno-sm{font-size:12px;color:color-mix(in srgb,var(--ink) 42%,transparent)}
+  .anno-cn{letter-spacing:0}
+  .head-row{display:flex;justify-content:space-between;align-items:flex-end;gap:40px}
+  .anno-col{display:flex;flex-direction:column;gap:6px;align-items:flex-end;text-align:right;flex:none}
+  .lede-row{display:flex;justify-content:space-between;align-items:baseline;gap:40px}
+  .lede{font-size:20px;line-height:1.6;color:color-mix(in srgb,var(--ink) 72%,transparent)}
+  .cell-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+  /* 漏洞卡：结构 / 内边距 / 间距三页同构（同构边距系统），变量只有容器边界 */
+  .lrow{display:flex;gap:32px}
+  .lcard{flex:1;min-height:540px;padding:32px 30px;display:flex;flex-direction:column;gap:14px}
+  .lcard-title{font-size:28px;font-weight:800}
+  .lcard-desc{font-size:18px;line-height:1.6;color:color-mix(in srgb,var(--ink) 80%,transparent)}
+  .bar-meta{display:flex;justify-content:space-between;align-items:baseline}
+  .bar-val{font-family:var(--font-mono);font-size:14px;font-weight:600;color:color-mix(in srgb,var(--ink) 65%,transparent)}
+  .mend-track{height:10px;background:var(--ink-tint)}
+  .mend-fill{height:100%}
+  .note-block{display:flex;align-items:flex-start;gap:12px}
+  /* A · 线隔离：无面无框，卡间 1px hairline（透明边框占位，box 几何与 B/C 一致） */
+  .iso-a .lcard{border:1px solid transparent}
+  .iso-a .lcard + .lcard{border-left-color:color-mix(in srgb,var(--ink) 26%,transparent)}
+  /* B · 框隔离：1px 描边框，无填充 */
+  .iso-b .lcard{border:1px solid color-mix(in srgb,var(--ink) 30%,transparent)}
+  /* C · 面+框（demo 式）：灰档面 + 1px hairline 框叠加 */
+  .iso-c .lcard{background:var(--paper-tint);border:1px solid color-mix(in srgb,var(--ink) 30%,transparent)}
+  </style>
+
+  <!-- p1 · 页 A「线隔离」：hairline 分隔 + 裸排（无面无框），现状代表 -->
   <div class="slide-slot">
-    <section class="slide dark cover-page" data-slide-id="cover">
-      <h1 data-editable data-anim="chars" style="font-family:var(--font-display);font-size:120px;line-height:1.3;font-weight:700">标题写在这里</h1>
-      <p data-editable class="reveal" style="margin-top:32px;font-size:28px;opacity:.72">副标题 · 一句话说明这份幻灯片</p>
+    <section class="slide iso-a" data-slide-id="iso-a">
+      <header class="masthead">
+        <span data-editable style="letter-spacing:0">SMART FORGE · 隔离方式对照</span>
+        <span data-editable>01 / 03</span>
+      </header>
+      <span class="mt-sig-folio" data-editable-skip>01</span>
+      <span class="mt-sig-bar" data-editable-skip></span>
+      <div class="head-row" style="margin-top:20px">
+        <h2 data-editable data-anim="chars" class="pg-title" style="font-size:108px">四大漏洞</h2>
+        <div class="anno-col" style="margin-bottom:12px">
+          <p data-editable class="anno">LEAKS ×4 · MEND-BAR ×4</p>
+          <p data-editable class="anno">TARGET · ALL → 0%</p>
+        </div>
+      </div>
+      <div class="lede-row" style="margin-top:14px">
+        <p data-editable class="lede">现状链路仍有四处漏损——修复目标：全部归零。</p>
+        <p data-editable class="anno">ISOLATION · LINE ONLY</p>
+      </div>
+      <div class="cell-head" style="margin-top:26px">
+        <p data-editable class="eyebrow">LEAKS · 四大漏洞 —— 修复目标：全部归零</p>
+        <p data-editable class="anno">MEND-BAR · 双态修复 ×4</p>
+      </div>
+      <div class="lrow" style="margin-top:14px">
+        <div class="lcard" data-anim>
+          <p data-editable class="eyebrow">LEAK · 01</p>
+          <p data-editable class="lcard-title">成本不可控</p>
+          <p data-editable class="lcard-desc"><span class="tt-mark">¥2K / 条</span> · ¥20K / 90s 视频</p>
+          <div class="bar-meta" style="margin-top:auto">
+            <span data-editable class="anno">LEAK RATE</span>
+            <span data-editable class="bar-val">94% → 0%</span>
+          </div>
+          <div class="mend-track" data-editable-skip><div class="mend-fill" data-anim="mend-bar" style="--from:94;--val:0"></div></div>
+          <p data-editable class="anno anno-sm anno-cn">SRC · 现状评估 · 示例口径</p>
+        </div>
+        <div class="lcard" data-anim>
+          <p data-editable class="eyebrow">LEAK · 02</p>
+          <p data-editable class="lcard-title">链路碎片化</p>
+          <p data-editable class="lcard-desc"><span class="tt-mark">≥5 款工具</span> · 无统一工作台</p>
+          <div class="bar-meta" style="margin-top:auto">
+            <span data-editable class="anno">LEAK RATE</span>
+            <span data-editable class="bar-val">86% → 0%</span>
+          </div>
+          <div class="mend-track" data-editable-skip><div class="mend-fill" data-anim="mend-bar" style="--from:86;--val:0"></div></div>
+          <p data-editable class="anno anno-sm anno-cn">SRC · 现状评估 · 示例口径</p>
+        </div>
+        <div class="lcard" data-anim>
+          <p data-editable class="eyebrow">LEAK · 03</p>
+          <p data-editable class="lcard-title">资产无法沉淀</p>
+          <p data-editable class="lcard-desc"><span class="tt-mark">0 素材库</span> · 0 提示词库</p>
+          <div class="bar-meta" style="margin-top:auto">
+            <span data-editable class="anno">LEAK RATE</span>
+            <span data-editable class="bar-val">100% → 0%</span>
+          </div>
+          <div class="mend-track" data-editable-skip><div class="mend-fill" data-anim="mend-bar" style="--from:100;--val:0"></div></div>
+          <p data-editable class="anno anno-sm anno-cn">SRC · 现状评估 · 示例口径</p>
+        </div>
+        <div class="lcard" data-anim>
+          <p data-editable class="eyebrow">LEAK · 04</p>
+          <p data-editable class="lcard-title">合规难闭环</p>
+          <p data-editable class="lcard-desc"><span class="tt-mark">无留痕</span> · 难追溯</p>
+          <div class="bar-meta" style="margin-top:auto">
+            <span data-editable class="anno">LEAK RATE</span>
+            <span data-editable class="bar-val">78% → 0%</span>
+          </div>
+          <div class="mend-track" data-editable-skip><div class="mend-fill" data-anim="mend-bar" style="--from:78;--val:0"></div></div>
+          <p data-editable class="anno anno-sm anno-cn">SRC · 现状评估 · 示例口径</p>
+        </div>
+      </div>
+      <div class="note-block" style="margin-top:16px">
+        <span class="mt-sig-mark" data-editable-skip style="flex:none;margin-top:6px"></span>
+        <div>
+          <p data-editable class="note-line">注：漏损率为各环节流失占比的现状评估（示例口径）；修复条表达 现状 → 目标，几何不随文字改。</p>
+          <p data-editable class="anno" style="margin-top:6px">MEND-BAR · --FROM → --VAL · 双态</p>
+        </div>
+      </div>
+      <footer class="mastfoot">
+        <span data-editable style="letter-spacing:0">天弘基金 AI 大赛 · 2026</span>
+        <span data-editable style="letter-spacing:0">A · 线隔离（现状）</span>
+      </footer>
     </section>
   </div>
 
+  <!-- p2 · 页 B「框隔离」：每卡 1px 描边框（无填充），同构 padding/gap -->
   <div class="slide-slot">
-    <section class="slide" data-slide-id="example-content">
+    <section class="slide iso-b" data-slide-id="iso-b">
       <header class="masthead">
-        <span data-editable>SECTION 01</span>
-        <span data-editable>2026-09</span>
+        <span data-editable style="letter-spacing:0">SMART FORGE · 隔离方式对照</span>
+        <span data-editable>02 / 03</span>
       </header>
-      <h2 data-editable class="reveal" style="font-size:72px;line-height:1.3">一页只讲一件事</h2>
-      <p data-editable class="reveal" style="--d:.15s;margin-top:40px;font-size:24px;line-height:1.8;max-width:1200px">正文示例。图片用 <code>&lt;img data-editable-image src="assets/example.jpg"&gt;</code>，生成时放占位图。</p>
+      <span class="mt-sig-folio" data-editable-skip>02</span>
+      <span class="mt-sig-bar" data-editable-skip></span>
+      <div class="head-row" style="margin-top:20px">
+        <h2 data-editable data-anim="chars" class="pg-title" style="font-size:108px">四大漏洞</h2>
+        <div class="anno-col" style="margin-bottom:12px">
+          <p data-editable class="anno">LEAKS ×4 · MEND-BAR ×4</p>
+          <p data-editable class="anno">TARGET · ALL → 0%</p>
+        </div>
+      </div>
+      <div class="lede-row" style="margin-top:14px">
+        <p data-editable class="lede">现状链路仍有四处漏损——修复目标：全部归零。</p>
+        <p data-editable class="anno">ISOLATION · FRAME ONLY</p>
+      </div>
+      <div class="cell-head" style="margin-top:26px">
+        <p data-editable class="eyebrow">LEAKS · 四大漏洞 —— 修复目标：全部归零</p>
+        <p data-editable class="anno">MEND-BAR · 双态修复 ×4</p>
+      </div>
+      <div class="lrow" style="margin-top:14px">
+        <div class="lcard" data-anim>
+          <p data-editable class="eyebrow">LEAK · 01</p>
+          <p data-editable class="lcard-title">成本不可控</p>
+          <p data-editable class="lcard-desc"><span class="tt-mark">¥2K / 条</span> · ¥20K / 90s 视频</p>
+          <div class="bar-meta" style="margin-top:auto">
+            <span data-editable class="anno">LEAK RATE</span>
+            <span data-editable class="bar-val">94% → 0%</span>
+          </div>
+          <div class="mend-track" data-editable-skip><div class="mend-fill" data-anim="mend-bar" style="--from:94;--val:0"></div></div>
+          <p data-editable class="anno anno-sm anno-cn">SRC · 现状评估 · 示例口径</p>
+        </div>
+        <div class="lcard" data-anim>
+          <p data-editable class="eyebrow">LEAK · 02</p>
+          <p data-editable class="lcard-title">链路碎片化</p>
+          <p data-editable class="lcard-desc"><span class="tt-mark">≥5 款工具</span> · 无统一工作台</p>
+          <div class="bar-meta" style="margin-top:auto">
+            <span data-editable class="anno">LEAK RATE</span>
+            <span data-editable class="bar-val">86% → 0%</span>
+          </div>
+          <div class="mend-track" data-editable-skip><div class="mend-fill" data-anim="mend-bar" style="--from:86;--val:0"></div></div>
+          <p data-editable class="anno anno-sm anno-cn">SRC · 现状评估 · 示例口径</p>
+        </div>
+        <div class="lcard" data-anim>
+          <p data-editable class="eyebrow">LEAK · 03</p>
+          <p data-editable class="lcard-title">资产无法沉淀</p>
+          <p data-editable class="lcard-desc"><span class="tt-mark">0 素材库</span> · 0 提示词库</p>
+          <div class="bar-meta" style="margin-top:auto">
+            <span data-editable class="anno">LEAK RATE</span>
+            <span data-editable class="bar-val">100% → 0%</span>
+          </div>
+          <div class="mend-track" data-editable-skip><div class="mend-fill" data-anim="mend-bar" style="--from:100;--val:0"></div></div>
+          <p data-editable class="anno anno-sm anno-cn">SRC · 现状评估 · 示例口径</p>
+        </div>
+        <div class="lcard" data-anim>
+          <p data-editable class="eyebrow">LEAK · 04</p>
+          <p data-editable class="lcard-title">合规难闭环</p>
+          <p data-editable class="lcard-desc"><span class="tt-mark">无留痕</span> · 难追溯</p>
+          <div class="bar-meta" style="margin-top:auto">
+            <span data-editable class="anno">LEAK RATE</span>
+            <span data-editable class="bar-val">78% → 0%</span>
+          </div>
+          <div class="mend-track" data-editable-skip><div class="mend-fill" data-anim="mend-bar" style="--from:78;--val:0"></div></div>
+          <p data-editable class="anno anno-sm anno-cn">SRC · 现状评估 · 示例口径</p>
+        </div>
+      </div>
+      <div class="note-block" style="margin-top:16px">
+        <span class="mt-sig-mark" data-editable-skip style="flex:none;margin-top:6px"></span>
+        <div>
+          <p data-editable class="note-line">注：漏损率为各环节流失占比的现状评估（示例口径）；修复条表达 现状 → 目标，几何不随文字改。</p>
+          <p data-editable class="anno" style="margin-top:6px">MEND-BAR · --FROM → --VAL · 双态</p>
+        </div>
+      </div>
       <footer class="mastfoot">
-        <span data-editable>HTML PPTX</span>
-        <span data-editable>PAGE 02</span>
+        <span data-editable style="letter-spacing:0">天弘基金 AI 大赛 · 2026</span>
+        <span data-editable style="letter-spacing:0">B · 框隔离</span>
+      </footer>
+    </section>
+  </div>
+
+  <!-- p3 · 页 C「面+框」：灰档面（--paper-tint）+ 1px hairline 框 + 恒定 gap，demo 式 -->
+  <div class="slide-slot">
+    <section class="slide iso-c" data-slide-id="iso-c">
+      <header class="masthead">
+        <span data-editable style="letter-spacing:0">SMART FORGE · 隔离方式对照</span>
+        <span data-editable>03 / 03</span>
+      </header>
+      <span class="mt-sig-folio" data-editable-skip>03</span>
+      <span class="mt-sig-bar" data-editable-skip></span>
+      <div class="head-row" style="margin-top:20px">
+        <h2 data-editable data-anim="chars" class="pg-title" style="font-size:108px">四大漏洞</h2>
+        <div class="anno-col" style="margin-bottom:12px">
+          <p data-editable class="anno">LEAKS ×4 · MEND-BAR ×4</p>
+          <p data-editable class="anno">TARGET · ALL → 0%</p>
+        </div>
+      </div>
+      <div class="lede-row" style="margin-top:14px">
+        <p data-editable class="lede">现状链路仍有四处漏损——修复目标：全部归零。</p>
+        <p data-editable class="anno">ISOLATION · FILL + FRAME</p>
+      </div>
+      <div class="cell-head" style="margin-top:26px">
+        <p data-editable class="eyebrow">LEAKS · 四大漏洞 —— 修复目标：全部归零</p>
+        <p data-editable class="anno">MEND-BAR · 双态修复 ×4</p>
+      </div>
+      <div class="lrow" style="margin-top:14px">
+        <div class="lcard" data-anim>
+          <p data-editable class="eyebrow">LEAK · 01</p>
+          <p data-editable class="lcard-title">成本不可控</p>
+          <p data-editable class="lcard-desc"><span class="tt-mark">¥2K / 条</span> · ¥20K / 90s 视频</p>
+          <div class="bar-meta" style="margin-top:auto">
+            <span data-editable class="anno">LEAK RATE</span>
+            <span data-editable class="bar-val">94% → 0%</span>
+          </div>
+          <div class="mend-track" data-editable-skip><div class="mend-fill" data-anim="mend-bar" style="--from:94;--val:0"></div></div>
+          <p data-editable class="anno anno-sm anno-cn">SRC · 现状评估 · 示例口径</p>
+        </div>
+        <div class="lcard" data-anim>
+          <p data-editable class="eyebrow">LEAK · 02</p>
+          <p data-editable class="lcard-title">链路碎片化</p>
+          <p data-editable class="lcard-desc"><span class="tt-mark">≥5 款工具</span> · 无统一工作台</p>
+          <div class="bar-meta" style="margin-top:auto">
+            <span data-editable class="anno">LEAK RATE</span>
+            <span data-editable class="bar-val">86% → 0%</span>
+          </div>
+          <div class="mend-track" data-editable-skip><div class="mend-fill" data-anim="mend-bar" style="--from:86;--val:0"></div></div>
+          <p data-editable class="anno anno-sm anno-cn">SRC · 现状评估 · 示例口径</p>
+        </div>
+        <div class="lcard" data-anim>
+          <p data-editable class="eyebrow">LEAK · 03</p>
+          <p data-editable class="lcard-title">资产无法沉淀</p>
+          <p data-editable class="lcard-desc"><span class="tt-mark">0 素材库</span> · 0 提示词库</p>
+          <div class="bar-meta" style="margin-top:auto">
+            <span data-editable class="anno">LEAK RATE</span>
+            <span data-editable class="bar-val">100% → 0%</span>
+          </div>
+          <div class="mend-track" data-editable-skip><div class="mend-fill" data-anim="mend-bar" style="--from:100;--val:0"></div></div>
+          <p data-editable class="anno anno-sm anno-cn">SRC · 现状评估 · 示例口径</p>
+        </div>
+        <div class="lcard" data-anim>
+          <p data-editable class="eyebrow">LEAK · 04</p>
+          <p data-editable class="lcard-title">合规难闭环</p>
+          <p data-editable class="lcard-desc"><span class="tt-mark">无留痕</span> · 难追溯</p>
+          <div class="bar-meta" style="margin-top:auto">
+            <span data-editable class="anno">LEAK RATE</span>
+            <span data-editable class="bar-val">78% → 0%</span>
+          </div>
+          <div class="mend-track" data-editable-skip><div class="mend-fill" data-anim="mend-bar" style="--from:78;--val:0"></div></div>
+          <p data-editable class="anno anno-sm anno-cn">SRC · 现状评估 · 示例口径</p>
+        </div>
+      </div>
+      <div class="note-block" style="margin-top:16px">
+        <span class="mt-sig-mark" data-editable-skip style="flex:none;margin-top:6px"></span>
+        <div>
+          <p data-editable class="note-line">注：漏损率为各环节流失占比的现状评估（示例口径）；修复条表达 现状 → 目标，几何不随文字改。</p>
+          <p data-editable class="anno" style="margin-top:6px">MEND-BAR · --FROM → --VAL · 双态</p>
+        </div>
+      </div>
+      <footer class="mastfoot">
+        <span data-editable style="letter-spacing:0">天弘基金 AI 大赛 · 2026</span>
+        <span data-editable style="letter-spacing:0">C · 面+框（demo 式）</span>
       </footer>
     </section>
   </div>
@@ -468,7 +747,7 @@ body{
 </div>
 
 <!-- SLOT: 页码初始文本——生成时把 "1 / 1" 改为 "1 / N"（N=总页数） -->
-<div class="deck-chrome" id="chrome">1 / 1</div>
+<div class="deck-chrome" id="chrome">1 / 3</div>
 
 <script>
 /* ============================================================

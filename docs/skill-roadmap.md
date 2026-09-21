@@ -119,5 +119,6 @@
 | AI 插画管线 | `design/illustration-pipeline.md` | 内容验收后统一补齐插画；`data-image-slot` 槽位契约；反降级静态校验 | ✅ 已完成（迭代 E） |
 | 向上兼容（全图化） | `design/compat-roadmap.md` | 页面级转全图（HTML 截图 / AI 重绘），混合 deck，原页 HTML 注释保留可回退 | 待评审 |
 | 向下兼容（html2pptx） | `design/compat-roadmap.md` | 三层映射（原生元素 / 结构降级 / 整页截图），独立工具不进产物 | 待评审 |
+| 编辑器图片 reframe 裁剪 | `research/demo1-framework-comparison.md` §三 | 换图后的裁剪调整（平移/缩放/角点拖拽，omelette 系 image-slot 先例）；工程量大，排期在 compat 评估后 | 待评估 |
 
 依赖顺序：插画管线 → 全图化 → html2pptx；主题 Schema 是动效亲和（G5）与插画风格（G7）的前置。

@@ -451,6 +451,13 @@ body{
   .lede-row{display:flex;justify-content:space-between;align-items:baseline;gap:40px}
   .lede{font-size:20px;line-height:1.6;color:color-mix(in srgb,var(--ink) 72%,transparent)}
   .cell-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+  /* 容器边界义务（v5 · components.md §13 硬规则 + §12 暗底例外 +
+     隔离实验 C 版「面+框」裁决）：高密度容器区 = 面（灰档 paper-tint /
+     墨档 ink-tint）+ 1px hairline 细框（ink 18%，母题 color-mix 口径）。
+     同页同构：同 gap / 同 padding / 同边界手段；封面/收束 accent 满版
+     色块不加框（仪式页特权）；卡内 accent 小件（mend-bar 条 / rotate
+     active 描边）保持 accent——细框是容器边界，accent 是焦点。 */
+  .tick-cell,.mcard,.pipe-card,.vcol,.stack-row,.kv-band,.kv-block,.out-cell{border:1px solid color-mix(in srgb,var(--ink) 18%,transparent)}
   /* 封面目录（nav-link 章节锚点，skeleton v7） */
   .toc-row{display:flex;gap:12px}
   a.nav-link{flex:1;display:flex;align-items:baseline;gap:14px;background:var(--paper-tint);padding:22px 24px;text-decoration:none;color:var(--ink)}
@@ -499,10 +506,12 @@ body{
   .kv-row + .kv-row{margin-top:6px}
   /* 对照列 versus-cols（§13） */
   .vcols{display:flex;gap:28px}
-  .vcol{flex:1;display:flex;flex-direction:column;gap:18px}
-  .vcol-head{display:flex;align-items:baseline;gap:16px;padding:22px 32px}
+  .vcol{flex:1;display:flex;flex-direction:column;gap:12px;background:var(--paper-tint);padding-bottom:14px}
+  .vcol-head{display:flex;align-items:baseline;gap:16px;padding:16px 32px}
   .vcol-head-accent{background:var(--accent);color:var(--accent-on)}
-  .vcol-head-tint{background:var(--paper-tint)}
+  /* v5：列体已有灰档面——WIDE 列头降纸档（透明），避免同色面叠面；
+     DEEP accent 列头保持全页唯一焦点块（§12 单焦点） */
+  .vcol-head-tint{background:transparent}
   .vrow{display:flex;flex-direction:column;gap:8px;padding:4px 32px}
   .vrow-title{font-size:26px;font-weight:800}
   .vrow-desc{font-size:18px;line-height:1.55;color:color-mix(in srgb,var(--ink) 78%,transparent)}
@@ -735,7 +744,7 @@ body{
         <div class="mcard" data-anim>
           <p data-editable class="eyebrow">LEAK · 03</p>
           <p data-editable class="mcard-title">资产无法沉淀</p>
-          <p data-editable class="mcard-desc"><span class="tt-mark">0 组织级素材库</span> · 0 提示词库</p>
+          <p data-editable class="mcard-desc">0 组织级素材库 · 0 提示词库</p>
           <div class="bar-meta" style="margin-top:auto">
             <span data-editable class="anno">LEAK RATE</span>
             <span data-editable class="bar-val">100% → 0%</span>
@@ -895,7 +904,7 @@ body{
         <p data-editable class="lede">创新纵深与复用广度逐条对照——做深三条，做宽三条。</p>
         <p data-editable class="anno">COLS · DEEP / WIDE</p>
       </div>
-      <div class="vcols" style="margin-top:28px">
+      <div class="vcols" style="margin-top:22px">
         <div class="vcol" data-anim="left">
           <div class="vcol-head vcol-head-accent" style="flex-wrap:wrap">
             <span data-editable style="font-family:var(--font-mono);font-size:16px;font-weight:600">DEEP</span>
@@ -967,14 +976,14 @@ body{
           </div>
         </div>
       </div>
-      <div class="kv-band" style="margin-top:22px">
+      <div class="kv-band" style="margin-top:16px">
         <div class="kv-cell"><span data-editable class="kv-label">COMPARE</span><span data-editable class="kv-value">3 × 3 对照</span></div>
         <div class="kv-cell"><span data-editable class="kv-label">DEEP</span><span data-editable class="kv-value">纵深 ×3</span></div>
         <div class="kv-cell"><span data-editable class="kv-label">WIDE</span><span data-editable class="kv-value">横向 ×3</span></div>
         <div class="kv-cell"><span data-editable class="kv-label">MAP</span><span data-editable class="kv-value">→ L01–L03</span></div>
         <div class="kv-cell"><span data-editable class="kv-label">SUM</span><span data-editable class="kv-value">做深 × 做宽</span></div>
       </div>
-      <div class="note-block" style="margin-top:14px">
+      <div class="note-block" style="margin-top:10px">
         <span class="mt-sig-mark" data-editable-skip style="flex:none;margin-top:6px"></span>
         <p data-editable class="note-line">注：KEY 为条目能力关键词；MAP 为该条目在三层架构（04 · 架构）中的落点。</p>
       </div>
@@ -1189,7 +1198,7 @@ body{
           <div data-anim="wipe-clip" style="margin-top:40px;display:inline-block;background:var(--accent);padding:16px 28px">
             <span data-editable class="pg-title" style="font-size:44px;color:var(--accent-on)">内容流水线 · 已上线运行</span>
           </div>
-          <p data-editable class="reveal" style="--d:.3s;margin-top:40px;font-size:32px;font-weight:700"><span class="tt-uline">你的数据</span>，<span class="tt-uline">你的设备</span>，<span class="tt-uline">你的规则</span>。</p>
+          <p data-editable class="reveal" style="--d:.3s;margin-top:40px;font-size:32px;font-weight:700">让<span class="tt-uline">内容生产</span>从外包手艺，变成<span class="tt-uline">平台流水线</span>。</p>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:baseline">
           <p data-editable class="note-line" style="letter-spacing:0">天弘基金 AI 大赛 · 2026</p>

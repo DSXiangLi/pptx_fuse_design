@@ -74,7 +74,8 @@ MEASURE_JS = """(idx) => {
       const a = Math.max(0, Math.min(1, col.a * opacity));
       const comp = { r: col.r * a + bgC.r * (1 - a), g: col.g * a + bgC.g * (1 - a), b: col.b * a + bgC.b * (1 - a) };
       const L = lum(comp);
-      t = Link > Lbg ? (L - Lbg) / (Link - Lbg) : 1;
+      // 亮度位置 t 与底色/墨色极性无关（同 j_render_check.py 修正）
+      t = Link !== Lbg ? (L - Lbg) / (Link - Lbg) : 1;
     }
     leaves.push({
       text: (el.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 28),

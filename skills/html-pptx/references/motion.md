@@ -143,6 +143,8 @@ v3 把"动效怎么被触发"提升为一等维度。**族前缀即触发器自�
 
 ### ptr 族（指针交互 · pointer tracker）
 
+> **hover 微交互**（K 期补，demo1 复盘）：内容卡片的纯 CSS hover 反馈是合法的 L5 轻量款——推荐**整卡反色**（hover 时背景↔文字色按 token 互换，如 accent 底 + accent-on 字）或 border-color 转 accent；只给"可交互暗示"的容器（链接卡/可点击区/对照列），纯展示容器不加；过渡 ≤.3s；accent 反色计入单焦点预算。`@media(hover:none)` 下天然无效果、零降级成本。
+
 | recipe | 职能 | 适用内容 | 时长档 | 亲和/禁用 | 实现要点 |
 |---|---|---|---|---|---|
 | `ptr-parallax`（`data-ptr="parallax"`） | affordance | 封面分层元素（前/后景） | 实时 + .5s 回弹 | dramatic 亲和 | 消费 slide 级 `--mxr/--myr`，力度 `style="--pdepth:Npx"`，位移上限 ±28px 烧死 |

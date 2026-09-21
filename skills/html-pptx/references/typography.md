@@ -84,9 +84,19 @@
 
 中文行高比西文宽：标题 ≥1.3，正文 ≥1.6。中文不设 `letter-spacing`，不用 `text-transform: uppercase`。
 
-## 7. 文字效果词汇（skeleton v7.1 / K 期深化，证据 docs/research/demo1-density-analysis.md §五）
+## 7. 文字呈现与效果（skeleton v7.2 / K 期深化，证据 docs/research/demo1-density-analysis.md §五/§六）
 
-"艺术字体效果"的大部分不是字体，是**文字处理（treatments）**——纯 CSS、离线无害、文字保持纯文本可编辑。骨架框架层提供四个 `.tt-*` 类，主题在 G2「标题修饰」声明亲和/禁忌：
+"字体呈现"不是选一款字体——它有五个独立的表达轴。选型时逐轴过一遍，而不是只盯字体栈：
+
+| 轴 | 空间 | 落法 |
+|---|---|---|
+| ① 字内填充 | 实色（默认）/ 描边 / 渐变 / 错版叠印 / 发光 | `.tt-outline` / gradient-flow（动效款）/ `.tt-shadow` / `.tt-glow` |
+| ② 字外装饰 | 荧光标记 / 粗下划线 / 删除线 / 题花注记 | `.tt-mark` / `.tt-uline` / `.tt-strike` / 主题 G9 |
+| ③ 排印方向 | 横排 / 竖排 / 微斜排 / 基线错位 | `writing-mode:vertical-rl`（a1/e7 母题先例）/ rotate ≤3° / 逐字 transform 交错 |
+| ④ 尺度形态 | 巨字 / 窄体拉伸 / 大小混排 | 字号对比档（§1/§5）/ `.tt-cond` / 首字下沉（c4 母题先例） |
+| ⑤ 字重混排 | 恒重 / 倒挂 / 同句跳跃 | 主题 G2 字重映射；同句 300+900 混排是张力来源（大留白页限定） |
+
+**骨架 `.tt-*` 词汇表**（纯 CSS、离线无害、文字保持纯文本可编辑；主题在 G2「标题修饰」声明亲和/禁忌）：
 
 | 类 | 效果 | CSS 落法 | 适用 | 禁忌 |
 |---|---|---|---|---|
@@ -94,6 +104,9 @@
 | `.tt-strike` | 加粗删除线 | `line-through` `.07em` | 反差数据带的 from 值（¥2,000→¥0 的 ¥2,000）、被否定的旧方案 | 禁用于正文句子；只删"被取代物" |
 | `.tt-mark` | 荧光笔标记 | accent 45% 底纹下 62% | 关键词、结论句中的记忆点 | 每段至多一处；accent 预算计入 |
 | `.tt-uline` | 粗下划线 | `inset 0 -.12em` accent 条 | 标题内 accent 关键词（demo 的 em 下划线） | 与链接样式混淆处禁用 |
+| `.tt-shadow` | 错版叠印（双色阴影错位，印刷套不准美学） | `text-shadow: .05em .05em 0 var(--tt-c)`（accent 影 + ink 字） | display 标题/大数字；e1 孔版/e8 报纸亲和 | 小字禁用（<32px 糊）；暗底主题慎用（叠印发脏） |
+| `.tt-glow` | 发光字 | `text-shadow: 0 0 .4em color-mix(accent 55%)` | 暗色主题的标题/关键数字；c1/c2/d2/e10 亲和 | 亮底禁用（光无从谈起）；每页至多一处；正文禁用 |
+| `.tt-cond` | 窄体拉伸（穷人版 condensed） | `transform: scaleY(1.22)`，inline-block 化 | display 巨字模拟窄体性格（离线替代联网窄体） | 【transform 互斥】与 data-anim 位移类/data-ptr/data-scroll 不同元素；正文禁用 |
 
 **混排手法**（词汇之外的组合技）：同一标题内"填充词 + 描边词"混排（如 SMART FORGE 填充 / PIPELINE 描边）——accent 预算内，描边词充当"背景层文字"，填充词是焦点；祭献一个词给氛围，成就另一个词的记忆点。
 
