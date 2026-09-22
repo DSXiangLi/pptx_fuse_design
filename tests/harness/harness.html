@@ -12,9 +12,13 @@
 /* 宿主侧：收集编辑器 postMessage 输出，提供注入入口 */
 window.__inbox = [];
 window.addEventListener('message', function(e){ window.__inbox.push(e.data); });
-window.loadDeck = function(html, name, assetsUrl){
+window.loadDeck = function(html, name, assetsUrl, exportManifest, exportBaseUrl){
   document.getElementById('ed').contentWindow.postMessage(
-    { type: 'pptx-html:load', html: html, name: name, assetsUrl: assetsUrl }, location.origin);
+    { type: 'pptx-html:load', html: html, name: name, assetsUrl: assetsUrl,
+      exportManifest: exportManifest, exportBaseUrl: exportBaseUrl }, location.origin);
+};
+window.exportIntents = function(){
+  return window.__inbox.filter(function(m){ return m && m.type === 'pptx-html:export-intent'; });
 };
 window.saveCount = function(){
   return window.__inbox.filter(function(m){ return m && m.type === 'pptx-html:save'; }).length;

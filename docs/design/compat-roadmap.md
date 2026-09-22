@@ -1,6 +1,7 @@
 # 上下兼容设计（未来规划：全图化与 html2pptx）
 
-> 状态：待评审 · 依据：2026-09-18 修订意见 7 · 定位：**未来方向规划**，不进入当前迭代范围（第一期仍是 HTML 页面化编辑）
+> 状态：**已被取代** · 2026-09-21 由 `tri-form-architecture.md` + `page-render-mode.md` + `pptx-export-svg.md` + `editor-tri-view.md` 取代为实施级设计（主要变化：全图化收敛为整页 AI 烙入唯一形态、html2pptx 改走 PDF→SVG 矢量管线、新增 manifest/content-hash 公共地基与编辑器三态对比）。本文档保留作历史记录。
+> 依据：2026-09-18 修订意见 7 · 定位：**未来方向规划**，不进入当前迭代范围（第一期仍是 HTML 页面化编辑）
 > 前置依赖：`illustration-pipeline.md`（生图能力）、渲染测量工具链（Playwright 截图即全图化的技术底座）。
 
 ## 1. 总原则：HTML 永远是唯一事实源

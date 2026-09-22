@@ -13,6 +13,7 @@
 | `data-image-intent` | `<img data-editable-image>` | 图片内容意图一句话（占位图依据 / 生图提示词槽位部分 / 换图指南） |
 | `data-image-state` | `<img data-editable-image>` | 图像供给状态机：`placeholder` / `generated` / `uploaded` |
 | `data-editable-skip` | 任意元素 | 纯装饰，编辑器必须忽略 |
+| `data-render-mode` | `<section class="slide">` | 页面渲染形态：`html`（缺省）/ `baked`（整页生图烙入），见"页面烙入模式"节 |
 
 ## 规则（生成侧义务）
 
@@ -156,8 +157,39 @@ grep -o 'src="[^"]*"' index.html | grep -v 'src="assets/'   # 应为空
 2. **母题件**：主题母题类（`.mt-*`）的纯装饰件一律 `data-editable-skip`。**文本载体类母题**（如 `.mt-pub-dropcap` 首字下沉、`.mt-pub-pull` 引文拉页）加在真实文本上——样式由类承担，文本保持 `data-editable` 就地可编辑，编辑/保存不改变类归属。
 3. **缓动签名**：主题块内 `:root{}` 的 token 重定义（如 `--ease-out`）是主题产物内容，与 `--val`/`--pdepth` 同口径——序列化净化【禁止】移除。
 
+## 页面烙入模式（契约级，v7 新增，skeleton v7.3）
+
+烙入页 = 一张整页生图 + **完整保留的 HTML 源层**（设计规格：`docs/design/page-render-mode.md`）：
+
+```html
+<section class="slide" data-slide-id="cover" data-render-mode="baked" data-content-hash="…">
+  <img data-editable-image
+       data-image-slot="page-baked-16x9"
+       data-image-intent="（人可读的换图指南一句话）"
+       data-image-state="generated"
+       src="assets/page-cover.png" alt="…"
+       style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+  <div class="baked-source" hidden>
+    <!-- 原 HTML 页面内容完整保留：标题、正文、组件、契约标记原样不动 -->
+  </div>
+</section>
+```
+
+1. **`data-render-mode`**：`"html"`（缺省，可不写）/ `"baked"`。标在 `<section class="slide">` 上，是产物内容，参与 content-hash（canonical string 第 2 行）。
+2. **`.baked-source` 源层规约**：
+   - 源层是烙入页的真相锚——原页面 HTML（含全部 `data-editable` 文字与组件标记）原样收进 `<div class="baked-source" hidden>`，作为 section 的直接子元素放在整页 img 之后；
+   - 骨架运行时（拆字/打字机/count-up 等文本引擎、动效初始化、in-view 驱动）**跳过 `.baked-source` 内部**（skeleton v7.3 起）；
+   - 编辑器可编辑扫描（注册表、两段手势、样式编辑、批注框选候选）同样**跳过 `.baked-source` 内部**——烙入页的文字不可就地编辑；源层编辑走编辑器专用"源层编辑"入口（编辑器 v3，见 `docs/design/editor-tri-view.md`）；
+   - 源层【禁止】标 `data-editable-skip`——它不是装饰件，skip 语义会让它从 manifest/hash 的语义树中消失；
+   - 序列化保存时源层**原样保留**（净化规则与页面其他部分同口径，无新增条目）；
+   - 源层**参与 content-hash**：canonical string 的 `querySelectorAll` 天然包含 hidden 子树，编辑源层即翻转 hash——stale 检测对烙入页与 HTML 页同一机制。
+3. **页面级槽位 `page-baked-16x9`**：烙入页的整页 img 沿用"图片槽位契约"三属性与三方绑定——槽位声明比例 16:9 ↔ 画布 1920×1080（页面级槽位的构图框即整个画布）↔ 生图 2560×1440，容差 5%；img 必须是 `section.slide` 的直接子元素并满幅铺放（inline style 见上）。`data-image-intent` 写**人可读的换图指南**（同插画槽位语义），生图指令全文不入属性（指令是编译产物，存 `prompts/` 工作区）。换图走编辑器既有图片替换流（上传置 `uploaded`，用户真图永不被 AI 覆盖）。
+4. **批注粒度**：烙入页批注 = **页级 + 坐标区域**——整页 img 在注册表内可框选，批注目标的 `excerpt` 为空（图里没有可引用的文本元素）。
+5. **回退规约**：摘除整页 img 与 `data-render-mode`、解除 `.baked-source` 的 `hidden`，即完整回退为普通 HTML 页——回退必须是生成失败时的诚实出路（`data-render-mode` 保持 `html`，源层即页面本体），禁止交付残页。
+
 ## 版本
 
+契约 v7（2026-09-21，三形态 M2 / skeleton v7.3）：新增"页面烙入模式"节——`data-render-mode="html|baked"`（缺省 html，进 canonical string 第 2 行）、`.baked-source` 源层规约（骨架运行时与编辑器扫描跳过其内部、禁标 data-editable-skip、序列化原样保留、源层参与 content-hash）、页面级槽位 `page-baked-16x9`（三属性 + 三方绑定：16:9 ↔ 画布 1920×1080 ↔ 生图 2560×1440）、烙入页批注粒度=页级+坐标区域（excerpt 为空）、回退规约。
 契约 v6.4（2026-09-20，K 期深化 / skeleton v7.1）：文字效果词汇 `.tt-*`（outline/strike/mark/uline）是静态 CSS 类——文字保持纯文本可编辑；`.tt-outline` 描边字（color:transparent）编辑态还原本色（编辑器注入样式强制还原本色 + 去描边，随净化剔除，同 gradient-flow 条款口径）；无运行时状态，净化无新增。
 契约 v6.3（2026-09-20，K 期 / skeleton v7）：新增"章节跳转与 v7 动效"节——data-chapter/nav-link/id 为产物内容、编辑态拦截 nav-link 点击、mend-bar 的 --from/--val 为产物内容、data-rotate 的 .active 为运行时状态净化移除。
 契约 v6.2（2026-09-19，G 期 / skeleton v6）：新增"主题 CSS 块与母题件"节——`SLOT: theme css` 原样保留、`.mt-*` 母题件 skip、文本载体类母题的文本保持可编辑、主题块 `:root{}` token 重定义不得净化。

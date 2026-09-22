@@ -4,11 +4,62 @@
 <!--
   ============================================================================
   HTML PPTX 编辑器 · editor.html
-  版本：v2.5（2026-09-21）
+  版本：v3.0（2026-09-21）
   实现依据：docs/design-editor.md v0.3（评审修订稿）+ docs/design/editor-v2.md
-  标记契约：skills/html-pptx/references/editing-contract.md v6.4（本页是消费侧实现）
+  标记契约：skills/html-pptx/references/editing-contract.md v7（本页是消费侧实现）
 
   变更记录：
+  - v3.0（三形态 M4：三态工作台与翻转对比，docs/design/editor-tri-view.md）：
+    1. 顶栏三态分段「编辑 | 对比 | 导出」：编辑=现状不动；对比=HTML 与
+       翻转产物的质检工作台；导出=页级清单（形态/载体/保真分/fresh-stale/
+       fonts stale）+ 产物下载。导出面板不发起转换（转换即技能红线），
+       stale 页引导文案="请让 AI 重新翻转本页"。
+    2. 翻面手势（编辑态）：当前页双面卡——正面=活 HTML iframe，背面=三态
+       容器；快捷键 F 或页面角标触发，CSS 3D rotateY(180deg)，双面
+       backface-visibility:hidden，动画期间禁 iframe 指针事件；
+       prefers-reduced-motion 即时切换（transition:none，无动画态残留）。
+       背面三态：就绪=<img> 渲染 export/page-NN.svg（烙入页渲染烙入图
+       assets/page-<id>.png）/ 过期=产物照常显示 + 「已过期」水印（deck
+       当前 data-content-hash ≠ manifest export_hash）/ 黑面空态=纯黑底
+       + 页码 + 一行状态小字（诚实空态，禁假进度条）。
+    3. 对比模式（默认落定=并排）：左活 HTML（仍可编辑）+ 右导出件，双窗格
+       按比例同步滚动（缩放天然同步——骨架按窗格宽度自适应）；滑动分割=
+       同页叠加 + 拖拽分割线 before/after 对刷；差异热区=叠加消费管线产出
+       的 page-NN.diff.png（编辑器无栅格化能力，只消费）。页清单按保真分
+       红→绿排序点击跳转；徽标三分量：形态/状态/保真分。保真分色阶口径与
+       n_fidelity_check.py 对齐（单页 diff<5% 即 fidelity>95 为绿）。
+    4. 烙入页源层编辑：正面「源层编辑」入口把 .baked-source 临时以覆盖层
+       展开（ed-src-open，display 覆盖 hidden），编辑走既有两段手势与
+       序列化通路；保存即翻转 hash → 背面烙入图自然 stale。
+    5. export/ 读取三通道（按优先级）：① HTTP 服务态——知道 deck 的 URL
+       路径（?deck= 打开；v3.0 起 ?deck= 不再依赖伴随服务，任意
+       http.server 均可）时 fetch 相对路径 export/manifest.json 与产物；
+       ② 嵌入态——pptx-html:load 扩展可选 exportManifest（对象直注）与
+       exportBaseUrl（产物 URL 基址），缺省时从 assetsUrl 推导基址再试
+       fetch；给了 manifest 没给 baseUrl 时产物图按黑面空态处理；
+       ③ file:// 直开（FSAA/下载态）——浏览器拦截相对路径 fetch，显示
+       引导文案，不报错不伪装（规格 §6「照常读相对路径」以 http.server
+       场景为实际含义）。保存成功后把最新页级 hash 写回 live DOM
+       （applySavedHashes），stale 检测与磁盘文件同口径。
+    6. 嵌入协议扩展：出 pptx-html:export-intent（{type, slideIds?,
+       action:'re-export'|'download', files?}——「重新翻转」与嵌入态下载
+       只发消息不执行）；入 pptx-html:load 扩展 exportManifest /
+       exportBaseUrl（向后兼容，缺省不影响既有宿主）。
+  - v2.7（三形态 M2：页面烙入模式，docs/design/page-render-mode.md）：
+    契约 v7 适配——可编辑扫描跳过 .baked-source 烙入源层内部：buildRegistry
+    注册表（批注框选候选）与 editableTarget（两段手势/hover/Enter/样式编辑
+    的入口）双双排除；烙入页的整页 img 在源层之外，换图流与页级批注天然
+    可用（批注粒度=页级+坐标区域，excerpt 为空）。源层不标
+    data-editable-skip，序列化原样保留并参与页级 content-hash
+    （pptxCanonicalString 的 querySelectorAll 天然含 hidden 子树，不豁免）。
+  - v2.6（三形态 M1：页级 content-hash，docs/design/tri-form-architecture.md §4.3）：
+    serializeClean 改异步，净化完成后、序列化输出前对每个 section.slide
+    用 Web Crypto（SHA-256 前 12 hex）按 canonical string 规则重算
+    data-content-hash 并写回属性——canonical string 构造函数
+    pptxCanonicalString/pptxNormText/pptxContentHash 与
+    skills/html-pptx/scripts/extract-manifest.py 内 CANONICAL_JS 逐字一致，
+    两端对同一内容算出同一 hash（验收：tests/harness/l_hash_check.py）。
+    嵌入态 postMessage 保存同路径覆盖；crypto.subtle 不可用时保留旧值不阻断保存。
   - v2.5（需求脑暴页，对应技能 Step 0.5 / references/briefing.md）：
     顶栏新增「需求脑暴」按钮 → 全屏覆盖层向导（制作新 deck 的场景，
     与设计决策抽屉互不共享状态：briefAnswers 独立于 answers）。
@@ -410,14 +461,139 @@
   }
   .brief-result-bar{display:flex;gap:10px;margin-top:10px;align-items:center}
   .brief-result-bar .hint{font-size:11px;color:var(--muted)}
+
+  /* ── 三态工作台（v3.0，editor-tri-view.md） ─────────────── */
+  [hidden]{display:none !important}   /* flex 容器上的 hidden 需要显式兜底 */
+  .workarea{flex:1;display:flex;min-width:0;min-height:0}
+  .workarea[hidden]{display:none}
+
+  /* 翻面：当前页双面卡（§3）。正面=活 iframe，背面=三态容器。
+     背面常驻自转 180° + backface 隐藏（只合成自身，不影响正面栅格化）；
+     共享 3D 上下文（perspective/preserve-3d）只在 armed（翻面动画期间与背面
+     朝前）时启用——常驻 3D 合成会改变 iframe 内容的栅格化路径（文字抗锯齿
+     全帧微差），静止正面必须与无包裹时逐像素一致 */
+  .flip-scene{position:absolute;inset:0}
+  .flip-inner{position:absolute;inset:0;
+    transition:transform .55s cubic-bezier(.32,.72,.35,1)}
+  .flip-scene.armed{perspective:1800px}
+  .flip-scene.armed .flip-inner{transform-style:preserve-3d}
+  .flip-inner.flipped{transform:rotateY(180deg)}
+  .flip-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+  .flip-back{transform:rotateY(180deg);background:#000;overflow:hidden}
+  .flip-inner.flipped .flip-front{pointer-events:none}
+  @media (prefers-reduced-motion: reduce){ .flip-inner{transition:none} }
+  .flip-badge{position:absolute;right:14px;bottom:14px;z-index:22;
+    background:rgba(20,20,18,.78);color:#f5f5f3;border-color:transparent;
+    font-size:12px;padding:6px 12px;border-radius:999px}
+  .flip-badge:hover{background:rgba(20,20,18,.92)}
+
+  /* 背面三态 / 对比右窗格共用的产物面组件 */
+  .tri-face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:#000;overflow:hidden}
+  .tri-face img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+  .tri-face[data-art-state="black"]{flex-direction:column;gap:10px;text-align:center;padding:0 8%}
+  .tri-black-no{font-family:"SF Mono","Menlo",monospace;font-size:13px;letter-spacing:.18em;color:#c9c9c4}
+  .tri-black-line{font-size:12px;color:#6f6f6a;line-height:1.7}
+  .tri-stale{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .tri-stale span{transform:rotate(-16deg);font-size:38px;font-weight:700;letter-spacing:.22em;
+    color:rgba(220,60,50,.78);border:4px solid rgba(220,60,50,.78);
+    padding:6px 26px 6px 34px;border-radius:10px;background:rgba(0,0,0,.32)}
+
+  /* 对比模式：左页清单 / 右产物窗格 / 叠层（滑动分割·差异热区） */
+  .cmp-list{width:264px;flex:none;border-right:1px solid var(--border);background:var(--bar);
+    display:flex;flex-direction:column;min-height:0}
+  .cmp-list-head{padding:10px 12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+  .cmp-list-head .seg button{flex:1;padding:4px 0;font-size:12px}
+  .cmp-tools{display:flex;gap:8px;align-items:center}
+  .cmp-tools button{font-size:11px;padding:3px 8px}
+  .cmp-note{font-size:11px;color:var(--muted);line-height:1.6}
+  .cmp-rows{flex:1;overflow-y:auto;padding:8px}
+  .cmp-row{display:flex;align-items:center;gap:6px;padding:7px 8px;border:1px solid transparent;
+    border-radius:7px;cursor:pointer;font-size:12px;min-width:0}
+  .cmp-row:hover{background:#f0f0ed}
+  .cmp-row.cur{border-color:var(--accent);background:var(--accent-soft)}
+  .cmp-row .no{font-family:"SF Mono","Menlo",monospace;color:var(--muted);flex:none}
+  .cmp-row .sid{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .badge{flex:none;font-size:10px;border-radius:4px;padding:1px 5px;border:1px solid var(--border);
+    color:var(--muted);white-space:nowrap}
+  .badge.b-baked{color:#7c3aed;border-color:#ddd0f7;background:#f5f1fd}
+  .badge.b-stale{color:var(--danger);border-color:#f0c5c0;background:#fdf0ef}
+  .badge.b-fresh{color:var(--ok);border-color:#bbe4c6;background:#eefaf0}
+  /* 保真分色阶：与 n_fidelity_check.py 对齐（diff<5% 即 fidelity>95 为绿） */
+  .badge.f-green{color:var(--ok);border-color:#bbe4c6;background:#eefaf0}
+  .badge.f-yellow{color:var(--warn-text);border-color:#ecd9a0;background:var(--warn-bg)}
+  .badge.f-red{color:var(--danger);border-color:#f0c5c0;background:#fdf0ef}
+  .cmp-right{flex:1;min-width:0;border-left:1px solid var(--border);background:#e9e9e6;
+    display:flex;flex-direction:column}
+  .cmp-artifacts{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:18px}
+  .cmp-art{position:relative;width:100%;aspect-ratio:16/9;flex:none;border:1px solid var(--border);
+    background:#000;cursor:pointer}
+  .cmp-art.cur{outline:2px solid var(--accent);outline-offset:1px}
+  .cmp-art-note{font-size:11px;color:var(--muted);line-height:1.7;background:var(--bar);
+    border:1px dashed var(--border);border-radius:8px;padding:10px 12px}
+  .cmp-overlay{position:absolute;inset:0;z-index:18;pointer-events:none}
+  .cmp-ol-holder{position:absolute;overflow:hidden}
+  .cmp-ol-img{position:absolute;inset:0;width:100%;height:100%}
+  .cmp-ol-black{position:absolute;inset:0;background:#000;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:8px;text-align:center}
+  .cmp-divider{position:absolute;top:0;bottom:0;width:0;border-left:2px solid #fff;
+    box-shadow:0 0 0 1px rgba(0,0,0,.45)}
+  .cmp-handle{position:absolute;top:50%;left:-13px;width:26px;height:26px;border-radius:50%;
+    background:#fff;border:1px solid rgba(0,0,0,.3);pointer-events:auto;cursor:ew-resize;
+    box-shadow:0 1px 6px rgba(0,0,0,.3)}
+  .cmp-tag{position:absolute;top:8px;font-size:11px;padding:2px 8px;border-radius:999px;
+    background:rgba(20,20,18,.72);color:#f5f5f3}
+  .cmp-tag-l{left:10px}.cmp-tag-r{right:10px}
+  .cmp-diff-ctl{position:absolute;left:10px;bottom:10px;pointer-events:auto;
+    background:rgba(255,255,255,.94);border:1px solid var(--border);border-radius:8px;
+    padding:6px 10px;font-size:11px;display:flex;gap:8px;align-items:center}
+
+  /* 烙入页源层编辑（编辑态入口 + 顶条） */
+  .src-edit-open{position:absolute;left:14px;bottom:14px;z-index:22;
+    background:rgba(20,20,18,.78);color:#f5f5f3;border-color:transparent;
+    font-size:12px;padding:6px 12px;border-radius:999px}
+  .src-edit-open:hover{background:rgba(20,20,18,.92)}
+  .src-edit-bar{position:absolute;left:0;right:0;top:0;z-index:24;display:none;
+    align-items:center;gap:10px;padding:8px 12px;background:#2b2413;color:#f5e9c8;
+    font-size:12px;border-bottom:1px solid #4a3f22}
+  .src-edit-bar.show{display:flex}
+  .src-edit-bar button{background:transparent;border-color:#6b5c33;color:inherit;font-size:12px;padding:3px 10px}
+
+  /* 导出面板 */
+  .export-view{flex:1;overflow-y:auto;background:var(--bg)}
+  .export-view[hidden]{display:none}
+  .exp-inner{max-width:1080px;margin:0 auto;padding:22px 24px 80px}
+  .exp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .exp-head h2{font-size:15px;font-weight:600;margin-right:auto}
+  .exp-summary{margin-top:12px;font-size:12px;color:var(--muted);line-height:1.8}
+  .exp-guide{margin-top:16px;border:1px dashed var(--border);border-radius:10px;
+    padding:18px;background:var(--bar);font-size:12px;line-height:2;color:var(--muted)}
+  .exp-guide code{font-family:"SF Mono","Menlo",monospace;background:#f0f0ed;
+    padding:1px 6px;border-radius:4px;color:var(--text)}
+  .exp-table{width:100%;border-collapse:collapse;margin-top:14px;background:var(--bar);
+    border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .exp-table th{font-size:11px;text-align:left;color:var(--muted);letter-spacing:.05em;
+    padding:8px 10px;border-bottom:1px solid var(--border);background:#f7f7f4}
+  .exp-table td{font-size:12px;padding:8px 10px;border-bottom:1px solid #f0f0ee;vertical-align:middle}
+  .exp-table tr:last-child td{border-bottom:0}
+  .exp-table tr.stale td{background:#fdf7f6}
+  .exp-table .mono{font-family:"SF Mono","Menlo",monospace}
+  .exp-table .exp-hint{color:var(--warn-text);font-size:11px}
+  .exp-row button{padding:2px 8px;font-size:11px;margin-right:4px}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="brand">HTML PPTX 编辑器<small>v2.5</small></div>
+  <div class="brand">HTML PPTX 编辑器<small>v3.0</small></div>
   <button id="btnOpen">打开文件</button>
   <button id="btnSave" class="primary" disabled title="将修改写回原文件">保存 (⌘S)</button>
+  <div class="sep"></div>
+  <div class="seg" id="viewSeg" title="三态工作台：编辑现状 / 对比翻转产物 / 导出清单（v3.0）">
+    <button data-view="edit" class="on">编辑</button>
+    <button data-view="compare">对比</button>
+    <button data-view="export">导出</button>
+  </div>
   <div class="sep"></div>
   <div class="seg" id="modeSeg" title="切换交互模式">
     <button data-mode="edit" class="on">文字编辑</button>
@@ -461,19 +637,83 @@
     </div>
   </aside>
 
-  <div class="stage" id="stage">
-    <iframe id="deckFrame" title="幻灯片预览"></iframe>
-    <div class="empty-state" id="emptyState">
-      <h2>打开一份 HTML 幻灯片开始编辑</h2>
-      <p>支持 html-pptx 技能生成的 .html 文件（带 data-editable 标记）。<br>
-      点击「打开文件」，或把文件拖到本页面。修改后按 Ctrl/⌘+S 写回原文件。</p>
-      <button class="primary" id="btnOpen2">打开文件</button>
+  <div class="workarea" id="workarea">
+    <!-- 对比模式页清单（v3.0 §4）：保真分红→绿排序，徽标三分量 -->
+    <div class="cmp-list" id="cmpList" hidden>
+      <div class="cmp-list-head">
+        <div class="seg" id="cmpViewSeg" title="同屏查看方式（默认落定=并排）">
+          <button data-cmp="side" class="on">并排</button>
+          <button data-cmp="swipe">滑动分割</button>
+          <button data-cmp="diff">差异热区</button>
+        </div>
+        <div class="cmp-tools">
+          <button id="btnTriRefresh" title="技能重新翻转后点此重新读取 export/ 目录">刷新产物</button>
+          <span class="cmp-note" id="cmpNote"></span>
+        </div>
+      </div>
+      <div class="cmp-rows" id="cmpRows"></div>
     </div>
 
-    <div class="anno-panel" id="annoPanel">
-      <div class="anno-head">批注清单 <span id="annoCount"></span><span class="spacer"></span><span class="anno-unexp" id="annoUnexp"></span></div>
-      <div class="anno-items" id="annoItems"></div>
-      <div class="anno-foot"><button class="primary" id="btnExportAnno" disabled>导出批注指令</button></div>
+    <div class="stage" id="stage">
+      <!-- 翻面双面卡（v3.0 §3）：正面=活 HTML（可编辑），背面=翻转产物三态 -->
+      <div class="flip-scene" id="flipScene">
+        <div class="flip-inner" id="flipInner">
+          <iframe id="deckFrame" class="flip-face flip-front" title="幻灯片预览"></iframe>
+          <div class="flip-face flip-back" id="flipBack"></div>
+        </div>
+      </div>
+      <div class="empty-state" id="emptyState">
+        <h2>打开一份 HTML 幻灯片开始编辑</h2>
+        <p>支持 html-pptx 技能生成的 .html 文件（带 data-editable 标记）。<br>
+        点击「打开文件」，或把文件拖到本页面。修改后按 Ctrl/⌘+S 写回原文件。</p>
+        <button class="primary" id="btnOpen2">打开文件</button>
+      </div>
+
+      <button class="flip-badge" id="flipBadge" hidden title="翻面查看当前页的翻转产物（快捷键 F）">翻面 (F)</button>
+      <button class="src-edit-open" id="btnSrcEdit" hidden title="打开该烙入页的 HTML 源层做文字编辑（保存后烙入图将标记过期）">源层编辑</button>
+      <div class="src-edit-bar" id="srcEditBar">
+        <span>正在编辑烙入页「<b id="srcEditSid"></b>」的源层——保存后烙入图将标记过期，需让 AI 重新翻转本页</span>
+        <span class="spacer"></span>
+        <button id="btnSrcEditClose">退出源层</button>
+      </div>
+
+      <!-- 对比叠层（滑动分割 / 差异热区）：叠加在当前页上方 -->
+      <div class="cmp-overlay" id="cmpOverlay" hidden>
+        <div class="cmp-ol-holder" id="cmpOlHolder"></div>
+        <div class="cmp-divider" id="cmpDivider"><div class="cmp-handle" id="cmpHandle"></div></div>
+        <span class="cmp-tag cmp-tag-l" id="cmpTagL">HTML（可编辑）</span>
+        <span class="cmp-tag cmp-tag-r" id="cmpTagR">导出件</span>
+        <div class="cmp-diff-ctl" id="cmpDiffCtl">热区不透明度 <input type="range" id="cmpDiffOp" min="20" max="100" value="90"></div>
+      </div>
+
+      <div class="anno-panel" id="annoPanel">
+        <div class="anno-head">批注清单 <span id="annoCount"></span><span class="spacer"></span><span class="anno-unexp" id="annoUnexp"></span></div>
+        <div class="anno-items" id="annoItems"></div>
+        <div class="anno-foot"><button class="primary" id="btnExportAnno" disabled>导出批注指令</button></div>
+      </div>
+    </div>
+
+    <!-- 对比模式右窗格（并排：导出件滚动列，与左窗格同步滚动） -->
+    <div class="cmp-right" id="cmpRight" hidden>
+      <div class="cmp-artifacts" id="cmpArtifacts"></div>
+    </div>
+  </div>
+
+  <!-- 导出面板（v3.0 §2）：页级清单 + 产物下载；不发起转换 -->
+  <div class="export-view" id="exportView" hidden>
+    <div class="exp-inner">
+      <div class="exp-head">
+        <h2>导出 · 最近一次翻转结果</h2>
+        <button id="btnExpRefresh" title="技能重新翻转后点此重新读取 export/ 目录">重新读取 export/</button>
+        <button id="btnDlPptx" data-url="" title="下载 PPTX 交付件（HTTP 态直链/FSAA 另存；嵌入态由宿主交付）">下载 deck.pptx</button>
+        <button id="btnExpReflip" class="primary" title="编辑器不发起转换（转换即技能）：嵌入态向宿主发送重新翻转请求，否则复制技能命令">重新翻转导出</button>
+      </div>
+      <div class="exp-summary" id="expSummary"></div>
+      <div class="exp-guide" id="expGuide" hidden></div>
+      <table class="exp-table" id="expTable" hidden>
+        <thead><tr><th>#</th><th>slide_id</th><th>形态</th><th>载体</th><th>保真分</th><th>状态</th><th>字体</th><th>操作</th></tr></thead>
+        <tbody id="expRows"></tbody>
+      </table>
     </div>
   </div>
 
@@ -2278,7 +2518,7 @@ var annoUnexported = false;  // 有未导出的批注变更
 var marquee = null;          // {x0, y0, x1, y1, el, d} 进行中的框选
 var pendingAnno = null;      // {hits:[{el, slide, path, tag, excerpt, checked}]} 弹窗期间
 
-var EDIT_CLASSES = ['ed-hover', 'ed-selected', 'ed-editing', 'anno-hit', 'anno-flash', 'anno-dragging', 'split-anim', 'tw-live'];
+var EDIT_CLASSES = ['ed-hover', 'ed-selected', 'ed-editing', 'anno-hit', 'anno-flash', 'anno-dragging', 'split-anim', 'tw-live', 'ed-src-open'];
 
 function $(id){ return document.getElementById(id); }
 
@@ -2372,16 +2612,16 @@ function askUnsaved(){
     $('modalCancel').onclick = function(){ done('cancel'); };
   });
 }
-async function ensureSwitchOkAndOpen(text, name, handle, assetsUrl){
+async function ensureSwitchOkAndOpen(text, name, handle, assetsUrl, opts){
   if (state.loaded && state.dirty){
     var choice = await askUnsaved();
     if (choice === 'cancel') return;
     if (choice === 'save'){ var ok = await saveDeck(); if (!ok) return; }
   }
-  openHtml(text, name, handle, assetsUrl);
+  openHtml(text, name, handle, assetsUrl, null, opts);
 }
 
-function openHtml(text, name, handle, assetsUrl, deckPath){
+function openHtml(text, name, handle, assetsUrl, deckPath, opts){
   /* 契约预检：至少有 .slide 和 data-slide-id；不符合仍可打开，仅提示 */
   var contractOk = false;
   try {
@@ -2390,6 +2630,29 @@ function openHtml(text, name, handle, assetsUrl, deckPath){
   } catch(e){}
   if (!contractOk) showWarn('该文件似乎不是 html-pptx 技能产物（缺少 .slide / data-slide-id 标记），仍可打开，但仅带标记的元素可编辑。');
   else hideWarn();
+
+  /* v3.0 export/ 读取通道初始化（editor-tri-view.md §6，三通道按优先级）：
+     ① HTTP 服务态：deckPath 已知 → deck 目录即产物基址；
+     ② 嵌入态：load 消息可选 exportManifest（对象直注）/ exportBaseUrl，
+        缺省从 assetsUrl 推导基址；③ file:// 直开 → refreshExport 走引导态 */
+  opts = opts || {};
+  triManifest = (opts.exportManifest && typeof opts.exportManifest === 'object') ? opts.exportManifest : null;
+  triInjected = !!triManifest;
+  triDeckBase = deckPath ? deckPath.slice(0, deckPath.lastIndexOf('/') + 1)
+              : (assetsUrl ? String(assetsUrl).replace(/\/?$/, '/') : null);
+  triBaseUrl = (typeof opts.exportBaseUrl === 'string' && opts.exportBaseUrl)
+             ? opts.exportBaseUrl.replace(/\/?$/, '/')
+             : (triDeckBase ? triDeckBase + 'export/' : null);
+  triPages = []; triMissing = {}; triStatus = 'idle';
+  /* 换文件复位：翻回正面、退出源层编辑、回到编辑态 */
+  flipped = false;
+  $('flipInner').classList.remove('flipped');
+  $('flipScene').classList.remove('armed');
+  frame.style.pointerEvents = '';
+  srcEdit = null;
+  $('srcEditBar').classList.remove('show');
+  view = 'edit';
+  applyView();
 
   /* srcdoc 的 base URL 继承自本页面：deck 的相对路径资源（assets/ 等）会按
      editor.html 所在目录解析。嵌入态下宿主可用 assetsUrl 指定 deck 的资源基准（§8）。
@@ -2416,6 +2679,7 @@ function openHtml(text, name, handle, assetsUrl, deckPath){
   frame.onload = function(){
     try { initEditLayer(); }
     catch(e){ console.error('[editor] 编辑层初始化失败', e); toast('编辑层初始化失败，请查看控制台'); }
+    refreshExport();   /* v3.0：装载后读取 export/ 产物（三通道） */
   };
   frame.srcdoc = text;
 
@@ -2461,7 +2725,12 @@ var INJECTED_CSS = [
   '.spotlight,.read-progress{display:none !important}',
   '[data-anim="gradient-flow"].ed-editing{background-image:none !important;-webkit-text-fill-color:currentColor !important;animation:none !important}',
   /* 契约 v6.4 / skeleton v7.1：.tt-outline 描边字编辑态还原本色（去描边+继承父级色） */
-  '.tt-outline.ed-editing{-webkit-text-stroke-width:0 !important;-webkit-text-stroke-color:transparent !important;color:inherit !important}'
+  '.tt-outline.ed-editing{-webkit-text-stroke-width:0 !important;-webkit-text-stroke-color:transparent !important;color:inherit !important}',
+  /* v3.0（契约 v7 / editor-tri-view.md §5）：烙入页「源层编辑」——把 .baked-source
+     临时展开为该页内的编辑覆盖层（display 覆盖 hidden UA 规则）；退出即摘除 class，
+     源层回归 hidden 原状（序列化净化经 EDIT_CLASSES 兜底剔除） */
+  '.baked-source.ed-src-open{display:block !important;position:absolute;inset:0;z-index:80;' +
+    'background:var(--paper,#fff);overflow:auto;padding:5% 7%}'
 ].join('\n');
 
 function initEditLayer(){
@@ -2509,6 +2778,7 @@ function buildRegistry(d){
     var editables = slide.querySelectorAll('[data-editable],[data-editable-image]');
     Array.prototype.forEach.call(editables, function(el){
       if (el.closest('[data-editable-skip]')) return;   /* 装饰元素忽略 */
+      if (el.closest('.baked-source')) return;   /* 契约 v7：烙入源层不可就地编辑（批注候选同步排除） */
       registry.push({
         el: el,
         slideId: sid,
@@ -2528,6 +2798,10 @@ function editableTarget(e){
   var el = t.closest('[data-editable],[data-editable-image]');
   if (!el) return null;
   if (el.closest('[data-editable-skip]')) return null;
+  /* 契约 v7：烙入源层（hidden）不进编辑手势；v3.0 例外——「源层编辑」展开中的
+     那一层（srcEdit）内的文字可经既有两段手势就地编辑 */
+  var bakedSrc = el.closest('.baked-source');
+  if (bakedSrc && bakedSrc !== srcEdit) return null;
   return el;
 }
 
@@ -2676,6 +2950,11 @@ function wireGestures(d){
       else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); commitEdit(); }
       return;
     }
+    /* v3.0 翻面手势（iframe 内按键也要接住）：F 翻面 / Esc 翻回 */
+    if ((e.key === 'f' || e.key === 'F') && mode === 'edit' && view === 'edit' && !srcEdit){
+      e.preventDefault(); setFlip(!flipped); return;
+    }
+    if (e.key === 'Escape' && flipped){ e.preventDefault(); setFlip(false); return; }
     if (mode !== 'edit') return;
     if (selEl && e.key === 'Enter'){
       e.preventDefault();
@@ -2709,6 +2988,7 @@ function wireSlideStatus(d){
     curSlideIdx = idx;
     $('sbPage').textContent = '第 ' + (idx + 1) + ' / ' + n + ' 页';
     tocHighlight(idx);
+    triOnDeckScroll();   /* v3.0：对比窗格同步滚动 / 叠层跟随 / 徽标高亮 */
   };
   deck.addEventListener('scroll', function(){ frame.contentWindow.requestAnimationFrame(update); }, { passive:true });
   update();
@@ -2724,6 +3004,8 @@ function updateStatusBar(){
   if (editEl){
     var r1 = findReg(editEl);
     $('sbSel').textContent = '编辑中：' + (r1 ? r1.path : editEl.tagName.toLowerCase()) + '（Esc 取消 · 失焦/Ctrl+Enter 确认）';
+  } else if (srcEdit){
+    $('sbSel').textContent = '源层编辑中（烙入页）：双击源层文字进入编辑，完成后点「退出源层」——保存即翻转该页 hash，烙入图标记过期';
   } else if (selEl){
     var r2 = findReg(selEl);
     var kind = selEl.hasAttribute('data-editable-image') ? '图片' : '文本';
@@ -2761,6 +3043,7 @@ function setMode(m){
   });
   $('annoPanel').classList.toggle('show', m === 'annotate');
   updateStatusBar();
+  updateTriChrome();   /* v3.0：翻面角标仅文字编辑子模式显示 */
 }
 $('modeSeg').addEventListener('click', function(e){
   var b = e.target.closest('button[data-mode]');
@@ -3151,7 +3434,36 @@ async function replaceImage(img){
 /* ============================================================
    序列化净化（§5.4，五条）与保存（§3.2）
    ============================================================ */
-function serializeClean(){
+/* 页级 content-hash 规范化字符串（三形态 M1，tri-form-architecture.md §4.3）。
+   【双端一致】以下三个函数与 skills/html-pptx/scripts/extract-manifest.py
+   内的 CANONICAL_JS 逐字一致，任何修改必须两端同步。 */
+function pptxNormText(s){
+  return (s || '').replace(/\s+/g, ' ').trim();
+}
+function pptxCanonicalString(slide){
+  var lines = [];
+  lines.push(slide.getAttribute('data-slide-id') || '');
+  lines.push(slide.getAttribute('data-render-mode') || 'html');
+  Array.prototype.forEach.call(slide.querySelectorAll('[data-editable]'), function(el){
+    lines.push('T:' + pptxNormText(el.textContent));
+  });
+  Array.prototype.forEach.call(slide.querySelectorAll('img[data-editable-image]'), function(img){
+    lines.push('I:' + (img.getAttribute('data-image-slot') || '') + '|' +
+      (img.getAttribute('data-image-intent') || '') + '|' +
+      (img.getAttribute('data-image-state') || '') + '|' +
+      (img.getAttribute('src') || ''));
+  });
+  return lines.join('\n');
+}
+async function pptxContentHash(slide){
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pptxCanonicalString(slide)));
+  var hex = Array.prototype.map.call(new Uint8Array(buf), function(b){
+    return ('0' + b.toString(16)).slice(-2);
+  }).join('');
+  return hex.slice(0, 12);
+}
+
+async function serializeClean(){
   var d = doc();
   /* 迭代 C（契约 v3）：先终止并还原全部进行中的运行时动效
      （拆字 span → 纯文本、count-up → 终值文本），再克隆序列化 */
@@ -3235,7 +3547,24 @@ function serializeClean(){
     if (q >= 0) img.setAttribute('src', src.slice(0, q));
   });
 
-  /* 5. 输出带 DOCTYPE 的完整文档 */
+  /* 5. 页级 content-hash 重算（三形态 M1，§4.3）：在净化后的克隆上
+     按 canonical string 规则逐页重算并写回 data-content-hash，
+     与 extract-manifest.py 对同一内容算出同一 hash。
+     crypto.subtle 不可用（非安全上下文）时保留旧值，不阻断保存。
+     v3.0：重算结果同时记入 lastSaveHashes，保存成功后写回 live DOM
+     （编辑器的 stale 检测以 live DOM 属性为数据源，与磁盘文件同口径）。 */
+  lastSaveHashes = null;
+  if (window.crypto && crypto.subtle){
+    var slides = clone.querySelectorAll('section.slide');
+    lastSaveHashes = {};
+    for (var si = 0; si < slides.length; si++){
+      var h = await pptxContentHash(slides[si]);
+      slides[si].setAttribute('data-content-hash', h);
+      lastSaveHashes[slides[si].getAttribute('data-slide-id') || ('#' + si)] = h;
+    }
+  }
+
+  /* 6. 输出带 DOCTYPE 的完整文档 */
   return '<!DOCTYPE html>\n' + clone.outerHTML;
 }
 
@@ -3253,8 +3582,9 @@ function updateSaveButton(){
 async function saveDeck(){
   if (!state.loaded) return false;
   if (editEl) commitEdit();
+  if (srcEdit) closeSrcEdit();   /* v3.0：源层编辑态在保存前收起（覆盖层 class 随净化剔除） */
   var text;
-  try { text = serializeClean(); }
+  try { text = await serializeClean(); }
   catch(e){ toast('序列化失败：' + e.message); return false; }
 
   /* 嵌入态：保存一律交给宿主 postMessage（§8）。嵌入加载没有文件句柄，
@@ -3263,7 +3593,7 @@ async function saveDeck(){
   if (state.embedded){
     try {
       window.parent.postMessage({ type:'pptx-html:save', html:text, name:state.fileName }, '*');
-      setDirty(false);
+      setDirty(false); applySavedHashes();
       toast('已发送保存请求到宿主页面');
       return true;
     } catch(e){ toast('与宿主通信失败：' + e.message); return false; }
@@ -3275,7 +3605,7 @@ async function saveDeck(){
   if (state.backend && state.deckPath){
     try {
       var res = await apiSave(text);
-      setDirty(false); $('sbMsg').textContent = '';
+      setDirty(false); $('sbMsg').textContent = ''; applySavedHashes();
       toast(res.committed ? '已保存并记录版本 ' + res.hash
                           : '已保存到 ' + state.deckPath);
       if ($('histDrawer').classList.contains('open')) loadVersions();
@@ -3295,7 +3625,7 @@ async function saveDeck(){
           throw new Error('未授予文件写入权限');
       }
       await writeFileToHandle(state.fileHandle, text);
-      setDirty(false); $('sbMsg').textContent = '';
+      setDirty(false); $('sbMsg').textContent = ''; applySavedHashes();
       toast('已保存到 ' + state.fileName);
       return true;
     } catch(e){
@@ -3314,7 +3644,7 @@ async function saveDeck(){
       await writeFileToHandle(h, text);
       state.fileHandle = h;
       state.fileName = h.name;
-      setDirty(false); $('sbMsg').textContent = '';
+      setDirty(false); $('sbMsg').textContent = ''; applySavedHashes();
       toast('已保存到 ' + h.name);
       return true;
     } catch(e){
@@ -3331,7 +3661,7 @@ async function saveDeck(){
     a.download = state.fileName || 'deck.html';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(a.href); }, 5000);
-    setDirty(false); $('sbMsg').textContent = '';
+    setDirty(false); $('sbMsg').textContent = ''; applySavedHashes();
     toast('已导出下载');
     return true;
   } catch(e){ toast('导出失败：' + e.message); return false; }
@@ -4176,6 +4506,712 @@ $('btnToc').addEventListener('click', function(){
 });
 
 /* ============================================================
+   三形态 M4：三态工作台与翻转对比（v3.0，docs/design/editor-tri-view.md）
+   编辑器只消费技能产出的 export/ 目录与 manifest.json（交付态），
+   永不发起转换（转换即技能红线）。产物不存在 → 引导态；产物过期 →
+   stale 水印；产物缺失 → 黑面空态（诚实空态，禁假进度条）。
+   ============================================================ */
+var triManifest = null;      // export/manifest.json（交付态）对象
+var triInjected = false;     // manifest 是否由宿主注入（无基址可 fetch 时保留）
+var triBaseUrl = null;       // export/ 产物 URL 基址（末尾含 /）
+var triDeckBase = null;      // deck 资源基址（assets/ 等相对路径的解析基准，末尾含 /）
+var triStatus = 'idle';      // 'idle' | 'loading' | 'ready' | 'none' | 'unavailable'
+var triPages = [];           // 页级派生态（buildTriPages 产物）
+var triMissing = {};         // 已知加载失败的产物 URL → true（img onerror 记录）
+var lastSaveHashes = null;   // serializeClean 最近一次重算的页级 hash（sid → hash）
+var view = 'edit';           // 'edit' | 'compare' | 'export'
+var cmpView = 'side';        // 'side' | 'swipe' | 'diff'（对比三视图，默认落定=并排）
+var flipped = false;         // 翻面手势状态（仅编辑态）
+var srcEdit = null;          // 源层编辑中的 .baked-source 元素（烙入页唯一新增编辑通道）
+var cmpDiv = 0.5;            // 滑动分割位置（0-1，相对当前页宽）
+var cmpDrag = false;         // 分割线拖拽中
+var diffOpacity = 0.9;       // 差异热区叠加不透明度
+var cmpSyncGuard = false;    // 双窗格同步滚动防回环
+var cmpRafOn = false;        // 叠层跟随 rAF 循环开关
+var cmpOlSid = null;         // 叠层内容当前对应的页（变化时重建内容）
+
+function pad2(n){ return ('0' + n).slice(-2); }
+
+/* deck 相对路径 → 可加载 URL；无基址（file:// 直开 / 宿主未给）返回 null */
+function deckAssetUrl(rel){
+  if (!rel) return null;
+  if (/^(https?:|data:|blob:|\/)/i.test(rel)) return rel;
+  return triDeckBase ? triDeckBase + rel : null;
+}
+
+/* 产物 URL 缓存破击：manifest 的 exported_at 每次导出必变 */
+function triCacheBust(){
+  var t = triManifest && triManifest.export && triManifest.export.exported_at;
+  return t ? '?v=' + encodeURIComponent(t) : '';
+}
+
+/* ---------- 页级派生态：DOM 现状 × manifest 交付态 ---------- */
+function buildTriPages(){
+  triPages = [];
+  var d = doc(); if (!d) return;
+  var slides = d.querySelectorAll('section.slide[data-slide-id]');
+  var mfPages = (triManifest && triManifest.pages) || [];
+  Array.prototype.forEach.call(slides, function(slide, i){
+    var sid = slide.getAttribute('data-slide-id');
+    var rm = slide.getAttribute('data-render-mode') || 'html';
+    var curHash = slide.getAttribute('data-content-hash') || '';
+    var mi = -1, mp = null;
+    for (var j = 0; j < mfPages.length; j++){
+      if (mfPages[j] && mfPages[j].slide_id === sid){ mi = j; mp = mfPages[j]; break; }
+    }
+    var carrier = mp ? (mp.carrier || null) : null;
+    /* 背面/对比的导出件：HTML 页 = export/page-NN.svg（png 降级页 = .png）；
+       烙入页 = 烙入图本身（assets/page-<id>.png，契约 v7 页面级槽位） */
+    var artifact = null;
+    if (mp){
+      if (rm === 'baked' || carrier === 'baked'){
+        var img = slide.querySelector('img[data-image-slot^="page-baked"]');
+        artifact = deckAssetUrl(img && img.getAttribute('src'));
+      } else if (carrier === 'svg' && triBaseUrl){
+        artifact = triBaseUrl + 'page-' + pad2(mi + 1) + '.svg';
+      } else if (carrier === 'png-fallback' && triBaseUrl){
+        artifact = triBaseUrl + 'page-' + pad2(mi + 1) + '.png';
+      }
+    }
+    /* stale = deck 当前 hash ≠ 导出时 hash（防幻觉硬规则 3：hash 失效检测） */
+    var stale = !!(mp && mp.export_hash && curHash && mp.export_hash !== curHash);
+    triPages.push({
+      idx: i, slideId: sid, renderMode: rm, hash: curHash,
+      manifestIdx: mi, manifest: mp, carrier: carrier, artifact: artifact,
+      stale: stale, fidelity: mp ? (mp.fidelity == null ? null : mp.fidelity) : null,
+      uncovered: (mp && mp.uncovered_glyphs) || []
+    });
+  });
+}
+
+/* 保存成功收尾（v3.0）：最新页级 hash 写回 live DOM，刷新三形态视图 */
+function applySavedHashes(){
+  if (!lastSaveHashes) return;
+  var d = doc(); if (!d) return;
+  Array.prototype.forEach.call(d.querySelectorAll('section.slide[data-slide-id]'), function(s){
+    var h = lastSaveHashes[s.getAttribute('data-slide-id')];
+    if (h) s.setAttribute('data-content-hash', h);
+  });
+  buildTriPages();
+  renderTriViews();
+}
+
+/* ---------- export/ 读取（三通道，openHtml 已初始化基址） ---------- */
+async function refreshExport(){
+  triMissing = {};
+  if (!state.loaded){ triStatus = 'idle'; triPages = []; renderTriViews(); return; }
+  if (!triManifest && triBaseUrl && location.protocol !== 'file:'){
+    triStatus = 'loading'; renderTriViews();
+    try {
+      var r = await fetch(triBaseUrl + 'manifest.json', { cache: 'no-store' });
+      if (r.ok){
+        var j = await r.json();
+        if (j && j.pages) triManifest = j;
+      }
+    } catch(e){}
+  }
+  /* ready=有 manifest；none=通道可用但无产物（从未翻转）；unavailable=
+     file:// 直开 fetch 被浏览器拦截——诚实降级为引导文案，不报错不伪装 */
+  triStatus = triManifest ? 'ready'
+            : (location.protocol === 'file:' ? 'unavailable' : 'none');
+  buildTriPages();
+  renderTriViews();
+}
+
+/* 「刷新产物」：技能重新翻转后重新读取；注入态 manifest（无基址可 fetch）保留 */
+async function triRefresh(){
+  if (!state.loaded) return;
+  if (!triInjected && triBaseUrl) triManifest = null;
+  await refreshExport();
+  toast(triManifest ? '已重新读取 export/' : '未发现 export/ 产物');
+}
+$('btnTriRefresh').addEventListener('click', triRefresh);
+$('btnExpRefresh').addEventListener('click', triRefresh);
+
+/* ---------- 背面三态组件（翻面背面 / 对比右窗格 / 叠层共用） ---------- */
+function buildArtifactFace(ps){
+  var face = document.createElement('div');
+  face.className = 'tri-face';
+  var blackOf = function(line){
+    face.dataset.artState = 'black';
+    var noEl = document.createElement('div');
+    noEl.className = 'tri-black-no';
+    noEl.textContent = ps ? ('第 ' + (ps.idx + 1) + ' 页 · ' + ps.slideId) : '—';
+    var ln = document.createElement('div');
+    ln.className = 'tri-black-line';
+    ln.textContent = line;
+    face.appendChild(noEl); face.appendChild(ln);
+    return face;
+  };
+  if (!ps) return blackOf('页面不存在');
+  if (triStatus === 'unavailable')
+    return blackOf('无法读取 export/（file:// 直开）· 请通过伴随服务打开或让宿主注入 exportManifest');
+  if (!triManifest) return blackOf('未翻转 · 请运行翻转技能');
+  if (!ps.manifest) return blackOf('未翻转 · 该页不在 export/manifest.json 中');
+  if (!ps.artifact)
+    return blackOf(ps.renderMode === 'baked'
+      ? '烙入图地址无法解析 · 请检查 assetsUrl'
+      : '产物地址未知 · 请让宿主提供 exportBaseUrl');
+  if (triMissing[ps.artifact]) return blackOf('产物缺失 · 请重新运行翻转技能');
+  face.dataset.artState = ps.stale ? 'stale' : 'ready';
+  var img = document.createElement('img');
+  img.alt = '第 ' + (ps.idx + 1) + ' 页翻转产物';
+  img.src = ps.artifact + triCacheBust();
+  img.addEventListener('error', function(){
+    triMissing[ps.artifact] = true;
+    renderTriViews();   /* 产物文件缺失 → 重渲染为黑面（triMissing 防回环） */
+  });
+  face.appendChild(img);
+  if (ps.stale){
+    var wm = document.createElement('div');
+    wm.className = 'tri-stale';
+    var sp = document.createElement('span');
+    sp.textContent = '已过期';
+    wm.appendChild(sp);
+    face.appendChild(wm);
+  }
+  return face;
+}
+
+/* ---------- 翻面手势（编辑态，§3） ---------- */
+function renderFlipBack(){
+  var back = $('flipBack');
+  back.innerHTML = '';
+  if (!triPages.length) return;
+  var ps = triPages[Math.min(curSlideIdx, triPages.length - 1)];
+  back.appendChild(buildArtifactFace(ps));
+}
+function setFlip(on){
+  if (!state.loaded || view !== 'edit') return;
+  if (on === flipped) return;
+  if (on && editEl) commitEdit();
+  flipped = on;
+  var inner = $('flipInner');
+  /* 3D 上下文按需启用（armed）：仅在翻面动画期间与背面朝前时存在，
+     静止正面零合成开销（见 .flip-scene 注释） */
+  $('flipScene').classList.add('armed');
+  /* 动画期间与翻至背面时禁 iframe 指针事件（防误触编辑手势），翻回正面后恢复 */
+  frame.style.pointerEvents = 'none';
+  inner.classList.toggle('flipped', on);
+  if (on) renderFlipBack();
+  $('flipBadge').textContent = on ? '返回 (F)' : '翻面 (F)';
+  var restored = false;
+  var restore = function(){
+    if (restored) return;
+    restored = true;
+    if (!flipped){
+      frame.style.pointerEvents = '';
+      $('flipScene').classList.remove('armed');
+    }
+  };
+  /* reduced-motion / 降级路径：transition 为 none 时 transitionend 不触发，即时恢复 */
+  var dur = 0;
+  try { dur = parseFloat(getComputedStyle(inner).transitionDuration) || 0; } catch(e){}
+  if (dur > 0){
+    inner.addEventListener('transitionend', function h(){
+      inner.removeEventListener('transitionend', h);
+      restore();
+    });
+    setTimeout(restore, 800);   /* 兜底：动画被打断时也不卡死指针事件 */
+  } else {
+    restore();
+  }
+  updateTriChrome();
+}
+$('flipBadge').addEventListener('click', function(){ setFlip(!flipped); });
+window.addEventListener('keydown', function(e){
+  /* F 翻面（编辑器 chrome 侧；输入控件与覆盖层打开时不抢键） */
+  if ((e.key === 'f' || e.key === 'F') && view === 'edit' && state.loaded &&
+      !editEl && !srcEdit &&
+      !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '') &&
+      !$('briefOverlay').classList.contains('show')){
+    e.preventDefault(); setFlip(!flipped);
+  }
+  if (e.key === 'Escape' && flipped){ e.preventDefault(); setFlip(false); }
+});
+
+/* ---------- 烙入页源层编辑（§5：烙入页唯一新增编辑通道，最小可用） ---------- */
+function openSrcEdit(){
+  var ps = triPages[curSlideIdx];
+  if (!ps || ps.renderMode !== 'baked') return;
+  var d = doc(); if (!d) return;
+  var slide = d.querySelector('section.slide[data-slide-id="' + ps.slideId + '"]');
+  var src = slide && slide.querySelector('.baked-source');
+  if (!src){ toast('该烙入页没有 .baked-source 源层'); return; }
+  clearSelection();
+  srcEdit = src;
+  src.classList.add('ed-src-open');   /* 覆盖 hidden：注入样式 display:block !important */
+  $('srcEditSid').textContent = ps.slideId;
+  $('srcEditBar').classList.add('show');
+  updateTriChrome();
+  updateStatusBar();
+}
+function closeSrcEdit(){
+  if (!srcEdit) return;
+  if (editEl && srcEdit.contains(editEl)) commitEdit();
+  srcEdit.classList.remove('ed-src-open');
+  srcEdit = null;
+  $('srcEditBar').classList.remove('show');
+  clearSelection();
+  updateTriChrome();
+  updateStatusBar();
+}
+$('btnSrcEdit').addEventListener('click', openSrcEdit);
+$('btnSrcEditClose').addEventListener('click', closeSrcEdit);
+
+/* ---------- 三态分段：编辑 | 对比 | 导出 ---------- */
+function setView(v){
+  if (v === view) return;
+  if (editEl) commitEdit();
+  if (v !== 'edit' && flipped) setFlip(false);
+  if (v !== 'edit' && srcEdit) closeSrcEdit();
+  view = v;
+  applyView();
+  renderTriViews();
+}
+function applyView(){
+  Array.prototype.forEach.call($('viewSeg').querySelectorAll('button'), function(b){
+    b.classList.toggle('on', b.dataset.view === view);
+  });
+  $('workarea').hidden = (view === 'export');
+  $('exportView').hidden = (view !== 'export');
+  $('cmpList').hidden = (view !== 'compare');
+  applyCmpView();
+  updateTriChrome();
+}
+$('viewSeg').addEventListener('click', function(e){
+  var b = e.target.closest('button[data-view]');
+  if (b && state.loaded) setView(b.dataset.view);
+});
+
+function updateTriChrome(){
+  var ps = triPages[curSlideIdx];
+  var baked = !!(ps && ps.renderMode === 'baked');
+  $('btnSrcEdit').hidden = !(view === 'edit' && state.loaded && baked && !flipped && !srcEdit);
+  /* 批注模式下隐藏翻面角标（与批注清单浮动列表同位，避免遮挡） */
+  $('flipBadge').hidden = !(view === 'edit' && state.loaded && !srcEdit && mode === 'edit');
+}
+
+/* ---------- 对比模式（§4，默认落定=并排） ---------- */
+function applyCmpView(){
+  var inCmp = (view === 'compare');
+  $('cmpRight').hidden = !(inCmp && cmpView === 'side');
+  $('cmpOverlay').hidden = !(inCmp && (cmpView === 'swipe' || cmpView === 'diff'));
+  Array.prototype.forEach.call($('cmpViewSeg').querySelectorAll('button'), function(b){
+    b.classList.toggle('on', b.dataset.cmp === cmpView);
+  });
+  $('cmpDivider').style.display = cmpView === 'swipe' ? '' : 'none';
+  $('cmpDiffCtl').style.display = cmpView === 'diff' ? '' : 'none';
+  $('cmpTagR').textContent = cmpView === 'diff' ? '差异热区' : '导出件';
+  cmpOlSid = null;
+  if (inCmp){ positionCmpOverlay(true); startCmpRaf(); }
+}
+$('cmpViewSeg').addEventListener('click', function(e){
+  var b = e.target.closest('button[data-cmp]');
+  if (!b) return;
+  cmpView = b.dataset.cmp;
+  applyCmpView();
+});
+
+/* 保真分色阶口径与 tests/harness/n_fidelity_check.py 对齐：
+   单页 diff<5%（fidelity>95）为绿；85–95 黄；<85 红（黄/红档为本编辑器展示口径） */
+function fidClass(f){ return f == null ? '' : (f >= 95 ? 'f-green' : (f >= 85 ? 'f-yellow' : 'f-red')); }
+
+function badge(cls, text){
+  var b = document.createElement('span');
+  b.className = 'badge' + (cls ? ' ' + cls : '');
+  b.textContent = text;
+  return b;
+}
+
+/* 页清单（对比/导出共用徽标三分量）：保真分红→绿排序，无分（烙入直通/无产物）排最后 */
+function renderCmpList(){
+  var box = $('cmpRows');
+  box.innerHTML = '';
+  if (!state.loaded) return;
+  $('cmpNote').textContent = triStatus === 'ready'
+    ? (triManifest.export && triManifest.export.exported_at
+        ? '翻转于 ' + triManifest.export.exported_at.slice(0, 19).replace('T', ' ') : '')
+    : '尚未发现 export/ 产物——请运行翻转技能后点「刷新产物」';
+  var rows = triPages.slice();
+  rows.sort(function(a, b){
+    var fa = a.fidelity, fb = b.fidelity;
+    if (fa == null && fb == null) return a.idx - b.idx;
+    if (fa == null) return 1;
+    if (fb == null) return -1;
+    return fa - fb;   /* 红→绿（低分在前） */
+  });
+  rows.forEach(function(ps){
+    var row = document.createElement('div');
+    row.className = 'cmp-row';
+    row.dataset.sid = ps.slideId;
+    var no = document.createElement('span');
+    no.className = 'no'; no.textContent = ps.idx + 1;
+    var sid = document.createElement('span');
+    sid.className = 'sid'; sid.textContent = ps.slideId; sid.title = ps.slideId;
+    row.appendChild(no); row.appendChild(sid);
+    row.appendChild(badge(ps.renderMode === 'baked' ? 'b-baked' : '',
+                          ps.renderMode === 'baked' ? '烙入' : 'HTML'));
+    if (triManifest){
+      row.appendChild(badge(ps.stale ? 'b-stale' : 'b-fresh', ps.stale ? 'stale' : 'fresh'));
+      row.appendChild(badge(fidClass(ps.fidelity), ps.fidelity == null ? '—' : ps.fidelity.toFixed(1)));
+    } else {
+      row.appendChild(badge('', '未翻转'));
+    }
+    row.addEventListener('click', function(){ gotoTriPage(ps); });
+    box.appendChild(row);
+  });
+  markCmpCur();
+}
+
+/* 并排右窗格：导出件滚动列（黑面空态与背面三态同一组件） */
+function renderCmpArtifacts(){
+  var box = $('cmpArtifacts');
+  box.innerHTML = '';
+  if (!triPages.length) return;
+  if (!triManifest){
+    var note = document.createElement('div');
+    note.className = 'cmp-art-note';
+    note.textContent = triStatus === 'unavailable'
+      ? 'file:// 直开无法读取 export/——请通过伴随服务（python3 tools/edit.py）打开，或让宿主注入 exportManifest / exportBaseUrl。'
+      : '尚未翻转：让 AI coding agent 运行 export-pptx.py 生成 export/ 产物后点「刷新产物」。';
+    box.appendChild(note);
+  }
+  triPages.forEach(function(ps){
+    var card = document.createElement('div');
+    card.className = 'cmp-art';
+    card.dataset.sid = ps.slideId;
+    card.title = '第 ' + (ps.idx + 1) + ' 页 · ' + ps.slideId;
+    card.appendChild(buildArtifactFace(ps));
+    card.addEventListener('click', function(){ gotoTriPage(ps); });
+    box.appendChild(card);
+  });
+  markCmpCur();
+}
+
+function markCmpCur(){
+  var cur = triPages[curSlideIdx] && triPages[curSlideIdx].slideId;
+  Array.prototype.forEach.call($('cmpRows').children, function(row){
+    row.classList.toggle('cur', row.dataset.sid === cur);
+  });
+  Array.prototype.forEach.call($('cmpArtifacts').querySelectorAll('.cmp-art'), function(c){
+    c.classList.toggle('cur', c.dataset.sid === cur);
+  });
+}
+
+function gotoTriPage(ps){
+  var d = doc(); if (!d) return;
+  var slide = d.querySelector('section.slide[data-slide-id="' + ps.slideId + '"]');
+  var slot = slide && (slide.closest('.slide-slot') || slide);
+  var deck = d.querySelector('.deck');
+  if (slot && deck) deck.scrollTo({ top: slot.offsetTop, behavior: 'auto' });
+}
+
+/* deck 滚动 → 右窗格同步（比例映射；缩放天然同步——骨架按窗格宽度自适应） */
+function syncCmpFromDeck(){
+  if (view !== 'compare' || cmpView !== 'side') return;
+  var d = doc(); var deck = d && d.querySelector('.deck');
+  var box = $('cmpArtifacts');
+  if (!deck || !box || $('cmpRight').hidden) return;
+  var dn = deck.scrollHeight - deck.clientHeight;
+  var bn = box.scrollHeight - box.clientHeight;
+  if (dn <= 0 || bn <= 0) return;
+  cmpSyncGuard = true;
+  box.scrollTop = deck.scrollTop / dn * bn;
+  requestAnimationFrame(function(){ cmpSyncGuard = false; });
+}
+$('cmpArtifacts').addEventListener('scroll', function(){
+  if (cmpSyncGuard) return;
+  var d = doc(); var deck = d && d.querySelector('.deck');
+  var box = $('cmpArtifacts');
+  if (!deck) return;
+  var dn = deck.scrollHeight - deck.clientHeight;
+  var bn = box.scrollHeight - box.clientHeight;
+  if (dn <= 0 || bn <= 0) return;
+  cmpSyncGuard = true;
+  deck.scrollTop = box.scrollTop / bn * dn;
+  requestAnimationFrame(function(){ cmpSyncGuard = false; });
+}, { passive: true });
+
+/* 滚动钩子（wireSlideStatus 的 update 内调用） */
+function triOnDeckScroll(){
+  markCmpCur();
+  syncCmpFromDeck();
+  updateTriChrome();
+}
+
+/* ---------- 对比叠层（滑动分割 / 差异热区）：对齐当前页槽位 ---------- */
+function overlayRect(){
+  var d = doc(); if (!d) return null;
+  var slides = d.querySelectorAll('section.slide[data-slide-id]');
+  var slide = slides[curSlideIdx];
+  if (!slide) return null;
+  var slot = slide.closest('.slide-slot') || slide;
+  var r = slot.getBoundingClientRect();
+  var fr = frame.getBoundingClientRect();
+  var or = $('cmpOverlay').getBoundingClientRect();
+  return { left: fr.left + r.left - or.left, top: fr.top + r.top - or.top,
+           width: r.width, height: r.height };
+}
+
+function buildCmpOlContent(ps){
+  var holder = $('cmpOlHolder');
+  holder.innerHTML = '';
+  var url = null, blackLine = null;
+  if (!ps){
+    blackLine = '页面不存在';
+  } else if (cmpView === 'diff'){
+    /* 差异热区是导出管线资产（编辑器无栅格化能力，只消费） */
+    if (triStatus === 'unavailable') blackLine = '无法读取 export/（file:// 直开）';
+    else if (!triManifest || !ps.manifest) blackLine = '未翻转 · 无差异热区资产';
+    else if (ps.renderMode === 'baked' || ps.carrier === 'baked') blackLine = '烙入页直通导出 · 无差异热区';
+    else if (!triBaseUrl) blackLine = '产物地址未知 · 请让宿主提供 exportBaseUrl';
+    else url = triBaseUrl + 'page-' + pad2(ps.manifestIdx + 1) + '.diff.png';
+  } else {
+    if (triStatus === 'unavailable') blackLine = '无法读取 export/（file:// 直开）';
+    else if (!triManifest || !ps.manifest) blackLine = '未翻转 · 请运行翻转技能';
+    else if (!ps.artifact) blackLine = '产物地址未知 · 请让宿主提供 exportBaseUrl';
+    else url = ps.artifact;
+  }
+  if (url && triMissing[url + '#ol']){ url = null; blackLine = '产物缺失 · 请重新运行翻转技能'; }
+  if (url){
+    var img = document.createElement('img');
+    img.className = 'cmp-ol-img';
+    img.id = 'cmpOlImg';
+    img.src = url + triCacheBust();
+    if (cmpView === 'diff') img.style.opacity = diffOpacity;
+    img.addEventListener('error', function(){
+      triMissing[url + '#ol'] = true;
+      cmpOlSid = null;
+      positionCmpOverlay(true);
+    });
+    holder.appendChild(img);
+  } else {
+    var b = document.createElement('div');
+    b.className = 'cmp-ol-black';
+    var noEl = document.createElement('div');
+    noEl.className = 'tri-black-no';
+    noEl.textContent = ps ? ('第 ' + (ps.idx + 1) + ' 页 · ' + ps.slideId) : '—';
+    var ln = document.createElement('div');
+    ln.className = 'tri-black-line';
+    ln.textContent = blackLine;
+    b.appendChild(noEl); b.appendChild(ln);
+    holder.appendChild(b);
+  }
+}
+
+function positionCmpOverlay(rebuild){
+  var ov = $('cmpOverlay');
+  if (ov.hidden) return;
+  var ps = triPages[curSlideIdx];
+  var sid = ps ? ps.slideId : null;
+  if (rebuild || sid !== cmpOlSid){
+    cmpOlSid = sid;
+    buildCmpOlContent(ps);
+  }
+  var r = overlayRect(); if (!r) return;
+  var holder = $('cmpOlHolder');
+  holder.style.left = r.left + 'px';
+  holder.style.top = r.top + 'px';
+  holder.style.width = r.width + 'px';
+  holder.style.height = r.height + 'px';
+  var dv = $('cmpDivider');
+  if (cmpView === 'swipe'){
+    var x = r.width * cmpDiv;
+    holder.style.clipPath = 'inset(0 0 0 ' + x + 'px)';
+    dv.style.left = (r.left + x) + 'px';
+    dv.style.top = r.top + 'px';
+    dv.style.height = r.height + 'px';
+    dv.style.bottom = 'auto';
+  } else {
+    holder.style.clipPath = '';
+  }
+}
+function startCmpRaf(){
+  if (cmpRafOn) return;
+  cmpRafOn = true;
+  requestAnimationFrame(function loop(){
+    if (view === 'compare' && (cmpView === 'swipe' || cmpView === 'diff')){
+      positionCmpOverlay(false);
+      requestAnimationFrame(loop);
+    } else {
+      cmpRafOn = false;
+    }
+  });
+}
+/* 分割线拖拽（叠层 pointer-events:none，只有把手可点） */
+$('cmpHandle').addEventListener('pointerdown', function(e){
+  e.preventDefault();
+  cmpDrag = true;
+  /* 指针捕获：拖出把手后下方是 iframe（跨文档边界吞事件），必须把后续
+     pointermove 重定向回把手（事件照常冒泡到 window 的 move 监听） */
+  try { this.setPointerCapture(e.pointerId); } catch(err){}
+});
+window.addEventListener('pointermove', function(e){
+  if (!cmpDrag) return;
+  var r = overlayRect(); if (!r) return;
+  var ovl = $('cmpOverlay').getBoundingClientRect();
+  cmpDiv = Math.min(0.95, Math.max(0.05, (e.clientX - ovl.left - r.left) / r.width));
+  positionCmpOverlay(false);
+});
+window.addEventListener('pointerup', function(){ cmpDrag = false; });
+$('cmpDiffOp').addEventListener('input', function(){
+  diffOpacity = (+this.value || 90) / 100;
+  var img = $('cmpOlImg');
+  if (img && cmpView === 'diff') img.style.opacity = diffOpacity;
+});
+
+/* ---------- 导出面板（§2：页级清单 + 产物下载；不发起转换） ---------- */
+var CARRIER_LABEL = { 'svg': 'SVG', 'png-fallback': 'PNG 降级', 'baked': '烙入直通' };
+
+function renderExportView(){
+  var guide = $('expGuide'), table = $('expTable'), rows = $('expRows'), sum = $('expSummary');
+  rows.innerHTML = '';
+  guide.hidden = true; table.hidden = true; sum.textContent = '';
+  $('btnDlPptx').dataset.url = (triStatus === 'ready' && triBaseUrl) ? triBaseUrl + 'deck.pptx' : '';
+  if (!state.loaded){
+    guide.innerHTML = '先打开一份 HTML 幻灯片。';
+    guide.hidden = false;
+    return;
+  }
+  if (triStatus !== 'ready'){
+    guide.innerHTML = (triStatus === 'unavailable'
+      ? 'file:// 直开时浏览器拦截相对路径读取——请通过伴随服务 <code>python3 tools/edit.py</code> 打开本页，' +
+        '或让宿主在 <code>pptx-html:load</code> 消息中注入 <code>exportManifest</code> / <code>exportBaseUrl</code>。<br>'
+      : '') +
+      '还没有 export/ 产物（该 deck 从未翻转）。翻转而非编辑器职责——转换即技能：<br>' +
+      '1. 让 AI coding agent 运行 <code>python3 skills/html-pptx/scripts/export-pptx.py ' +
+      (state.deckPath || '&lt;deck&gt;/index.html') + '</code>；<br>' +
+      '2. 产物落在 deck 的 <code>export/</code> 目录（deck.pptx / page-NN.svg / manifest.json）；<br>' +
+      '3. 回到本页点「重新读取 export/」。';
+    guide.hidden = false;
+    return;
+  }
+  var exp = triManifest.export || {};
+  sum.textContent = '翻转于 ' + (exp.exported_at || '—') +
+    ' ｜ 载体：SVG ' + ((exp.carriers || {}).svg || 0) + ' · 烙入直通 ' + ((exp.carriers || {}).baked || 0) +
+    ' · PNG 降级 ' + ((exp.carriers || {})['png-fallback'] || 0) +
+    ' ｜ 平均保真分 ' + (exp.fidelity_avg == null ? '—' : exp.fidelity_avg) +
+    ' ｜ 门禁 ' + (exp.gate ? ('render=' + exp.gate.render + ' / drift=' +
+      (exp.gate.drift && exp.gate.drift.status)) : '—');
+  triPages.forEach(function(ps){
+    var tr = document.createElement('tr');
+    tr.className = 'exp-row' + (ps.stale ? ' stale' : '');
+    tr.dataset.sid = ps.slideId;
+    var td = function(text, cls){
+      var c = document.createElement('td');
+      if (cls) c.className = cls;
+      c.textContent = text;
+      return c;
+    };
+    tr.appendChild(td(String(ps.idx + 1), 'mono'));
+    tr.appendChild(td(ps.slideId, 'mono'));
+    tr.appendChild(td(ps.renderMode === 'baked' ? '烙入页' : 'HTML 页'));
+    tr.appendChild(td(ps.carrier ? (CARRIER_LABEL[ps.carrier] || ps.carrier) : '—'));
+    var ftd = document.createElement('td');
+    if (ps.fidelity != null) ftd.appendChild(badge(fidClass(ps.fidelity), ps.fidelity.toFixed(1)));
+    else ftd.appendChild(badge('', ps.carrier === 'baked' ? '直通' : '—'));
+    tr.appendChild(ftd);
+    var std = document.createElement('td');
+    if (ps.stale){
+      std.appendChild(badge('b-stale', 'stale'));
+      var hint = document.createElement('div');
+      hint.className = 'exp-hint';
+      hint.textContent = '请让 AI 重新翻转本页';
+      std.appendChild(hint);
+    } else {
+      std.appendChild(badge(ps.manifest ? 'b-fresh' : '', ps.manifest ? 'fresh' : '未翻转'));
+    }
+    tr.appendChild(std);
+    /* uncovered_glyphs 非空 → 字体子集已过期（防线 A 需重跑） */
+    tr.appendChild(td(ps.uncovered.length ? 'fonts stale（缺 ' + ps.uncovered.length + ' 字形）' : ''));
+    var ops = document.createElement('td');
+    if (ps.artifact && triBaseUrl){
+      var dl = document.createElement('button');
+      dl.className = 'btn-dl';
+      dl.textContent = '下载 ' + (ps.carrier === 'svg' ? 'SVG' : 'PNG');
+      dl.title = ps.artifact;
+      dl.dataset.url = ps.artifact;
+      dl.addEventListener('click', function(){
+        downloadAsset(ps.artifact, (ps.carrier === 'svg' ? 'page-' + pad2(ps.manifestIdx + 1) + '.svg'
+                                                          : 'page-' + pad2(ps.idx + 1) + '.png'));
+      });
+      ops.appendChild(dl);
+    }
+    var rf = document.createElement('button');
+    rf.className = 'btn-reflip';
+    rf.textContent = '重新翻转';
+    rf.title = '编辑器不发起转换：嵌入态向宿主发送翻转请求，否则复制技能命令';
+    rf.addEventListener('click', function(){ reFlip([ps.slideId]); });
+    ops.appendChild(rf);
+    tr.appendChild(ops);
+    rows.appendChild(tr);
+  });
+  table.hidden = false;
+}
+
+/* 产物下载：HTTP 态直链/FSAA 另存；嵌入态 postMessage（export-intent, action=download） */
+async function downloadAsset(url, name){
+  if (!url){ toast('产物地址未知（无 exportBaseUrl），无法下载'); return; }
+  if (state.embedded){
+    try {
+      window.parent.postMessage({ type:'pptx-html:export-intent', action:'download',
+                                  files:[{ name: name, url: url }] }, '*');
+    } catch(e){}
+    toast('已向宿主发送下载请求（嵌入态产物由宿主交付）');
+    return;
+  }
+  try {
+    if (state.fsaa){
+      var r = await fetch(url);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      var blob = await r.blob();
+      var h = await window.showSaveFilePicker({ suggestedName: name });
+      await writeFileToHandle(h, blob);
+      toast('已保存 ' + name);
+    } else {
+      var a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+  } catch(e){ if (e && e.name === 'AbortError') return; toast('下载失败：' + e.message); }
+}
+$('btnDlPptx').addEventListener('click', function(){
+  downloadAsset(this.dataset.url || null, 'deck.pptx');
+});
+
+/* 「重新翻转」只表达意图：嵌入态发 export-intent，其余复制技能命令——
+   转换发生与否由宿主侧 AI 工作流决定（转换即技能红线） */
+function reFlip(slideIds){
+  if (state.embedded){
+    try {
+      window.parent.postMessage({ type:'pptx-html:export-intent', action:'re-export',
+                                  slideIds: slideIds || null }, '*');
+    } catch(e){}
+    toast('已向宿主发送重新翻转请求');
+    return;
+  }
+  var cmd = 'python3 skills/html-pptx/scripts/export-pptx.py ' +
+            (state.deckPath || '<deck>/index.html') + ' --force';
+  copyText(cmd).then(function(ok){
+    toast(ok ? '编辑器不发起转换——翻转命令已复制，请交给 AI coding agent 执行'
+             : '请让 AI 重新翻转（运行技能 export-pptx.py）');
+  });
+}
+$('btnExpReflip').addEventListener('click', function(){ reFlip(null); });
+
+/* 三形态视图统一重渲染（装载 / 刷新 / 保存 / 切视图后调用） */
+function renderTriViews(){
+  renderCmpList();
+  renderCmpArtifacts();
+  positionCmpOverlay(true);
+  renderExportView();
+  if (flipped) renderFlipBack();
+  updateTriChrome();
+}
+
+
+/* ============================================================
    本地伴随服务（v1.6 §3，tools/edit.py）
    编辑器保持单文件纯静态：加载时探测同源 /api/health，探测到才启用
    "保存即版本 + 历史回滚"；探测不到（普通静态服务 / file://）维持现状。
@@ -4185,10 +5221,7 @@ function probeBackend(){
   fetch('api/health', { cache: 'no-store' })
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(j){
-      if (j && j.ok){
-        state.backend = j;
-        maybeOpenDeckParam();
-      }
+      if (j && j.ok) state.backend = j;
       updateHistoryBtn();
     })
     .catch(function(){ updateHistoryBtn(); });
@@ -4205,14 +5238,19 @@ function updateHistoryBtn(){
         : '查看版本历史');
 }
 
-/* ?deck=<相对路径>：伴随服务托管模式下直接载入工作目录内的 deck */
+/* ?deck=<相对路径>：直接载入 URL 路径可知的 deck（v3.0 起不再依赖伴随服务——
+   任意 http.server 托管均可；这是 export/ HTTP 读取通道的前提）。
+   assetsUrl 传 deck 目录：iframe 内 deck 的相对资源（assets/ 图片等）才能正确解析。 */
 function maybeOpenDeckParam(){
   var p = null;
   try { p = new URLSearchParams(location.search).get('deck'); } catch(e){}
   if (!p || state.loaded) return;
   fetch(p, { cache: 'no-store' })
     .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
-    .then(function(text){ openHtml(text, p, null, null, p); })
+    .then(function(text){
+      var base = p.slice(0, p.lastIndexOf('/') + 1);
+      openHtml(text, p, null, base, p);
+    })
     .catch(function(e){ toast('打开 ' + p + ' 失败：' + e.message); });
 }
 
@@ -4325,24 +5363,34 @@ async function rollbackTo(hash){
     /* 回滚改变的是磁盘文件：重新加载让 iframe 与文件重新一致 */
     var rt = await fetch(state.deckPath + '?v=' + Date.now(), { cache: 'no-store' });
     if (!rt.ok) throw new Error('重新加载失败 HTTP ' + rt.status);
-    openHtml(await rt.text(), state.fileName, null, null, state.deckPath);
+    openHtml(await rt.text(), state.fileName, null,
+             state.deckPath.slice(0, state.deckPath.lastIndexOf('/') + 1), state.deckPath);
     loadVersions();
   } catch(e){ toast('回滚失败：' + e.message); }
 }
 
 /* ============================================================
    嵌入预留（§8）：postMessage 协议形状
-   入：{type:"pptx-html:load", html, name?, assetsUrl?}
+   入：{type:"pptx-html:load", html, name?, assetsUrl?,
+        exportManifest?, exportBaseUrl?}
+       —— v3.0 扩展（向后兼容，缺省不影响既有宿主）：exportManifest =
+          export/manifest.json 交付态对象直注；exportBaseUrl = export/ 产物
+          URL 基址（拼接 page-NN.svg 等相对路径）。给了 manifest 没给
+          baseUrl 时产物图无法显示，对应页按黑面空态处理（诚实空态）。
    出：{type:"pptx-html:save", html, name} / {type:"pptx-html:dirty", dirty}
        / {type:"pptx-html:annotations", payload}（批注导出，§10.4）
        / {type:"pptx-html:brief", text, json}（需求脑暴简报，v2.5 / briefing.md）
+       / {type:"pptx-html:export-intent", action:"re-export"|"download",
+          slideIds?, files?}（v3.0：导出面板「重新翻转」与嵌入态产物下载
+          只发消息不执行——转换/交付由宿主侧 AI 工作流决定）
    ============================================================ */
 window.addEventListener('message', async function(e){
   var d = e.data;
   if (!d || typeof d !== 'object' || typeof d.type !== 'string') return;
   if (d.type === 'pptx-html:load' && typeof d.html === 'string'){
     await ensureSwitchOkAndOpen(d.html, d.name || 'embedded-deck.html', null,
-                                typeof d.assetsUrl === 'string' ? d.assetsUrl : null);
+                                typeof d.assetsUrl === 'string' ? d.assetsUrl : null,
+                                { exportManifest: d.exportManifest, exportBaseUrl: d.exportBaseUrl });
   }
 });
 
@@ -4353,6 +5401,7 @@ renderPanel();
 updateSaveButton();
 renderDirty();
 probeBackend();
+maybeOpenDeckParam();   /* v3.0：?deck= 不再依赖伴随服务，任意 http.server 下均可经 URL 载入 */
 /* 目录侧栏默认态：独立打开默认展开，嵌入态默认收起（宽度敏感，§2） */
 $('toc').classList.toggle('open', !state.embedded);
 $('btnToc').setAttribute('aria-pressed', String(!state.embedded));

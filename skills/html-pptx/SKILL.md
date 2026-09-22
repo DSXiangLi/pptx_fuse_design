@@ -120,6 +120,14 @@ AI 的默认审美会收敛到平庸：居中 hero、紫蓝渐变、卡片墙。
 
 发现问题按修正阶梯处理：微调间距 → 精简文案 → 拆页。【硬规则】正文字号不得低于 18px（画布坐标系）。
 
+渲染校验通过后【硬规则】写入全 deck 页级 hash：
+
+```bash
+python3 skills/html-pptx/scripts/extract-manifest.py <deck目录>/index.html --write-hashes
+```
+
+该命令把每页的 `data-content-hash`（SHA-256 前 12 位，算法见 `docs/design/tri-form-architecture.md` §4.3）写回 `<section class="slide">`，与产物同时交付——它是下游生图/导出 pass 的 stale 检测锚。此后编辑器每次保存会自动重算页级 hash，无需手工重跑；只有绕开编辑器直接改文件时才需要重新执行本命令。
+
 ### Step 5.5 · 插画 pass（可选，契约 v5）
 
 入口【硬规则】：Step 5 渲染校验通过、**用户确认内容验收之后**，让用户选择图片模式——插画是内容定稿后的独立 pass，不与内容生成同步（内容改了插画作废，生图成本远高于排版）：
@@ -156,6 +164,62 @@ python <oai生图技能目录>/script.py "<统一风格段 + 槽位 intent>" \
 
 插画不改布局：尺寸即构图尺寸的纪律不变，生图只填槽位，不重排页面。
 
+### Step 5.6 · 页面烙入 pass（可选，契约 v7 / 三形态 M2）
+
+整页生图——把选定页整体烙成一张图，向上兼容 HTML 的表现力上限。与插画模式的边界【硬规则】：插画 = 页内槽位（文字永远在 HTML 层可编辑）；烙入 = 整页（文字烧死在图里，不可就地编辑）。不存在"背景生图 + 文字叠加"的混合态。完整规格见 `docs/design/page-render-mode.md`。
+
+入口【硬规则】：Step 5 渲染校验通过、**用户确认内容验收之后**，用户**逐页选定**哪些页烙入（典型候选：封面、章节页、收束页等 `.cover-page` 仪式页）。不做"一键全 deck 烙入"的默认推荐——这是用户用编辑性换表现力的显式选择。
+
+**1. 盘点与编译**：对选定页，从 manifest 提取逐字文本与槽位清单，编译生图指令：
+
+```bash
+python3 skills/html-pptx/scripts/extract-manifest.py <deck目录>/index.html --out /tmp/manifest.json
+python3 skills/html-pptx/scripts/compile-bake-prompts.py /tmp/manifest.json \
+  --pages <逗号分隔的 slide_id 清单> \
+  --goal "<deck 主题与受众一句话>" --style "<全 deck 统一风格段>" \
+  --plan <页计划 JSON> --anchor <风格锚截图文件名> \
+  --out-dir <deck目录>/prompts
+```
+
+指令按规格 §4 七节模板确定性拼装（Canvas / Deck Goal / Global Style / Style Anchor / Text / Layout / Constraints）——**Text 段 100% 逐字来自 manifest，禁止转述**（防幻觉硬规则，harness 校验精确子串）；Deck Goal / 各页 Layout 来自页计划输入（`--plan` JSON 或 CLI 参数）。**分工口径【硬规则】**：脚本管确定性骨架（Text/Canvas/Constraints 的逐字与拼装），agent 管 Layout 段与风格段的写法——不同构图谱系对生图模型的指令策略不同，写 Layout 与风格段前**必须查询 `references/bake-prompts.md`**（按谱系的指令策略、文字量纪律、失败模式对策）；选页时也用其文字量标准把关（文字密布的页不该烙入）。`prompts/` 是工作区目录，不是交付物。
+
+**2. 风格锚**：风格锚 = **真实 HTML 页的浏览器截图**（默认取封面页，用户可指定）——图片页与 HTML 页的家族相似性由同一渲染产物直接锚定，而非由另一张生图间接近似。
+
+**3. 代表页审批闸门【硬规则】**：先烙一页代表页（默认取烙入清单中的第一页；封面在清单内时强制取封面）→ 用户确认视觉执行质量（文字准确性、材质、构图）→ 才批量。风格方向在 Step 2 主题冻结时已决，此闸门只管执行质量，不重新讨论风格。
+
+**4. 逐页生图**：oai生图 CLI（沿用 Step 5.5 的命令契约），16:9、2K（2560×1440，卡文字清晰度与模型像素上限的平衡点）；落盘 `assets/page-<slide_id>.png`，与槽位同名心智一致。成功后改造页面为烙入结构（契约 v7）：section 加 `data-render-mode="baked"`，整页 img（`data-image-slot="page-baked-16x9"` + intent 写人可读换图指南 + `data-image-state="generated"`，满幅铺放）作为 section 直接子元素，原页面 HTML 完整收进 `<div class="baked-source" hidden>` 源层置于其后。
+
+**5. 回归校验【硬规则】**：
+
+- 重跑 Step 5 渲染校验（烙入页走图片分支：满幅、比例、无位移；源层 hidden 不参与溢出/重叠测量）；
+- 跑静态校验器，必须零错误：`node skills/html-pptx/scripts/check-images.mjs <deck目录>/index.html --mode illustration`（v7 起识别页面级槽位 `page-baked-16x9`）；
+- 烙入页 hash 重跑：`python3 skills/html-pptx/scripts/extract-manifest.py <deck目录>/index.html --write-hashes`（render_mode 进 canonical string，烙入后 hash 必须更新）；
+- 反降级：声明烙入的页不允许残留 `placeholder`。**生成失败的页诚实回退为 HTML 页**（`data-render-mode` 保持 `html`，源层即页面本体——HTML 页本身就是合格交付，不交付残页），失败页在 Step 6 交付说明中逐条列出。
+
+**stale 与重新烙入**：用户在编辑器修改烙入页源层 → hash 翻转 → 编辑器 stale 徽标 → 用户要求时重跑本 pass（仅 stale 页）。生图成本远高于排版，不自动重烙。
+
+### Step 5.7 · 导出 pass（可选，三形态 M3：HTML→PPTX）
+
+单向交付快照：用户需要 .pptx 交付时执行。完整规格见 `docs/design/pptx-export-svg.md`。
+
+```bash
+python3 skills/html-pptx/scripts/export-pptx.py <deck目录>/index.html [--force]
+python3 skills/html-pptx/scripts/export-pptx.py <deck目录>/index.html --check-stale   # 指纹过期检测
+```
+
+管线（参数已实测固化，见 `tests/harness/results/spike-m3/REPORT.md`）：防线 C 门禁（渲染校验 + 排版漂移对比，不过不产 PDF）→ freeze 后 printToPDF（13.333″×7.5″）→ pdftocairo 逐页转 SVG（文字已转曲，消费端零字体依赖）→ SVG 光栅化出 PNG 副本 → python-pptx 组装（每页满幅 PNG + svgBlip 双写指向 SVG，老 Office 自动降级 PNG）→ postflight 重开包校验 → 保真分 + 差异热区 → `export/manifest.json`。
+
+关键口径：
+
+- **烙入页直通**：`data-render-mode="baked"` 页（Step 5.6）跳过 PDF/SVG 转换，`assets/page-<slide_id>.png` 直接满幅嵌入——两个子技能在管线尾部汇合；
+- **漂移基线**：防线 C2 需要逐叶排版快照基线，来源按优先级 = 上次 `export/manifest.json` → deck 内 `.manifest-baseline.json`。生成侧在 Step 5 渲染校验通过后【默认】落一份基线：`python3 skills/html-pptx/scripts/extract-manifest.py <deck目录>/index.html --out <deck目录>/.manifest-baseline.json`；无基线时漂移检测诚实降级（报告声明未生效），本次快照自动成为下次基线；
+- **降级链**：pdftocairo 不可用或某页转换失败 → 该页 3840×2160 高分辨率截图单独成页（png-fallback），导出报告逐页列明降级原因；截图设施也不可用 → 非零退出，不产半成品；
+- **单向纪律**【硬规则】：导出全程对 index.html 只读（前后字节校验），PPTX 永不回读；重导 = 重新翻转（--force），旧 pptx 作废；
+- **stale**：编辑器保存会翻转页级 hash——`--check-stale` 检出指纹过期页（导出 hash ≠ 当前 hash），过期即重导；
+- **字体防线 A**（可选）：`subset-fonts.py` 按全 deck 实际用字子集化字体 → `fonts/*.woff2` + 可注入骨架 SLOT: fonts（骨架 v7.4 起）的 @font-face 块，消灭生产端字体环境变量；未覆盖字形会在 export/manifest.json 的 uncovered_glyphs 中列出。
+
+交付说明口径（追加到 Step 6）：每页实际生效的载体（svg / png-fallback / baked）、全 deck 平均保真分、降级页与原因；**不承诺"100% 可编辑 pptx"**——Office 2016+/365 显示矢量 SVG 且可"转换为形状"微调，更老版本及 WPS 走 PNG 位图。
+
 ### Step 6 · 交付
 
 交付时说明三件事：
@@ -169,6 +233,12 @@ python <oai生图技能目录>/script.py "<统一风格段 + 槽位 intent>" \
 1. 哪些槽位已生图（`data-image-state="generated"`）及各自的风格段执行要点；
 2. 哪些槽位生成失败、诚实回退为占位图（保持 `placeholder`），附失败原因；
 3. 如何替换任一插画：编辑器上传，或直接替换 `assets/` 同名文件（槽位 intent 就是换图指南）。
+
+若走了 Step 5.6 页面烙入模式，交付说明再追加三件事：
+
+1. **诚实声明哪些页已烙入**（`data-render-mode="baked"` 页清单）——这些页的文字烧死在图里，不再可就地编辑，改文字需走"源层编辑 + 重新烙入"流程；
+2. 哪些页生图失败、诚实回退为 HTML 页（`data-render-mode` 保持 `html`），附失败原因；
+3. 如何替换烙入页的整页图：编辑器上传（整页 img 走既有换图流），或直接替换 `assets/page-<slide_id>.png` 同名文件。
 
 ## 可编辑标记契约（摘要）
 
@@ -214,4 +284,5 @@ python <oai生图技能目录>/script.py "<统一风格段 + 槽位 intent>" \
 - `gallery/index.html`——Step 4 落码信息图页时翻对应族×皮肤的实例页抄丰富度；
 - `references/charts.md`——Step 4 需要图表时读；
 - `references/motion.md`——Step 4 安排动效时读；
+- `references/bake-prompts.md`——Step 5.6 选页把关与写 Layout/风格段前读；
 - `references/editing-contract.md`——Step 4 前读一次。

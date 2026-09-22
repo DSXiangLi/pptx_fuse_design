@@ -1,0 +1,49 @@
+# 0922 · 三形态翻转 M1–M4 实施 + 真实烙入生图 + 可编辑 PPTX 设计
+
+> 2026-09-22 · 承接 `docs/design/handover-tri-form.md`（M1–M4 规划）→ 全部落地；同日新增 `docs/design/pptx-export-editable.md`（子技能 C，评审通过进入实施）。
+
+## M1 公共地基：extract-manifest + content-hash
+
+- `scripts/extract-manifest.py`（python+Playwright，渲染后提取：role 推导 furniture→annotation→title/body、逐字 content、line_count/advance_width 快照、canonical string = slide_id+render_mode+T:/I: 行，SHA-256 前 12 hex；`--write-hashes` 属性级精准写回，23 个 fixture deck 已写入）；
+- editor.html v2.6：保存时 Web Crypto 重算页级 hash，canonical JS 与 extractor 逐字一致（脚本 diff 证实 byte-identical）；
+- harness `l_hash_check.py`（T23，7 项）：幂等 / 编辑翻转（恰好该页翻）/ 双端一致（编辑器保存产物 == extractor 重算，14/14 页）。
+
+## M2 整页烙入（契约 v7 / skeleton v7.3）
+
+- 契约 v7：data-render-mode / .baked-source 源层五条规约 / 页面级槽位 page-baked-16x9 / 批注粒度页级+坐标；
+- skeleton v7.3：`liveEls()` 过滤器 7 处排除源层（拆字/动效/in-view/scroll 驱动/fx/ptr），存量 deck 零影响；
+- SKILL.md Step 5.6 + `compile-bake-prompts.py` 七节模板（Text 段逐字，harness 校验精确子串）；check-images 页面级槽位扩展；editor v2.7 扫描跳过源层；
+- fixture `tests/decks/bake-mix/` + harness `m_bake_check.py`（T24，41 项断言）。
+
+## M3 HTML→PPTX 导出（保真轨）
+
+- spike 先行（`tests/harness/results/spike-m3/REPORT.md`，gitignored 可复跑）：pdftocairo 逐页 `-f N -l N` 实测零 `<text>` 全转曲；三个坑固化——@page+scale=2/3 换算、gradient-flow 还原本色注入（p14 diff 17.1%→1.16%）、python-pptx 漏 svg content-type 需 zip 手术；
+- `scripts/export-pptx.py`：防线 C 双门禁（j_render_check + 漂移对比 >3% 阻断）→ printToPDF → 转曲 SVG → svgBlip+PNG 双写 → postflight 原子落盘 → 保真分 + diff 热区 → export/manifest.json；烙入页直通；降级链；单向纪律 sha256 比对；
+- 防线 A 最小落地：`subset-fonts.py` + skeleton v7.4 SLOT: fonts + uncovered_glyphs 检测；防线 B metric_fallback 试点 b1/a1/c1；防线 D 进 typography §6.5；
+- 实测 bake-mix 44s、保真 avg diff 0.27%；harness `n_fidelity_check.py`（T25，23 项：postflight/阈值/stale/降级/门禁演练）。
+
+## M4 编辑器 v3.0 三态工作台
+
+- 顶栏三态分段（编辑/对比/导出）+ 翻面手势（F 键双面卡，背面三态：就绪 SVG/过期水印/黑面诚实空态）+ 对比三视图（并排默认/滑动分割/差异热区）+ stale 闭环 + 烙入页源层编辑 + export/ 三通道读取（HTTP/?deck=、嵌入 exportManifest·exportBaseUrl、file:// 降级）+ postMessage `export-intent`；
+- 计划外修复：常驻 preserve-3d 改变 iframe 栅格化路径致 T4 回归 → 3D 上下文按需启用；
+- harness `o_tri_view_check.py`（T26，35 项）。
+
+## 同日：真实烙入生图 + bake-prompts 参考
+
+- oai生图（ThinkSkillHub，GPT-Image-2.5）真实执行 Step 5.6：封面截图为风格锚 i2i，bake-mix ch-baked 页换成真图（2048×1152），回归全过；
+- 用户意见"生图优化是手艺不是脚本"→ `references/bake-prompts.md`：六构图谱系 Layout 指令策略 + 文字量纪律 + 失败模式对策；SKILL.md 分工口径硬规则（脚本管防幻觉骨架、agent 管 Layout/风格段写法）；
+- harness 修复：n_fidelity/o_tri_view 拷贝 fixture 排除 export//prompts/（残留产物导致预备导出被拒绝）；
+- **全量回归 51 项 51 PASS 0 FAIL**（T23–T26 子进程全绿）。
+
+## 可编辑 PPTX（子技能 C）设计与评审
+
+- 用户意见：SVG 轨不可编辑≈PDF → 双轨导出（deck.pptx 可编辑轨主交付 / deck-vector.pptx + deck.pdf 保真轨）；
+- ppt-master v6.6.0 深研：编译器 ~5.1 万行、文本框 wrap=none 改字即溢出、图表双写 hash 腐化、字体靠白名单；可借资产=字体映射四表/bodyPr 工程/chart_xml 参照/embeddedFontLst 机制（MIT）；
+- 我们的路线=**渲染真相 × 契约标记**：真实分行文本框 wrap=square、原生 chart XML（DOM 单源派生数据）、信息图 grpSp、复杂视觉烙图兜底、字体内嵌根治漂移；
+- 设计文档 `docs/design/pptx-export-editable.md` 评审通过，C1（文本+形状）→C2（图表+信息图）→C3（字体内嵌+双轨整合）实施中。
+
+## 遗留
+
+- 真实 Office 365 / WPS 目检：人工验收项（两轨共用）；
+- OFL 字体迁移 20 主题：独立批次（防线 A 能力已就位）；
+- 既有问题未修：tech-ikb-v3 的 22 处 16px 小字（老 deck 口径）、f1_texture_check.py 游离脚本过时。

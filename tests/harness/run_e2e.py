@@ -35,7 +35,7 @@ PORT = 8925
 BASE = 'http://127.0.0.1:%d' % PORT
 RESULTS = os.path.join(ROOT, 'tests/harness/results')
 
-DECKS = ['tech-ikb', 'culture-kraft', 'launch-mono', 'art-botanical', 'density-low', 'density-high', 'infographic-b2', 'charts-a3', 'motion-d2', 'motion-v5', 'infographic-d1', 'tech-ikb-v2', 'culture-kraft-v2', 'launch-mono-v2', 'components-gallery', 'tech-ikb-v3', 'culture-kraft-v3', 'launch-mono-v3', 'j-localfirst-a1', 'j-localfirst-e2', 'j-localfirst-e6', 'smartforge-c1', 'smartforge-e8']
+DECKS = ['tech-ikb', 'culture-kraft', 'launch-mono', 'art-botanical', 'density-low', 'density-high', 'infographic-b2', 'charts-a3', 'motion-d2', 'motion-v5', 'infographic-d1', 'tech-ikb-v2', 'culture-kraft-v2', 'launch-mono-v2', 'components-gallery', 'tech-ikb-v3', 'culture-kraft-v3', 'launch-mono-v3', 'j-localfirst-a1', 'j-localfirst-e2', 'j-localfirst-e6', 'smartforge-c1', 'smartforge-e8', 'bake-mix']
 VIEW_W, VIEW_H = 1440, 900          # harness 视口
 
 RESULTS_LIST = []
@@ -125,7 +125,7 @@ def dirty_events(page):
 
 # ---------- 往返 diff 白名单（§5.4 + 实测的一次性解析/序列化规范化） ----------
 
-BOOLEAN_ATTRS = ['data-editable', 'data-editable-image', 'data-editable-skip', 'data-anim', 'data-ig-item', 'data-rotate', 'data-rotate-item']
+BOOLEAN_ATTRS = ['data-editable', 'data-editable-image', 'data-editable-skip', 'data-anim', 'data-ig-item', 'data-rotate', 'data-rotate-item', 'hidden']
 SVG_VOID = 'circle|ellipse|line|path|polygon|polyline|rect|stop|use'
 
 def _canon_style(m):
@@ -2320,6 +2320,62 @@ def test_check_images():
            '；'.join(problems) if problems else
            '合规 deck 零警告通过；存量 deck 2 警告 rc=0；插画模式 placeholder 残留 rc=1；重跑幂等')
 
+# ---------- 测试 23：页级 content-hash（三形态 M1 / tri-form-architecture.md §4.3） ----------
+
+def test_hash_check():
+    """l_hash_check.py 作为子进程纳入回归：提取幂等 / 编辑翻转 /
+    编辑器 Web Crypto 端与 extractor 端 hash 双端一致 / 产物每页 12 位 hex。"""
+    r = subprocess.run([sys.executable, os.path.join(ROOT, 'tests/harness/l_hash_check.py')],
+                       capture_output=True, text=True)
+    tail = (r.stdout.strip().splitlines() or [''])[-1]
+    report('T23-hash', '页级 content-hash（M1）', r.returncode == 0,
+           '子进程退出码 %d：%s%s' % (r.returncode, tail,
+                                      ('\n' + r.stdout + r.stderr) if r.returncode else ''))
+
+# ---------- 测试 24：页面烙入模式（三形态 M2 / page-render-mode.md §6） ----------
+
+def test_bake_check():
+    """m_bake_check.py 作为子进程纳入回归（沿用 T23 加 l_hash_check 的约定）：
+    契约 v7 三要素静态校验 / 源层保留与回退 / 指令编译合规（Text 段精确子串）/
+    编辑器源层跳过与保存幂等 / hash 翻转 / 混合 deck 渲染与章节跳转回归 /
+    失败回退演练。"""
+    r = subprocess.run([sys.executable, os.path.join(ROOT, 'tests/harness/m_bake_check.py')],
+                       capture_output=True, text=True)
+    tail = (r.stdout.strip().splitlines() or [''])[-1]
+    report('T24-bake', '页面烙入模式（M2）', r.returncode == 0,
+           '子进程退出码 %d：%s%s' % (r.returncode, tail,
+                                      ('\n' + r.stdout + r.stderr) if r.returncode else ''))
+
+# ---------- 测试 25：HTML→PPTX 导出管线（三形态 M3 / pptx-export-svg.md §6） ----------
+
+def test_export_pptx():
+    """n_fidelity_check.py 作为子进程纳入回归（沿用 T23/T24 约定）：
+    全流程出口与耗时 / postflight 结构复核 / 保真阈值（平均 diff<2%、单页<5%）/
+    manifest schema / stale 检出 / 降级演练（屏蔽 pdftocairo、屏蔽截图）/
+    单向纪律 / 门禁演练（伪造漂移基线阻断）。
+    命名偏差：设计文档称 m_fidelity_check.py，m_ 已被 m_bake_check 占用，用 n_。"""
+    r = subprocess.run([sys.executable, os.path.join(ROOT, 'tests/harness/n_fidelity_check.py')],
+                       capture_output=True, text=True)
+    tail = (r.stdout.strip().splitlines() or [''])[-1]
+    report('T25-export', 'HTML→PPTX 导出管线（M3）', r.returncode == 0,
+           '子进程退出码 %d：%s%s' % (r.returncode, tail,
+                                      ('\n' + r.stdout + r.stderr) if r.returncode else ''))
+
+# ---------- 测试 26：编辑器 v3 三态工作台与翻转对比（三形态 M4 / editor-tri-view.md §7） ----------
+
+def test_tri_view_check():
+    """o_tri_view_check.py 作为子进程纳入回归（沿用 T23–T25 约定）：
+    HTTP 通道 manifest 读取 / 对比默认落定并排 + 无产物页黑面 / 背面三态
+    （就绪 SVG / 黑面空态 / 过期水印）/ stale 闭环（改字保存→水印→重跑导出→
+    水印消失）/ 烙入页源层编辑 / 导出面板四页与载体保真分 / 嵌入态
+    export-intent 消息 / 降级引导 / 翻面与 reduced-motion。"""
+    r = subprocess.run([sys.executable, os.path.join(ROOT, 'tests/harness/o_tri_view_check.py')],
+                       capture_output=True, text=True)
+    tail = (r.stdout.strip().splitlines() or [''])[-1]
+    report('T26-tri-view', '编辑器 v3 三态工作台（M4）', r.returncode == 0,
+           '子进程退出码 %d：%s%s' % (r.returncode, tail,
+                                      ('\n' + r.stdout + r.stderr) if r.returncode else ''))
+
 # ---------- 测试 17：图片上传置 state=uploaded（迭代 E / 契约 v5） ----------
 
 def test_image_upload_state(browser):
@@ -2554,6 +2610,10 @@ def main():
             test_gallery_f2(browser)
             test_check_images()
             test_image_upload_state(browser)
+            test_hash_check()
+            test_bake_check()
+            test_export_pptx()
+            test_tri_view_check()
 
             browser.close()
     finally:

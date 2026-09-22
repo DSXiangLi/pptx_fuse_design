@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="skeleton-version" content="7.2">
+<meta name="skeleton-version" content="7.4">
 <title><!-- SLOT: 文档标题 --></title>
 <style>
 /* ============================================================
@@ -31,6 +31,17 @@
 }
 
 /* ============================================================
+   SLOT: fonts（skeleton v7.4 起，可选——三形态 M3 防线 A）
+   字体随 deck 走的 @font-face 块：由 scripts/subset-fonts.py
+   按全 deck 实际用字子集化后生成（woff2，src 指向 fonts/ 相对
+   路径），--inject 注入或手工粘贴到标记区间内。font-family
+   必须与上方字体栈声明的族名逐字一致，系统栈仍作 fallback。
+   无字体子集时留空即合法（回落系统栈，离线方针不变）。
+   ============================================================ */
+/*__FONTS_SLOT_BEGIN__*/
+/*__FONTS_SLOT_END__*/
+
+/* ============================================================
    框架层 · 禁止修改
    处理：16:9 固定画布缩放、竖向滚动、键盘翻页、章节跳转（v7：data-chapter
    + nav-link 锚点 + 数字键直跳）、mend-bar 双态修复条与 data-rotate
@@ -41,6 +52,10 @@
    （data-fx，密度/数量/速度烧死，in-view 生命周期，离屏停帧）、
    质感槽位与背景配给制、
    刊头家具样式（masthead/mastfoot）、reduced-motion 降级、打印。
+   v7.3（契约 v7 页面烙入模式）：运行时文本引擎/动效初始化/in-view
+   驱动一律跳过 .baked-source 烙入源层内部（源层 hidden 保留供
+   manifest/hash，不参与运行时；hidden 元素默认不打印，打印样式
+   无需新增规则）。
    ============================================================ */
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
@@ -483,6 +498,15 @@ body{
 
   function slots(){ return Array.prototype.slice.call(deck.querySelectorAll('.slide-slot')); }
 
+  /* 烙入源层豁免（v7.3，契约 v7）：.baked-source 是烙入页完整保留的
+     HTML 源层（hidden，只参与 manifest/hash）。运行时文本引擎、动效
+     初始化、in-view 驱动的全部选择器经 liveEls 过滤，跳过其内部——
+     存量无 .baked-source 的 deck 过滤为恒等，零影响。 */
+  function inBaked(el){ return !!(el && el.closest && el.closest('.baked-source')); }
+  function liveEls(root, sel){
+    return Array.prototype.filter.call(root.querySelectorAll(sel), function(el){ return !inBaked(el); });
+  }
+
   /* 缩放：整个 1920×1080 画布按容器比例缩放，绝不重排内容。
      ResizeObserver 而非 window resize：iframe 尺寸变化、侧栏开合都算。 */
   var lastScale = 0;
@@ -588,7 +612,7 @@ body{
         }
       });
     }, {root: deck, threshold: 0.25});
-    Array.prototype.forEach.call(document.querySelectorAll('[data-rotate]'), function(box){ rotIO.observe(box); });
+    liveEls(document, '[data-rotate]').forEach(function(box){ rotIO.observe(box); });
   }
 
   /* 背景配给（skeleton v4）：纯 CSS 按 class 配给（.cover-page /
@@ -779,14 +803,14 @@ body{
   /* 加载时为每页的 [data-anim] 元素分配序号 --i（阶梯延迟的基数）；
      mask-lines 的 .ml-inner 行内层单独编号（逐行遮罩阶梯，v5） */
   slots().forEach(function(s){
-    var els = s.querySelectorAll('[data-anim]');
+    var els = liveEls(s, '[data-anim]');
     for (var i = 0; i < els.length; i++) els[i].style.setProperty('--i', i);
-    var inners = s.querySelectorAll('[data-anim="mask-lines"] .ml-inner');
+    var inners = liveEls(s, '[data-anim="mask-lines"] .ml-inner');
     for (var j = 0; j < inners.length; j++) inners[j].style.setProperty('--i', j);
   });
   if (!reduceMotion){
     slots().forEach(function(s){
-      var lines = s.querySelectorAll('[data-anim="draw-line"]');
+      var lines = liveEls(s, '[data-anim="draw-line"]');
       for (var i = 0; i < lines.length; i++) prepDrawLine(lines[i]);
     });
   }
@@ -794,18 +818,18 @@ body{
     if (slide.classList.contains('in-view')) return;
     if (!reduceMotion){
       /* 运行时拆字：先拆再加 in-view（同一帧完成，避免先显后拆的闪烁） */
-      var splits = slide.querySelectorAll(SPLIT_SEL);
+      var splits = liveEls(slide, SPLIT_SEL);
       for (var i = 0; i < splits.length; i++) splitEl(splits[i]);
     }
     slide.classList.add('in-view');
     if (!reduceMotion){
-      var cus = slide.querySelectorAll('[data-anim="count-up"]');
+      var cus = liveEls(slide, '[data-anim="count-up"]');
       for (var j = 0; j < cus.length; j++) countUp(cus[j]);
-      var tws = slide.querySelectorAll('[data-anim="typewriter"]');
+      var tws = liveEls(slide, '[data-anim="typewriter"]');
       for (var t = 0; t < tws.length; t++) typewriter(tws[t]);
-      var scs = slide.querySelectorAll('[data-anim="scramble"]');
+      var scs = liveEls(slide, '[data-anim="scramble"]');
       for (var c = 0; c < scs.length; c++) scramble(scs[c]);
-      var dls = slide.querySelectorAll('[data-anim="draw-line"]');
+      var dls = liveEls(slide, '[data-anim="draw-line"]');
       for (var k = 0; k < dls.length; k++){
         if (dls[k].__drawLen) dls[k].style.strokeDashoffset = '0';
       }
@@ -843,7 +867,7 @@ body{
   if (!reduceMotion){
     slots().forEach(function(s){
       var slide = s.querySelector('.slide');
-      if (slide && slide.querySelector('[data-scroll="parallax"],[data-scroll="scrub"],[data-scroll="scrub-draw"]'))
+      if (slide && liveEls(slide, '[data-scroll="parallax"],[data-scroll="scrub"],[data-scroll="scrub-draw"]').length)
         spSlides.push({ slide: slide, slot: s });
     });
     if (spSlides.length){
@@ -1039,7 +1063,7 @@ body{
 
   /* fx 实例收集与 in-view 生命周期：reduced-motion 整组不初始化 */
   if (!reduceMotion){
-    var fxCvs = deck.querySelectorAll('canvas[data-fx]');
+    var fxCvs = liveEls(deck, 'canvas[data-fx]');
     for (var fc = 0; fc < fxCvs.length; fc++){
       var fxType = fxCvs[fc].getAttribute('data-fx');
       var fxSlide = fxCvs[fc].closest ? fxCvs[fc].closest('.slide') : null;
@@ -1099,9 +1123,9 @@ body{
   (function initPointer(){
     if (reduceMotion) return;
     if (!(window.matchMedia && window.matchMedia('(pointer:fine)').matches)) return;
-    var needVars = !!deck.querySelector('.spotlight,[data-ptr="parallax"]');
-    var tilts = deck.querySelectorAll('[data-ptr="tilt"]');
-    var magnets = deck.querySelectorAll('[data-ptr="magnetic"]');
+    var needVars = !!liveEls(deck, '.spotlight,[data-ptr="parallax"]').length;
+    var tilts = liveEls(deck, '[data-ptr="tilt"]');
+    var magnets = liveEls(deck, '[data-ptr="magnetic"]');
     if (!needVars && !tilts.length && !magnets.length) return;
     if (needVars){
       ptr.onMove = function(e){

@@ -230,6 +230,17 @@ for (const t of themes) {
     if (!g2[k]) err(`${t.id}: G2 缺少 token ${k}`);
   for (const k of ['字重倾向', '字号对比', '字重映射', '标题修饰'])
     if (!t.groups.G2 || !t.groups.G2[k]) err(`${t.id}: G2 缺少字段「${k}」`);
+  /* metric_fallback（可选，M3 防线 B）：display→…；body→…；mono→… */
+  if (t.groups.G2 && t.groups.G2['metric_fallback']) {
+    const mf = t.groups.G2['metric_fallback'];
+    const entries = mf.split(/[；;]/).map(s => s.trim()).filter(Boolean);
+    if (!entries.length) err(`${t.id}: metric_fallback 为空`);
+    for (const e of entries) {
+      const m = /^(display|body|mono)→(.+)$/.exec(e);
+      if (!m) err(`${t.id}: metric_fallback 条目非法：「${e}」（格式 display→字体A/字体B，键 ∈ display/body/mono）`);
+      else if (!m[2].trim()) err(`${t.id}: metric_fallback ${m[1]} 的回退栈为空`);
+    }
+  }
 
   /* G3 texture（立场必填，flat 也要显式写出） */
   checkTexture(t.id, parseTokens(t.css.G3));

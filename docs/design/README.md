@@ -18,6 +18,12 @@
 | `handover-theme-differentiation.md` | **session 交接文档**：进度快照 + 用户验收 comment + baoyu-design 补充调研 + 主题差异化/想象层的独立思考（七层表达力栈、隐喻库、世界采样构思法、G–J 期路线） | 2026-09-19 用户验收 comment |
 | `theme-expression-stack.md` | G+H 期设计：主题 = 七层表达力栈（L1–L7 ↔ G0–G9）；骨架 v6 主题 CSS 槽位；两级主题架构（9 重主题 + 配色变体，16 纯调色板主题诚实合并）；两两七层 diff ≥3 的机器门槛；隐喻库 + 呈现发散步 | handover §5 路线（G/H/I/J 全部实施完毕） |
 | `high-density-containers.md` | K 期：高密度表达三件套——文本容器层（components.md §13 六型 + 四层字阶纪律）、章节跳转导航（skeleton v7：data-chapter/nav-link/数字键）、动效编排纪律吸收（mend-bar 双态修复条 + data-rotate 轮转高亮 + 内容→动效对照表） | 2026-09-20 用户验收意见（高密度测试缺口 + demo1 动效复盘） |
+| `tri-form-architecture.md` | 三形态架构总览：HTML（唯一真相）/ 整页生图（视觉上限）/ PPTX（单向交付快照）；翻转统一动词；**转换即技能**红线；manifest + content-hash 公共地基；防幻觉三硬规则 | 2026-09-21 上下兼容两轮设计讨论（M1 已实现，T23） |
+| `page-render-mode.md` | 子技能 A：整页生图烙入模式——与插画模式的边界（页内槽位 vs 整页）、源层保留结构（契约 v7）、HTML 样张锚 + 确定性指令编译、代表页审批闸门、stale 重烙 | 同上（M2 已实现，T24） |
+| `pptx-export-svg.md` | 子技能 B：HTML→PDF→SVG→PPTX 矢量管线（浏览器即编译器、文字转曲、svgBlip+PNG 双写）；字体/布局稳定性四道防线（字体随档子集化/度量兼容回退/导出渲染门禁/容器余量） | 同上（M3 已实现，T25） |
+| `editor-tri-view.md` | 编辑器 v3：三态工作台（编辑/对比/导出）、翻面交互（手势/过场 + 背面三态含黑面空态）+ 并排（默认落定）/滑动分割/差异热区（质检层）、stale 闭环、保真分排序 | 同上（M4 已实现，editor.html v3.0 + T26） |
+| `handover-tri-form.md` | **session 交接文档**：三形态翻转设计的进度快照 + 阅读顺序 + 已定决策快照 + M1–M4 任务规划 + 遗留待澄清点——下个 session 从这里读起 | 2026-09-21 设计闭环交接 |
+| `pptx-export-editable.md` | 子技能 C：可编辑 PPTX 导出（原生元素轨）——渲染真相 × 契约标记路线（真实分行文本框 wrap=square / 原生 chart XML / 信息图 grpSp 分组 / 复杂视觉烙图兜底 / 字体内嵌 embeddedFontLst）；双轨导出（deck.pptx 可编辑轨主交付 + deck-vector.pptx/deck.pdf 保真轨）；ppt-master 资产借用清单 | 2026-09-22 用户意见（SVG 轨不可编辑≈PDF）+ ppt-master v6.6.0 调研（评审通过，C1–C3 实施中） |
 
 ## 决策速览
 
@@ -25,7 +31,8 @@
 2. **拆字不禁令**：产物文件中的文字永远是纯文本节点，拆字由骨架 JS 在运行时执行；编辑器看到的永远是纯文本，编辑契约零改动，无 JS/reduced-motion 天然降级。
 3. **信息图组合衍生**：结构族（有限枚举）× Item 皮肤（有限枚举）× 参数变体（密度/方向/项数）= 大组合空间；数据字段与结构族硬约定防止 AI 乱填；新族/新皮肤入库走 `../research/sota-visual-languages.md` 七件规范。
 4. **插画管线**：占位图 →（内容验收）→ AI 统一补齐插画 →（用户随时）上传替换，三级供给链共享同一条 `assets/` 资产契约；声明插画模式必须真实落盘（可静态校验的反降级）。
-5. **上下兼容**：HTML 永远是唯一事实源与起点；全图化和 pptx 导出都是**导出态分支**，以独立工具承载，不污染产物纯净性。
+5. **上下兼容**：HTML 永远是唯一事实源与起点；全图化和 pptx 导出都是**导出态分支**，以独立工具承载，不污染产物纯净性。（2026-09-21 起升级为实施级设计：见 `tri-form-architecture.md` 系列四文档；原 `compat-roadmap.md` 保留为历史记录。）
+6. **三形态与翻转**：HTML = 唯一真相源，整页生图与 PPTX 导出是两种"翻转"（单向、逐字引用、hash 失效检测）；**转换是技能不是后端**——编辑器只消费 `export/` 产物；PPTX 保真走浏览器渲染→PDF→SVG 转录路线，字体随 deck 子集化内嵌根治跨机版式漂移。
 
 ## 共同纪律
 

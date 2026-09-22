@@ -11,7 +11,12 @@
  *      素材文件固有尺寸 SVG/PNG/JPEG/GIF/WebP；全部不可判定 → 警告）；
  *   4. 存量兼容：缺 data-image-slot 的老 deck 给警告而非报错；
  *   5. --mode illustration（AI 插画模式产物）：反降级——任何
- *      state="placeholder" 的槽位或缺槽位的 img 均为错误。
+ *      state="placeholder" 的槽位或缺槽位的 img 均为错误；
+ *   6. 页面级槽位（契约 v7，slot 语义名 page-baked-*）：img 必须是
+ *      data-render-mode="baked" 的 section.slide 的直接子元素，section
+ *      内含 hidden 的 .baked-source 源层；三方绑定的构图来源 = 画布
+ *      1920×1080（16:9 固定）；--mode illustration 下声明 baked 的页
+ *      残留 placeholder 同样报错（通用反降级规则覆盖）。
  *
  * 用法：node skills/html-pptx/scripts/check-images.mjs <deck.html> [...] [--mode illustration]
  * 幂等（纯读取）。有错误打印清单并以非零退出；仅警告退出码为 0。零依赖，Node ≥ 20。
@@ -22,6 +27,10 @@ import { dirname, join, normalize } from 'node:path';
 const STATES = new Set(['placeholder', 'generated', 'uploaded']);
 const RATIO_TOLERANCE = 0.05;
 const SLOT_RE = /^[a-z0-9][a-z0-9-]*-(\d+)x(\d+)$/;
+/* 契约 v7 页面级槽位：语义名固定 page-baked（如 page-baked-16x9） */
+const PAGE_SLOT_RE = /^page-baked-(\d+)x(\d+)$/;
+/* 页面级槽位的构图框即整个画布（16:9 固定） */
+const CANVAS_RATIO = 1920 / 1080;
 
 /* ---------- CLI ---------- */
 const args = process.argv.slice(2);
@@ -146,6 +155,25 @@ for (const file of files) {
   catch (e) { err(file + ': 读取失败（' + e.message + '）'); continue; }
 
   const imgRe = /<img\b[^>]*>/g;
+  /* 页面级槽位校验需要 section 上下文（骨架结构：section 不嵌套）——
+     预扫描全部 <section> 起止区间 */
+  const sections = [];
+  const secRe = /<section\b[^>]*>/g;
+  let sm0;
+  while ((sm0 = secRe.exec(html))) {
+    const openEnd = sm0.index + sm0[0].length;
+    const closeM = /<\/section\s*>/.exec(html.slice(openEnd));
+    sections.push({
+      start: sm0.index, openEnd: openEnd,
+      end: closeM ? openEnd + closeM.index : html.length,
+      attrs: parseAttrs(sm0[0]),
+    });
+  }
+  function sectionOf(pos) {
+    let hit = null;
+    for (const s of sections) { if (s.start <= pos && pos < s.end) hit = s; }
+    return hit;
+  }
   let m, count = 0;
   while ((m = imgRe.exec(html))) {
     const attrs = parseAttrs(m[0]);
@@ -182,6 +210,39 @@ for (const file of files) {
     if (!state) err(who + ' 有 data-image-slot 但缺 data-image-state（v5 三属性不完整）');
     else if (!STATES.has(state)) err(who + ' data-image-state 非法：' + JSON.stringify(state) + '（合法值 placeholder|generated|uploaded）');
 
+    /* 2b. 页面级槽位结构校验（契约 v7）：page-baked-* 的整页 img 必须是
+       data-render-mode="baked" 的 section.slide 的直接子元素，且 section
+       内含 hidden 的 .baked-source 源层 */
+    if (PAGE_SLOT_RE.test(slot)) {
+      const sec = sectionOf(m.index);
+      if (!sec || !(sec.attrs['class'] || '').split(/\s+/).includes('slide')) {
+        err(who + ' 页面级槽位 ' + slot + ' 不在 section.slide 内');
+      } else {
+        if (sec.attrs['data-render-mode'] !== 'baked') {
+          err(who + ' 页面级槽位 ' + slot + ' 所在 section 缺 data-render-mode="baked"（实为 ' +
+              JSON.stringify(sec.attrs['data-render-mode'] || '(无)') + '）——声明烙入的页三要素必须齐备');
+        }
+        const between = html.slice(sec.openEnd, m.index).replace(/<!--[\s\S]*?-->/g, '').trim();
+        if (between) {
+          err(who + ' 页面级槽位 ' + slot + ' 必须是 section.slide 的直接子元素（img 与 section 开始标签之间只允许空白/注释）');
+        }
+        const secHtml = html.slice(sec.openEnd, sec.end);
+        let hasSource = false;
+        const divRe = /<div\b[^>]*>/g;
+        let dm;
+        while ((dm = divRe.exec(secHtml))) {
+          const da = parseAttrs(dm[0]);
+          if ((da['class'] || '').split(/\s+/).includes('baked-source')) {
+            if ('hidden' in da) hasSource = true;
+            else err(who + ' .baked-source 源层缺 hidden 属性（契约 v7：源层必须隐藏保留）');
+          }
+        }
+        if (!hasSource) {
+          err(who + ' 页面级槽位 ' + slot + ' 所在 section 缺 <div class="baked-source" hidden> 源层（契约 v7 三要素）');
+        }
+      }
+    }
+
     /* 3. 反降级（插画模式） */
     if (mode === 'illustration' && state === 'placeholder') {
       err(who + ' 插画模式产物残留 placeholder 状态槽位（slot=' + slot + '）——生成失败应诚实回退并在交付说明列出，冒充违规');
@@ -190,6 +251,8 @@ for (const file of files) {
     /* 4. 三方绑定：声明比例 vs 可判定来源（容差 5%） */
     const declared = +sm[1] / +sm[2];
     const sources = [];
+    /* 页面级槽位（契约 v7）：构图框 = 1920×1080 画布，天然可判定 */
+    if (PAGE_SLOT_RE.test(slot)) sources.push({ ratio: CANVAS_RATIO, via: '画布 1920×1080（页面级槽位构图框）' });
     const aw = +attrs.width, ah = +attrs.height;
     if (aw > 0 && ah > 0) sources.push({ ratio: aw / ah, via: 'img width/height 属性' });
     sources.push(...styleRatios(attrs.style));
