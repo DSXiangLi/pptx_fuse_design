@@ -1,6 +1,6 @@
 # 子技能 C：可编辑 PPTX 导出（原生元素轨）
 
-> 状态：评审通过 · 2026-09-22（用户批准，进入 C1–C3 实施） · 总览见 `tri-form-architecture.md`；保真轨（SVG 转曲）见 `pptx-export-svg.md`
+> 状态：**已实现（2026-09-22，C1–C3 全落地）**——C1 文本+简单形状 / C2 图表原生+信息图+烙图兜底 / C3 字体内嵌+双轨编排+编辑器面板；验收 p_editable_check（T27）+ n_fidelity_check（T25）全绿 · 总览见 `tri-form-architecture.md`；保真轨（SVG 转曲）见 `pptx-export-svg.md`
 > 依据：2026-09-22 用户意见——整页转曲 SVG 的 pptx 不可编辑、与 PDF 交付无差异；需要**可编辑 PPTX** 导出（文本框/信息图/图表全方位原生可编辑），并全方位参考 `source/ppt-master/`（v6.6.0，MIT）站在巨人肩膀上。调研结论见本文件 §2。
 
 ## 1. 定位：双轨导出

@@ -94,10 +94,15 @@ def main():
         check('⑦ 单向纪律：导出前后 index.html 字节一致', sha256(deck) == before)
 
         export_dir = os.path.join(os.path.dirname(deck), 'export')
-        pptx = os.path.join(export_dir, 'deck.pptx')
+        pptx = os.path.join(export_dir, 'deck-vector.pptx')   # 保真轨（C3 定名）
         mf_path = os.path.join(export_dir, 'manifest.json')
-        check('①c 产物齐备（deck.pptx + manifest.json）',
-              os.path.isfile(pptx) and os.path.isfile(mf_path))
+        check('①c 双轨产物齐备（deck.pptx 可编辑 + deck-vector.pptx + deck.pdf + manifest.json）',
+              os.path.isfile(pptx) and os.path.isfile(mf_path)
+              and os.path.isfile(os.path.join(export_dir, 'deck.pptx'))
+              and os.path.isfile(os.path.join(export_dir, 'deck.pdf')))
+        with open(os.path.join(export_dir, 'deck.pdf'), 'rb') as f:
+            pdf_bytes = f.read()
+        check('①d deck.pdf 直出：4 页 MediaBox', pdf_bytes.count(b'/MediaBox') == 4)
 
         # ---------- ② postflight 复核 ----------
         from pptx import Presentation
@@ -118,6 +123,12 @@ def main():
               carriers.get(BAKED_ID) == 'baked'
               and all(c == 'svg' for sid, c in carriers.items() if sid != BAKED_ID),
               repr(carriers))
+        tracks = mf.get('export', {}).get('tracks', {})
+        check('②e tracks schema：双轨 ok + 可编辑轨指标齐备',
+              tracks.get('vector', {}).get('ok') is True
+              and tracks.get('editable', {}).get('ok') is True
+              and tracks['editable'].get('native_text_ratio') == 1.0
+              and 'fonts_embedded' in tracks['editable'])
 
         # ---------- ③ 保真阈值 ----------
         fids = {p['slide_id']: p.get('fidelity') for p in mf['pages']}
@@ -190,8 +201,12 @@ def main():
         deck_c = fresh_deck(tmp, 'noshot')
         env_no_shot = dict(os.environ, PPTX_EXPORT_DISABLE_SCREENSHOT='1')
         r = run_export(deck_c, env=env_no_shot)
-        check('⑥b 截图设施不可用 → 非零退出且不产 export/ 半成品',
-              r.returncode != 0 and not os.path.exists(os.path.join(os.path.dirname(deck_c), 'export')),
+        exp_c = os.path.join(os.path.dirname(deck_c), 'export')
+        check('⑥b 截图设施不可用 → 保真轨失败非零退出、无 deck-vector.pptx；'
+              '可编辑轨（bake-mix 无烙图需求）不被阻断',
+              r.returncode != 0
+              and not os.path.exists(os.path.join(exp_c, 'deck-vector.pptx'))
+              and os.path.exists(os.path.join(exp_c, 'deck.pptx')),
               'rc=%d' % r.returncode)
 
         # ---------- ⑧ 门禁演练（伪造漂移基线） ----------
@@ -221,8 +236,9 @@ def main():
         check('⑧c 阻断报告逐元素列出页与文本',
               victim is not None and victim[0] in (r.stdout + r.stderr)
               and victim[1][:12] in (r.stdout + r.stderr))
-        check('⑧d 门禁阻断不产 export/ 半成品',
-              not os.path.exists(os.path.join(os.path.dirname(deck_d), 'export')))
+        exp_d = os.path.join(os.path.dirname(deck_d), 'export')
+        check('⑧d 门禁阻断不产 export/ 半成品（可编辑轨已撤下）',
+              not os.path.exists(exp_d) or not os.listdir(exp_d))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

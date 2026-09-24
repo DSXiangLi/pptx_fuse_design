@@ -1,5 +1,7 @@
 # 子技能 B：HTML→PPTX 导出（SVG 矢量管线）
 
+> **角色修订（2026-09-22，C3 起）**：本管线为**保真轨**——产物定名 `export/deck-vector.pptx`（原 deck.pptx 改名）并顺带直出 `export/deck.pdf`（printToPDF 落盘）；`export/deck.pptx` 改指可编辑轨（主交付，见 `pptx-export-editable.md`）。管线逻辑零行为变更，由 export-pptx.py 双轨编排（--track both|editable|vector）。
+
 > 状态：待评审 · 2026-09-21 · 总览与公共地基见 `tri-form-architecture.md`
 > 依据：2026-09-21 用户意见——以 SVG 为中间层、尽可能保留视觉效果；调研 `source/ppt-master/`（AI 手写 SVG + 自研 SVG→DrawingML 编译器路线）后确认不走编译器路线。
 

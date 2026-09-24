@@ -20,10 +20,10 @@
 | `high-density-containers.md` | K 期：高密度表达三件套——文本容器层（components.md §13 六型 + 四层字阶纪律）、章节跳转导航（skeleton v7：data-chapter/nav-link/数字键）、动效编排纪律吸收（mend-bar 双态修复条 + data-rotate 轮转高亮 + 内容→动效对照表） | 2026-09-20 用户验收意见（高密度测试缺口 + demo1 动效复盘） |
 | `tri-form-architecture.md` | 三形态架构总览：HTML（唯一真相）/ 整页生图（视觉上限）/ PPTX（单向交付快照）；翻转统一动词；**转换即技能**红线；manifest + content-hash 公共地基；防幻觉三硬规则 | 2026-09-21 上下兼容两轮设计讨论（M1 已实现，T23） |
 | `page-render-mode.md` | 子技能 A：整页生图烙入模式——与插画模式的边界（页内槽位 vs 整页）、源层保留结构（契约 v7）、HTML 样张锚 + 确定性指令编译、代表页审批闸门、stale 重烙 | 同上（M2 已实现，T24） |
-| `pptx-export-svg.md` | 子技能 B：HTML→PDF→SVG→PPTX 矢量管线（浏览器即编译器、文字转曲、svgBlip+PNG 双写）；字体/布局稳定性四道防线（字体随档子集化/度量兼容回退/导出渲染门禁/容器余量） | 同上（M3 已实现，T25） |
+| `pptx-export-svg.md` | 子技能 B：HTML→PDF→SVG→PPTX 矢量管线（浏览器即编译器、文字转曲、svgBlip+PNG 双写）；字体/布局稳定性四道防线（字体随档子集化/度量兼容回退/导出渲染门禁/容器余量） | 同上（M3 已实现 T25；C3 起为保真轨 deck-vector.pptx + deck.pdf 直出） |
 | `editor-tri-view.md` | 编辑器 v3：三态工作台（编辑/对比/导出）、翻面交互（手势/过场 + 背面三态含黑面空态）+ 并排（默认落定）/滑动分割/差异热区（质检层）、stale 闭环、保真分排序 | 同上（M4 已实现，editor.html v3.0 + T26） |
 | `handover-tri-form.md` | **session 交接文档**：三形态翻转设计的进度快照 + 阅读顺序 + 已定决策快照 + M1–M4 任务规划 + 遗留待澄清点——下个 session 从这里读起 | 2026-09-21 设计闭环交接 |
-| `pptx-export-editable.md` | 子技能 C：可编辑 PPTX 导出（原生元素轨）——渲染真相 × 契约标记路线（真实分行文本框 wrap=square / 原生 chart XML / 信息图 grpSp 分组 / 复杂视觉烙图兜底 / 字体内嵌 embeddedFontLst）；双轨导出（deck.pptx 可编辑轨主交付 + deck-vector.pptx/deck.pdf 保真轨）；ppt-master 资产借用清单 | 2026-09-22 用户意见（SVG 轨不可编辑≈PDF）+ ppt-master v6.6.0 调研（评审通过，C1–C3 实施中） |
+| `pptx-export-editable.md` | 子技能 C：可编辑 PPTX 导出（原生元素轨）——渲染真相 × 契约标记路线（真实分行文本框 wrap=square / 原生 chart XML / 信息图 grpSp 分组 / 复杂视觉烙图兜底 / 字体内嵌 embeddedFontLst）；双轨导出（deck.pptx 可编辑轨主交付 + deck-vector.pptx/deck.pdf 保真轨）；ppt-master 资产借用清单 | 2026-09-22 用户意见（SVG 轨不可编辑≈PDF）+ ppt-master v6.6.0 调研（**C1–C3 已实现**，T25/T27 全绿） |
 
 ## 决策速览
 

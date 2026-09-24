@@ -40,7 +40,11 @@
 - 用户意见：SVG 轨不可编辑≈PDF → 双轨导出（deck.pptx 可编辑轨主交付 / deck-vector.pptx + deck.pdf 保真轨）；
 - ppt-master v6.6.0 深研：编译器 ~5.1 万行、文本框 wrap=none 改字即溢出、图表双写 hash 腐化、字体靠白名单；可借资产=字体映射四表/bodyPr 工程/chart_xml 参照/embeddedFontLst 机制（MIT）；
 - 我们的路线=**渲染真相 × 契约标记**：真实分行文本框 wrap=square、原生 chart XML（DOM 单源派生数据）、信息图 grpSp、复杂视觉烙图兜底、字体内嵌根治漂移；
-- 设计文档 `docs/design/pptx-export-editable.md` 评审通过，C1（文本+形状）→C2（图表+信息图）→C3（字体内嵌+双轨整合）实施中。
+- 设计文档 `docs/design/pptx-export-editable.md` 评审通过，C1（文本+形状）→C2（图表+信息图）→C3（字体内嵌+双轨整合）**当日全部落地**：
+  - C1：export-pptx-editable.py——渲染快照（真实逐行分行零估算）→ 原生文本框（wrap=square + 真实框宽，超越 ppt-master 的 wrap=none 改字即溢出）+ 简单形状 prstGeom + latin/ea 双 typeface（pptx_font_maps.py，MIT 抽取 ppt-master 四表）；T27 挂回归；
+  - C2：图表双源校验（文本×几何比值不变量容差 5%，不过即烙图——宁烙图不错映射）→ 基础五配方原生 chart XML（workbook 数据逐字、轴/图例删除防双写）；data-ig → grpSp 分组；复杂视觉 elementScreenshot 烙图、文字仍原生叠加；
+  - C3：字体内嵌（fsType 许可闸 + embeddedFontLst zip 手术，不伪造）、双轨编排（deck.pptx=可编辑主交付 / deck-vector.pptx / deck.pdf；基础设施失败单轨隔离、防线 C 门禁双轨同撤；manifest export.tracks）、编辑器导出面板双轨适配（旧 schema 向后兼容）；
+  - 验收：p_editable_check 73 项（5 fixture deck：文本逐字缺失 0、几何 ≤2%、原生 chart workbook 逐字、字体内嵌、双轨三件套）+ n_fidelity 26 项 + **全量回归 52 项 52 PASS**。
 
 ## 遗留
 

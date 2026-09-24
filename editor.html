@@ -705,7 +705,9 @@
       <div class="exp-head">
         <h2>导出 · 最近一次翻转结果</h2>
         <button id="btnExpRefresh" title="技能重新翻转后点此重新读取 export/ 目录">重新读取 export/</button>
-        <button id="btnDlPptx" data-url="" title="下载 PPTX 交付件（HTTP 态直链/FSAA 另存；嵌入态由宿主交付）">下载 deck.pptx</button>
+        <button id="btnDlPptx" data-url="" title="下载可编辑轨 PPTX 主交付件（HTTP 态直链/FSAA 另存；嵌入态由宿主交付）">下载 deck.pptx（可编辑）</button>
+        <button id="btnDlVector" data-url="" hidden title="下载保真轨 PPTX（转曲 SVG，视觉封存/老 Office 走 PNG）">deck-vector.pptx</button>
+        <button id="btnDlPdf" data-url="" hidden title="下载保真轨直出 PDF">deck.pdf</button>
         <button id="btnExpReflip" class="primary" title="编辑器不发起转换（转换即技能）：嵌入态向宿主发送重新翻转请求，否则复制技能命令">重新翻转导出</button>
       </div>
       <div class="exp-summary" id="expSummary"></div>
@@ -5069,6 +5071,14 @@ function renderExportView(){
   rows.innerHTML = '';
   guide.hidden = true; table.hidden = true; sum.textContent = '';
   $('btnDlPptx').dataset.url = (triStatus === 'ready' && triBaseUrl) ? triBaseUrl + 'deck.pptx' : '';
+  /* 双轨产物（C3）：保真轨下载件仅在新 schema（tracks 字段）且保真轨成功时显示；
+     旧 schema manifest（无 tracks）保持单按钮现状，不报错 */
+  var exp0 = (triManifest && triManifest.export) || {};
+  var trk = exp0.tracks || null;
+  $('btnDlVector').hidden = !(trk && trk.vector && trk.vector.ok && triBaseUrl);
+  $('btnDlPdf').hidden = !(trk && trk.vector && trk.vector.ok && triBaseUrl);
+  $('btnDlVector').dataset.url = (trk && trk.vector && trk.vector.ok && triBaseUrl) ? triBaseUrl + 'deck-vector.pptx' : '';
+  $('btnDlPdf').dataset.url = (trk && trk.vector && trk.vector.ok && triBaseUrl) ? triBaseUrl + 'deck.pdf' : '';
   if (!state.loaded){
     guide.innerHTML = '先打开一份 HTML 幻灯片。';
     guide.hidden = false;
@@ -5082,18 +5092,33 @@ function renderExportView(){
       '还没有 export/ 产物（该 deck 从未翻转）。翻转而非编辑器职责——转换即技能：<br>' +
       '1. 让 AI coding agent 运行 <code>python3 skills/html-pptx/scripts/export-pptx.py ' +
       (state.deckPath || '&lt;deck&gt;/index.html') + '</code>；<br>' +
-      '2. 产物落在 deck 的 <code>export/</code> 目录（deck.pptx / page-NN.svg / manifest.json）；<br>' +
+      '2. 产物落在 deck 的 <code>export/</code> 目录（deck.pptx 可编辑轨 / deck-vector.pptx 与 deck.pdf 保真轨 / page-NN.svg / manifest.json）；<br>' +
       '3. 回到本页点「重新读取 export/」。';
     guide.hidden = false;
     return;
   }
   var exp = triManifest.export || {};
-  sum.textContent = '翻转于 ' + (exp.exported_at || '—') +
+  var trackLine = '';
+  if (exp.tracks){
+    var te = exp.tracks.editable || {}, tv = exp.tracks.vector || {};
+    trackLine = '可编辑轨（deck.pptx）：' + (te.ok
+      ? 'native 文本覆盖 ' + (te.native_text_ratio != null ? (te.native_text_ratio * 100).toFixed(1) + '%' : '—') +
+        ' ｜ 烙图 ' + (te.rasterized || 0) + ' 件 ｜ uncovered ' + ((te.uncovered || []).length) +
+        ' ｜ 字体' + (te.fonts_embedded && te.fonts_embedded.length ? '已随档 ' + te.fonts_embedded.length + ' 族'
+                       : '未随档')
+      : '失败（' + (te.error || te.gate || '未知') + '）') +
+      '　·　保真轨（deck-vector.pptx / deck.pdf）：' + (tv.ok
+      ? '载体 SVG ' + ((tv.carriers || {}).svg || 0) + ' · 烙入 ' + ((tv.carriers || {}).baked || 0) +
+        ' · PNG 降级 ' + ((tv.carriers || {})['png-fallback'] || 0) +
+        ' ｜ 平均保真分 ' + (tv.fidelity_avg == null ? '—' : tv.fidelity_avg)
+      : '失败（' + (tv.error || tv.gate || '未知') + '）');
+  }
+  sum.textContent = trackLine || ('翻转于 ' + (exp.exported_at || '—') +
     ' ｜ 载体：SVG ' + ((exp.carriers || {}).svg || 0) + ' · 烙入直通 ' + ((exp.carriers || {}).baked || 0) +
     ' · PNG 降级 ' + ((exp.carriers || {})['png-fallback'] || 0) +
     ' ｜ 平均保真分 ' + (exp.fidelity_avg == null ? '—' : exp.fidelity_avg) +
     ' ｜ 门禁 ' + (exp.gate ? ('render=' + exp.gate.render + ' / drift=' +
-      (exp.gate.drift && exp.gate.drift.status)) : '—');
+      (exp.gate.drift && exp.gate.drift.status)) : '—'));
   triPages.forEach(function(ps){
     var tr = document.createElement('tr');
     tr.className = 'exp-row' + (ps.stale ? ' stale' : '');
@@ -5178,6 +5203,12 @@ async function downloadAsset(url, name){
 }
 $('btnDlPptx').addEventListener('click', function(){
   downloadAsset(this.dataset.url || null, 'deck.pptx');
+});
+$('btnDlVector').addEventListener('click', function(){
+  downloadAsset(this.dataset.url || null, 'deck-vector.pptx');
+});
+$('btnDlPdf').addEventListener('click', function(){
+  downloadAsset(this.dataset.url || null, 'deck.pdf');
 });
 
 /* 「重新翻转」只表达意图：嵌入态发 export-intent，其余复制技能命令——

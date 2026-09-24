@@ -1,13 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-三形态 M3 子技能 B：HTML→PPTX 导出管线（docs/design/pptx-export-svg.md）。
+"""三形态 HTML→PPTX 导出（双轨编排入口，docs/design/pptx-export-editable.md §5）。
 
 用法：
-  python3 scripts/export-pptx.py <deck/index.html> [--force]
+  python3 scripts/export-pptx.py <deck/index.html> [--force] [--track both|editable|vector]
   python3 scripts/export-pptx.py <deck/index.html> --check-stale
 
-管线（参数经 tests/harness/results/spike-m3/REPORT.md 实测固化）：
+双轨（C3 起）：
+  - **可编辑轨（主交付）**：export/deck.pptx——文本/形状/图表原生可编辑
+    （export-pptx-editable.py，import 复用非 subprocess）；
+  - **保真轨**：export/deck-vector.pptx（转曲 SVG 矢量）+ export/deck.pdf
+    （printToPDF 顺带直出）+ page-NN.svg/png/diff.png——视觉封存、打印、
+    跨机零漂移。
+  任一轨的基础设施失败不阻断另一轨（报告逐轨声明成败，退出码 1）；
+  防线 C 门禁阻断属 deck 级问题——两轨都不产出，已产出的可编辑轨撤下。
+  manifest.json 顶层字段向后兼容（编辑器 v3 在读），新增 export.tracks
+  字段逐轨声明。
+
+保真轨管线（参数经 tests/harness/results/spike-m3/REPORT.md 实测固化）：
   ① 防线 C 门禁【不过不产 PDF】：
      C1 渲染校验——子进程跑 tests/harness/j_render_check.py（零溢出/零重叠/
         字号档），任一页 FAIL 即阻断；
@@ -76,6 +86,7 @@ from datetime import datetime, timezone
 
 from playwright.sync_api import sync_playwright
 
+HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))))
 J_RENDER_CHECK = os.path.join(ROOT, 'tests/harness/j_render_check.py')
@@ -107,6 +118,21 @@ class ExportError(Exception):
     """管线级失败：打印信息并以退出码 1 终止。"""
 
 
+class GateBlocked(ExportError):
+    """防线 C 门禁阻断（deck 级质量门禁）——双轨编排下两轨都不产出：
+    烙入坏版式到哪条轨都是坏的，门禁失败不属于"单轨基础设施失败"。"""
+
+
+def _load_editable():
+    """惰性加载可编辑轨模块（避免与 export-pptx-editable.py 顶层互导死循环）。"""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        'export_pptx_editable', os.path.join(HERE, 'export-pptx-editable.py'))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def log(msg):
     print('[export-pptx] %s' % msg, file=sys.stderr)
 
@@ -132,7 +158,7 @@ def gate_render(deck_html):
     r = run_py(J_RENDER_CHECK, deck_html)
     tail = (r.stdout.strip().splitlines() or [''])[-1]
     if r.returncode != 0:
-        raise ExportError('防线 C1 阻断：渲染校验未过——%s\n%s' % (tail, r.stdout))
+        raise GateBlocked('防线 C1 阻断：渲染校验未过——%s\n%s' % (tail, r.stdout))
     log('防线 C1 通过：%s' % tail)
 
 
@@ -208,7 +234,7 @@ def gate_drift(manifest, baseline, baseline_src):
                             v['baseline']['line_count'], v['baseline']['advance_width'],
                             v['current']['line_count'], v['current']['advance_width']))
         lines.append('修复路径：安装主题字体 / 跑 subset-fonts.py 防线 A 子集化 / 调整容器')
-        raise ExportError('\n'.join(lines))
+        raise GateBlocked('\n'.join(lines))
     log('防线 C2 通过：基线=%s，比对叶子 %d 片，零漂移' % (baseline_src, compared))
     return {'status': 'pass', 'baseline': baseline_src, 'compared_leaves': compared,
             'violations': []}
@@ -511,17 +537,10 @@ def postflight(pptx_path, pages_plan, expect_pages, expect_svg):
 
 # ---------------------------------------------------------------- 主流程
 
-def cmd_export(deck_html, force):
-    deck_html = os.path.abspath(deck_html)
-    deck_dir = os.path.dirname(deck_html)
-    export_dir = os.path.join(deck_dir, 'export')
-    if not os.path.isfile(deck_html):
-        raise ExportError('deck 不存在：%s' % deck_html)
-    if os.path.isfile(os.path.join(export_dir, 'deck.pptx')) and not force:
-        raise ExportError('export/deck.pptx 已存在——重导请加 --force（旧 pptx 作废，单向纪律）')
-
+def run_vector(deck_html, deck_dir, export_dir, t0):
+    """保真轨全流程（既有 M3 管线，零行为变更；产物改名 deck-vector.pptx +
+    顺带直出 deck.pdf）。返回交付态 manifest dict，失败抛 ExportError。"""
     hash_before = sha256_file(deck_html)
-    t0 = datetime.now(timezone.utc)
 
     # 防线 C 门禁【不过不产 PDF】
     gate_render(deck_html)
@@ -548,7 +567,7 @@ def cmd_export(deck_html, force):
                 baked[i] = ap
 
         # 渲染 + 打印（HTML 页；烙入页直通但仍参与页序）
-        truth, pdf_path = render_deck(deck_html, work)
+        truth, pdf_path = render_deck(deck_html, work)   # work/deck.pdf 即保真轨直出 PDF
         verify_pdf(pdf_path, n_pages)
 
         # pdf→svg + 降级链
@@ -601,7 +620,7 @@ def cmd_export(deck_html, force):
         # 组装 + postflight（先写临时文件，全过才覆盖主产物）
         pages_plan = [{'png': pngs[page_key(i)], 'svg': svgs.get(i)}
                       for i in range(1, n_pages + 1)]
-        pptx_path = os.path.join(work, 'deck.pptx')
+        pptx_path = os.path.join(work, 'deck-vector.pptx')
         n_svg = build_pptx(pages_plan, pptx_path)
         postflight(pptx_path, pages_plan, n_pages, n_svg)
 
@@ -618,7 +637,7 @@ def cmd_export(deck_html, force):
         vals = [v for v in fidelity.values() if v is not None]
         manifest['export'] = {
             'exported_at': t0.isoformat(),
-            'exporter': 'export-pptx.py (M3)',
+            'exporter': 'export-pptx.py (M3+C3 双轨)',
             'converter': {'pdftocairo': conv_version, 'chromium': 'playwright'},
             'gate': gate,
             'pages': n_pages,
@@ -637,14 +656,14 @@ def cmd_export(deck_html, force):
             json.dump(manifest, f, ensure_ascii=False, indent=2)
             f.write('\n')
 
-        # 落盘 export/（--force 覆盖）；清理上一版的过期产物（页数变少/
-        # 载体变化时的残留）——keep 按本次实际产物名构建
+        # 落盘 export/（--force 覆盖）；清理上一版的过期产物——keep 按本次
+        # 实际产物名构建，并保护可编辑轨产物（deck.pptx / deck.report.json）
         os.makedirs(export_dir, exist_ok=True)
-        keep = {'manifest.json'}
+        keep = {'manifest.json', 'deck.pptx', 'deck.report.json'}
         for name in os.listdir(work):
             if name in ('manifest.json',):
                 continue
-            if name.startswith(('page-', 'deck.pptx')):
+            if name.startswith('page-') or name in ('deck-vector.pptx', 'deck.pdf'):
                 shutil.move(os.path.join(work, name), os.path.join(export_dir, name))
                 keep.add(name)
         for name in list(os.listdir(export_dir)):
@@ -652,18 +671,87 @@ def cmd_export(deck_html, force):
                 os.remove(os.path.join(export_dir, name))
         shutil.move(os.path.join(work, 'manifest.json'),
                     os.path.join(export_dir, 'manifest.json'))
-
-        dt = (datetime.now(timezone.utc) - t0).total_seconds()
-        print(json.dumps({
-            'ok': True, 'export_dir': export_dir, 'pages': n_pages,
-            'carriers': manifest['export']['carriers'],
-            'fidelity_avg': manifest['export']['fidelity_avg'],
-            'gate': gate, 'elapsed_s': round(dt, 1),
-        }, ensure_ascii=False, indent=2))
-        log('导出完成：%s（%d 页，耗时 %.1fs）' % (export_dir, n_pages, dt))
-        return 0
+        log('保真轨完成：%s（%d 页）' % (export_dir, n_pages))
+        return manifest
     finally:
         shutil.rmtree(work, ignore_errors=True)
+
+
+def cmd_export(deck_html, force, track='both'):
+    """双轨编排：默认两轨全出——可编辑轨 deck.pptx（主交付）+ 保真轨
+    deck-vector.pptx / deck.pdf；任一轨的基础设施失败不阻断另一轨（报告
+    逐轨声明成败），防线 C 门禁阻断属 deck 级问题，两轨都不产出。"""
+    deck_html = os.path.abspath(deck_html)
+    deck_dir = os.path.dirname(deck_html)
+    export_dir = os.path.join(deck_dir, 'export')
+    if not os.path.isfile(deck_html):
+        raise ExportError('deck 不存在：%s' % deck_html)
+    if not force and (os.path.isfile(os.path.join(export_dir, 'deck.pptx'))
+                      or os.path.isfile(os.path.join(export_dir, 'deck-vector.pptx'))):
+        raise ExportError('export/ 已有 pptx 产物——重导请加 --force（旧件作废，单向纪律）')
+
+    t0 = datetime.now(timezone.utc)
+    tracks = {}
+    gate_blocked = None
+
+    # 可编辑轨（基础设施失败不阻断保真轨）
+    if track in ('both', 'editable'):
+        try:
+            rep = _load_editable().run_export(deck_html, os.path.join(export_dir, 'deck.pptx'))
+            tracks['editable'] = {
+                'ok': True, 'pptx': 'deck.pptx',
+                'native_text_ratio': rep['native_text_ratio'],
+                'native_infographic_ratio': rep.get('native_infographic_ratio'),
+                'rasterized': rep['totals']['raster'],
+                'uncovered': sorted({u for p in rep['pages'] for u in p['uncovered']}),
+                'fonts_embedded': rep.get('fonts_embedded'),
+                'fonts_skipped': rep.get('fonts_skipped'),
+                'fonts_note': rep.get('fonts_note'),
+            }
+        except Exception as e:  # 单轨失败诚实声明，另一轨继续
+            tracks['editable'] = {'ok': False, 'error': str(e)}
+            log('可编辑轨失败（保真轨继续）：%s' % e)
+
+    # 保真轨
+    if track in ('both', 'vector'):
+        try:
+            manifest = run_vector(deck_html, deck_dir, export_dir, t0)
+            exp = manifest['export']
+            tracks['vector'] = {'ok': True, 'pptx': 'deck-vector.pptx', 'pdf': 'deck.pdf',
+                                'fidelity_avg': exp['fidelity_avg'],
+                                'carriers': exp['carriers']}
+        except GateBlocked as e:
+            gate_blocked = str(e)
+            tracks['vector'] = {'ok': False, 'gate': gate_blocked}
+        except Exception as e:
+            tracks['vector'] = {'ok': False, 'error': str(e)}
+            log('保真轨失败（可编辑轨已产出）：%s' % e)
+
+    # 门禁阻断 → 已产出的可编辑轨作废（坏版式不交付，门禁语义覆盖双轨）
+    if gate_blocked and os.path.isfile(os.path.join(export_dir, 'deck.pptx')):
+        os.remove(os.path.join(export_dir, 'deck.pptx'))
+        rep_json = os.path.join(export_dir, 'deck.report.json')
+        if os.path.isfile(rep_json):
+            os.remove(rep_json)
+        tracks['editable'] = {'ok': False, 'gate': '门禁阻断，可编辑轨产物已撤下'}
+
+    # tracks 写回 export/manifest.json（保真轨产出过时；向后兼容：顶层字段不动）
+    mf_path = os.path.join(export_dir, 'manifest.json')
+    if os.path.isfile(mf_path):
+        with open(mf_path, encoding='utf-8') as f:
+            mf = json.load(f)
+        mf.setdefault('export', {})['tracks'] = tracks
+        with open(mf_path, 'w', encoding='utf-8') as f:
+            json.dump(mf, f, ensure_ascii=False, indent=2)
+            f.write('\n')
+
+    dt = (datetime.now(timezone.utc) - t0).total_seconds()
+    ok_all = all(t.get('ok') for t in tracks.values()) if tracks else False
+    print(json.dumps({'ok': ok_all, 'export_dir': export_dir, 'tracks': tracks,
+                      'elapsed_s': round(dt, 1)}, ensure_ascii=False, indent=2))
+    if gate_blocked:
+        print(gate_blocked, file=sys.stderr)
+    return 0 if ok_all else 1
 
 
 def cmd_check_stale(deck_html):
@@ -695,17 +783,20 @@ def cmd_check_stale(deck_html):
 
 
 def main():
-    ap = argparse.ArgumentParser(description='HTML→PPTX 导出管线（三形态 M3 子技能 B）')
+    ap = argparse.ArgumentParser(description='HTML→PPTX 导出管线（双轨：可编辑轨 + 保真轨）')
     ap.add_argument('deck', help='deck 的 index.html 路径')
     ap.add_argument('--force', action='store_true',
-                    help='覆盖已有 export/deck.pptx（重导即作废旧 pptx）')
+                    help='覆盖已有 export/ pptx 产物（重导即作废旧件）')
+    ap.add_argument('--track', choices=['both', 'editable', 'vector'], default='both',
+                    help='导出轨道：both（缺省两轨全出）/ editable（可编辑轨 deck.pptx）'
+                         '/ vector（保真轨 deck-vector.pptx + deck.pdf）')
     ap.add_argument('--check-stale', action='store_true',
                     help='只做指纹过期检测：当前页级 hash vs export/manifest.json')
     args = ap.parse_args()
     try:
         if args.check_stale:
             return cmd_check_stale(args.deck)
-        return cmd_export(args.deck, args.force)
+        return cmd_export(args.deck, args.force, args.track)
     except ExportError as e:
         print(str(e), file=sys.stderr)
         return 1

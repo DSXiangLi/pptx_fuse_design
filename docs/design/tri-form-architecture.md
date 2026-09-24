@@ -101,7 +101,9 @@ deck/
   index.html            ← 唯一真相（含烙入页源层与 data-content-hash）
   assets/               ← 图片资产（含整页烙入图，同名替换心智不变）
   fonts/                ← 可选：字体子集 woff2（见 pptx-export-svg.md §4 防线 A）
-  export/               ← 子技能 B 产物：page-*.svg / page-*.png / deck.pptx / manifest.json
+  export/               ← 导出产物（双轨，C3 起）：deck.pptx（可编辑轨主交付）/
+                          deck-vector.pptx + deck.pdf（保真轨）/ page-*.svg / page-*.png /
+                          page-*.diff.png / manifest.json（含 export.tracks 逐轨字段）
 ```
 
 `export/` 同时是编辑器的预览资产来源——转换管线的中间产物天然就是对比视图的展示件，不为预览单独造任何东西。

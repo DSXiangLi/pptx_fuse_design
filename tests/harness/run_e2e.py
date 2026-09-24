@@ -2376,6 +2376,20 @@ def test_tri_view_check():
            '子进程退出码 %d：%s%s' % (r.returncode, tail,
                                       ('\n' + r.stdout + r.stderr) if r.returncode else ''))
 
+# ---------- 测试 27：可编辑 PPTX 导出 C1（子技能 C / pptx-export-editable.md §7） ----------
+
+def test_editable_check():
+    """p_editable_check.py 作为子进程纳入回归（沿用 T23–T26 约定）：
+    文本逐字（extractor 文本 ⊆ slide XML）/ 几何抽验 ≤2% / wrap=square +
+    框宽=渲染宽度 / 字号 px→pt 映射 / CJK run 双 typeface a:ea / 烙入页满幅
+    p:pic / 单向纪律 / native_text_ratio=1.0（fixture bake-mix + smartforge-c1）。"""
+    r = subprocess.run([sys.executable, os.path.join(ROOT, 'tests/harness/p_editable_check.py')],
+                       capture_output=True, text=True)
+    tail = (r.stdout.strip().splitlines() or [''])[-1]
+    report('T27-editable', '可编辑 PPTX 导出 C1+C2（子技能 C）', r.returncode == 0,
+           '子进程退出码 %d：%s%s' % (r.returncode, tail,
+                                      ('\n' + r.stdout + r.stderr) if r.returncode else ''))
+
 # ---------- 测试 17：图片上传置 state=uploaded（迭代 E / 契约 v5） ----------
 
 def test_image_upload_state(browser):
@@ -2614,6 +2628,7 @@ def main():
             test_bake_check()
             test_export_pptx()
             test_tri_view_check()
+            test_editable_check()
 
             browser.close()
     finally:

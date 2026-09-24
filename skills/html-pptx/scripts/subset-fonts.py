@@ -69,8 +69,10 @@ def slugify(family):
     return re.sub(r'[^a-z0-9]+', '-', family.lower()).strip('-')
 
 
-def subset_one(family, font_path, charset, out_dir):
-    """子集化单个字体，返回 (输出文件名, 字重, 格式, 字节数)。"""
+def subset_one(family, font_path, charset, out_dir, fmt_choice='auto'):
+    """子集化单个字体，返回 (输出文件名, 字重, 格式, 字节数)。
+    fmt_choice：auto（有 brotli 出 woff2，否则 ttf）/ woff2 / ttf。
+    ttf 是 pptx fntdata 字体内嵌的唯一形态（C3）；woff2 仅供 HTML 侧使用。"""
     from fontTools import subset
     from fontTools.ttLib import TTFont
 
@@ -86,12 +88,19 @@ def subset_one(family, font_path, charset, out_dir):
         log('%s 是 TTC 集合（%d 款）——取 0 号字体' % (font_path, len(coll.fonts)))
     weight = font['OS/2'].usWeightClass if 'OS/2' in font else 400
 
+    has_brotli = True
     try:
         import brotli  # noqa: F401
-        flavor, ext, fmt = 'woff2', '.woff2', 'woff2'
     except ImportError:
+        has_brotli = False
+    if fmt_choice == 'woff2' and not has_brotli:
+        raise SystemExit('--format woff2 需要 brotli（pip install brotli）')
+    if fmt_choice == 'ttf' or (fmt_choice == 'auto' and not has_brotli):
         flavor, ext, fmt = None, '.ttf', 'truetype'
-        log('未安装 brotli——%s 降级输出 .ttf（woff2 需 pip install brotli）' % family)
+        if fmt_choice == 'auto':
+            log('未安装 brotli——%s 降级输出 .ttf（woff2 需 pip install brotli）' % family)
+    else:
+        flavor, ext, fmt = 'woff2', '.woff2', 'woff2'
 
     opts = subset.Options()
     opts.flavor = flavor
@@ -111,7 +120,7 @@ def subset_one(family, font_path, charset, out_dir):
     font.save(out_path)
     font.close()
     size = os.path.getsize(out_path)
-    log('%s：%d 字 → %s（%.1f KB，字重 %d）' % (family, len(charset), name, size / 1024, weight))
+    log('%s：%d 字 → %s（%.1f KB，字重 %d，%s）' % (family, len(charset), name, size / 1024, weight, fmt))
     return name, weight, fmt, size
 
 
@@ -149,6 +158,9 @@ def main():
     ap.add_argument('--out-dir', help='子集输出目录（缺省 <deck>/fonts）')
     ap.add_argument('--inject', action='store_true',
                     help='把 @font-face 块写入 deck 的 fonts SLOT 标记区间')
+    ap.add_argument('--format', choices=['auto', 'woff2', 'ttf'], default='auto',
+                    help='子集形态：auto（缺省，有 brotli 出 woff2 否则 ttf）；'
+                         'ttf 是 pptx 字体内嵌（fntdata）的唯一形态')
     args = ap.parse_args()
 
     deck_html = os.path.abspath(args.deck)
@@ -165,7 +177,7 @@ def main():
     charset = deck_charset(deck_html)
     entries = []
     for family, path in mappings:
-        name, weight, fmt, _ = subset_one(family, path, charset, out_dir)
+        name, weight, fmt, _ = subset_one(family, path, charset, out_dir, args.format)
         entries.append((family, name, weight, fmt))
 
     block = font_face_block(entries, out_dir, deck_dir)

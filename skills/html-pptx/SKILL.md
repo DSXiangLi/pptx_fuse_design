@@ -198,16 +198,27 @@ python3 skills/html-pptx/scripts/compile-bake-prompts.py /tmp/manifest.json \
 
 **stale 与重新烙入**：用户在编辑器修改烙入页源层 → hash 翻转 → 编辑器 stale 徽标 → 用户要求时重跑本 pass（仅 stale 页）。生图成本远高于排版，不自动重烙。
 
-### Step 5.7 · 导出 pass（可选，三形态 M3：HTML→PPTX）
+### Step 5.7 · 导出 pass（可选，三形态：HTML→PPTX 双轨）
 
-单向交付快照：用户需要 .pptx 交付时执行。完整规格见 `docs/design/pptx-export-svg.md`。
+单向交付快照：用户需要 .pptx/.pdf 交付时执行。规格：`docs/design/pptx-export-editable.md`（可编辑轨）+ `docs/design/pptx-export-svg.md`（保真轨）。
 
 ```bash
-python3 skills/html-pptx/scripts/export-pptx.py <deck目录>/index.html [--force]
+python3 skills/html-pptx/scripts/export-pptx.py <deck目录>/index.html [--force] [--track both|editable|vector]
 python3 skills/html-pptx/scripts/export-pptx.py <deck目录>/index.html --check-stale   # 指纹过期检测
 ```
 
-管线（参数已实测固化，见 `tests/harness/results/spike-m3/REPORT.md`）：防线 C 门禁（渲染校验 + 排版漂移对比，不过不产 PDF）→ freeze 后 printToPDF（13.333″×7.5″）→ pdftocairo 逐页转 SVG（文字已转曲，消费端零字体依赖）→ SVG 光栅化出 PNG 副本 → python-pptx 组装（每页满幅 PNG + svgBlip 双写指向 SVG，老 Office 自动降级 PNG）→ postflight 重开包校验 → 保真分 + 差异热区 → `export/manifest.json`。
+**双轨产物**（`--track` 缺省 both 两轨全出；任一轨基础设施失败不阻断另一轨，报告逐轨声明）：
+
+| 产物 | 轨道 | 角色 |
+|---|---|---|
+| `export/deck.pptx` | **可编辑轨（主交付）** | 文本框/形状/原生 chart/信息图分组全部原生可编辑，对方接着改 |
+| `export/deck-vector.pptx` | 保真轨 | 整页转曲 SVG（svgBlip+PNG 双写），视觉封存、跨机零漂移 |
+| `export/deck.pdf` | 保真轨直出 | printToPDF 落盘，打印/审阅 |
+| `export/page-NN.svg/png/diff.png` | 保真轨中间件 | 编辑器对比视图资产 |
+
+**可编辑轨**（export-pptx-editable.py，编排时 import 复用）：渲染后 DOM 快照（真实包围盒/逐行分行/计算样式）→ L1 文本框（wrap=square 真实框宽，改字按原宽重排）+ L2 简单形状 + L3 原生 chart（数值文本 × 几何比例双源校验，容差 5%，不过烙图兜底绝不硬映射）+ L4 信息图 grpSp 分组 + L5 复杂视觉烙图（canvas FX/渐变/滤镜/未识别 svg，文字仍原生叠加）+ 字体内嵌（fonts/*.ttf → fntdata + embeddedFontLst，fsType 许可闸：installable/editable/preview 才嵌，受限跳过并报告列明）。**诚实边界**：不承诺像素级特效等价——glow/混合模式/canvas FX 等以烙图兜底，报告 rasterized 与 uncovered 分列。
+
+**保真轨**（既有 M3 管线，参数 spike 实测固化）：防线 C 门禁（渲染校验 + 排版漂移对比，不过不产 PDF——门禁属 deck 级，阻断时两轨都不产出）→ freeze 后 printToPDF（13.333″×7.5″）→ pdftocairo 逐页转曲 SVG → PNG 副本 → svgBlip 双写组装 → postflight 重开包 → 保真分 + 差异热区。
 
 关键口径：
 
@@ -216,9 +227,9 @@ python3 skills/html-pptx/scripts/export-pptx.py <deck目录>/index.html --check-
 - **降级链**：pdftocairo 不可用或某页转换失败 → 该页 3840×2160 高分辨率截图单独成页（png-fallback），导出报告逐页列明降级原因；截图设施也不可用 → 非零退出，不产半成品；
 - **单向纪律**【硬规则】：导出全程对 index.html 只读（前后字节校验），PPTX 永不回读；重导 = 重新翻转（--force），旧 pptx 作废；
 - **stale**：编辑器保存会翻转页级 hash——`--check-stale` 检出指纹过期页（导出 hash ≠ 当前 hash），过期即重导；
-- **字体防线 A**（可选）：`subset-fonts.py` 按全 deck 实际用字子集化字体 → `fonts/*.woff2` + 可注入骨架 SLOT: fonts（骨架 v7.4 起）的 @font-face 块，消灭生产端字体环境变量；未覆盖字形会在 export/manifest.json 的 uncovered_glyphs 中列出。
+- **字体防线 A**（可选）：`subset-fonts.py`（`--format auto|woff2|ttf`）按全 deck 实际用字子集化字体 → `fonts/*.woff2`（HTML 侧，可注入骨架 SLOT: fonts @font-face 块）与 `fonts/*.ttf`（pptx fntdata 内嵌的唯一形态，可编辑轨自动嵌入）；未覆盖字形会在 export/manifest.json 的 uncovered_glyphs 中列出。
 
-交付说明口径（追加到 Step 6）：每页实际生效的载体（svg / png-fallback / baked）、全 deck 平均保真分、降级页与原因；**不承诺"100% 可编辑 pptx"**——Office 2016+/365 显示矢量 SVG 且可"转换为形状"微调，更老版本及 WPS 走 PNG 位图。
+交付说明口径（追加到 Step 6）：逐轨声明——可编辑轨 native 覆盖率/烙图数/uncovered/字体随档状态；保真轨每页载体（svg / png-fallback / baked）、全 deck 平均保真分、降级页与原因。可编辑轨不承诺像素级特效等价；保真轨 Office 2016+/365 显示矢量 SVG 且可"转换为形状"微调，更老版本及 WPS 走 PNG 位图。
 
 ### Step 6 · 交付
 
