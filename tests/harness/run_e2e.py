@@ -35,7 +35,7 @@ PORT = 8925
 BASE = 'http://127.0.0.1:%d' % PORT
 RESULTS = os.path.join(ROOT, 'tests/harness/results')
 
-DECKS = ['tech-ikb', 'culture-kraft', 'launch-mono', 'art-botanical', 'density-low', 'density-high', 'infographic-b2', 'charts-a3', 'motion-d2', 'motion-v5', 'infographic-d1', 'tech-ikb-v2', 'culture-kraft-v2', 'launch-mono-v2', 'components-gallery', 'tech-ikb-v3', 'culture-kraft-v3', 'launch-mono-v3', 'j-localfirst-a1', 'j-localfirst-e2', 'j-localfirst-e6', 'smartforge-c1', 'smartforge-e8', 'bake-mix']
+DECKS = ['tech-ikb', 'culture-kraft', 'launch-mono', 'art-botanical', 'density-low', 'density-high', 'infographic-b2', 'charts-a3', 'motion-d2', 'motion-v5', 'infographic-d1', 'tech-ikb-v2', 'culture-kraft-v2', 'launch-mono-v2', 'components-gallery', 'tech-ikb-v3', 'culture-kraft-v3', 'launch-mono-v3', 'j-localfirst-a1', 'j-localfirst-e2', 'j-localfirst-e6', 'smartforge-c1', 'smartforge-e8', 'bake-mix', 'cmb-retail']
 VIEW_W, VIEW_H = 1440, 900          # harness 视口
 
 RESULTS_LIST = []

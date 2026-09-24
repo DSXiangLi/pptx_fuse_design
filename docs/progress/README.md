@@ -4,6 +4,7 @@
 
 ## 最近更新
 
+- 2026-09-24 · [0924_editable_overlap_fix.md](0924_editable_overlap_fix.md) — 可编辑轨文字重叠归因（行距口径/框高零冗余/字体未随档/无出厂回验）+ 五层加固方案（字体随档默认化/行高基线校准/松配合/几何自净/LO 回验逐页降级），目标 <1%
 - 2026-09-22 · [0922_tri_form_m1m4.md](0922_tri_form_m1m4.md) — 三形态翻转 M1–M4 全落地：extract-manifest+content-hash 双端一致（T23）/ 契约 v7 整页烙入+skeleton v7.3（T24）/ HTML→PPTX 保真轨 spike+管线+四道防线（T25）/ 编辑器 v3.0 三态工作台（T26）；真实 oai生图烙入 + bake-prompts.md 指令参考；可编辑 PPTX 设计评审通过进 C1–C3；51/51 PASS
 - 2026-09-21 · [0921_iter_n.md](0921_iter_n.md) — N 期：需求脑暴环节——briefing.md 八组问题 + SKILL.md Step 0.5 + 编辑器 v2.5 需求脑暴页（向导收集 → 格式化简报给 agent，嵌入态 postMessage），46/46 + 19/19
 - 2026-09-20 · [0920_iter_k.md](0920_iter_k.md) — K 期：高密度表达——文本容器层（components §13 六型 + 四层字阶硬规则）、章节跳转（skeleton v7：data-chapter/nav-link/数字键）、动效编排吸收（mend-bar 双态修复条 + data-rotate 轮转 + 内容→动效对照表）、smartforge-c1 高密度验收 deck；L 期泛化（字体呈现五轴 + tt/rl 词汇）；M 期容器边界义务 + 主题立场三元模型
@@ -20,6 +21,7 @@
 
 | 日期 | 文档 | 摘要 |
 |---|---|---|
+| 2026-09-24 | [0924_editable_overlap_fix](0924_editable_overlap_fix.md) | 可编辑轨重叠归因与五层加固方案（cmb-retail 54 页基准暴露，tencent-pptx/slide-paipai 调研佐证） |
 | 2026-09-22 | [0922_tri_form_m1m4](0922_tri_form_m1m4.md) | 三形态 M1–M4（extract-manifest/content-hash 双端一致、契约 v7 烙入、skeleton v7.3/v7.4、export-pptx 保真轨四防线、编辑器 v3.0 三态工作台、harness T23–T26）、真实 oai生图烙入、bake-prompts.md、可编辑 PPTX 设计评审通过、51/51 E2E PASS |
 | 2026-09-18 | [0918_iter_d_infographic](0918_iter_d_infographic.md) | components.md v2（六结构族 × 六 Item 皮肤 × 参数变体 + 适配矩阵 + 数据形态静态断言）、契约 v4（信息图分层 + data-ig 辅助标记）、SKILL.md 三步选型、tests/decks/infographic-d1 + harness T15、26/26 E2E PASS |
 | 2026-09-18 | [0918_iter_c_motion](0918_iter_c_motion.md) | skeleton v3（运行时拆字引擎 + chars/shatter/count-up/draw-line/fill-bar + G3 质感槽位 + ambience）、motion.md v2、契约 v3（拆字运行时化）、editor.html v1.8（强制还原 + 净化扩展）、24/24 E2E PASS |

@@ -14,6 +14,8 @@
 | `projects/dashi-ppt-skill.md` | React SSR + 内置编辑器：JSON 契约 + 槽位字数预算 + beam search 全稿版式分配 + state-overlay 持久化 |
 | `projects/ppt-master.md` | SVG → 原生可编辑 PPTX：规则效力分级 + spec/lock 双文件 + 内置 SVG 编辑器（双通道编辑/批注先行实现） |
 | `projects/open-design.md` | 单 HTML deck + 桌面编辑器：骨架 SLOT 逐字复制 + 编辑桥七轮实测迭代全记录 |
+| `projects/slide-paipai.md` | 一套内容双后端渲染（PIL 页图 + python-pptx 原生对象）：统一绘制 API + 后端替换、wrap=square 单段策略、表格边框 XML 顺序坑 |
+| `projects/tencent-pptx.md` | SlideDSL（受限 JSX）→ slidep 编译原生 OOXML：量化密度门禁 + DESIGN/STORY 双文档契约 + 风格两层分离与三态路由 |
 | `optimal-solution.md` | **综合判断**：以七条最优标准为标尺的逐条辩证结论 + 现状差距表 |
 | `sota-visual-languages.md` | **枚举规范**：SOTA 视觉的可衍生性判定 + 枚举项法定结构 + 三级验收标准 |
 
@@ -30,6 +32,8 @@
 | baoyu-design（2026-09-19 补） | Claude Design 系统提示词的 Skill 化 | 设计系统文件夹约定 + 编译绑定 + 发散质量标尺 | 主题完备性问卷、差异轴纪律、unforgettable 一问——见 `../design/handover-theme-differentiation.md` §四 |
 | html-ppt-skill（2026-09-19 补） | 多文件 HTML deck 播放器 | 36 轻主题 + 15 重主题双层架构 + 主题热插拔 | 主题双层分级、撞脸检测 showcase、语义化 FX——见 `../design/handover-theme-differentiation.md` §四 |
 | demo1（2026-09-20 补，用户提供） | omelette 系设计-交付框架的长滚动落地页 | 一方向一文件手工定制 + image-slot Web Component + sidecar 持久化 + 13 组 bespoke 动效 | 密度解剖（`demo1-density-analysis.md`）、框架对比（`demo1-framework-comparison.md`：reframe 裁剪/sidecar 模式/hover 反色可学；运行时拆字等五项收敛同构） |
+| slide-paipai（2026-09-24 补，用户提供） | 同一内容 → 1920×1080 页图 + 原生可编辑 PPTX 双产物 | 统一绘制 API + monkey-patch 后端替换；PIL 确定性排版（原子 token 断行/last_y 流式定位）；python-pptx 手写 XML 兜底 | 数字原子化断行基线、wrap=square 单段策略的外部印证、表格边框 XML 顺序、柱图 1.28× 头部余量等数值纪律 |
+| tencent-pptx（2026-09-24 补，用户提供） | SlideDSL（受限 JSX）→ slidep CLI 编译原生 PPTX | DESIGN/STORY 双文档契约 + 页级 lint/upsert 原子提交 + 风格结构层/常量层分离与三态路由 | 量化密度门禁（填充率/留白/兄弟卡对齐）、anti_pattern 负向封禁、目录↔扉页逐字一致契约、风格预览卡纪律 |
 
 ## 二、关键发现（按主题归并）
 

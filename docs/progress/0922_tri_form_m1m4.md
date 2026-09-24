@@ -51,3 +51,11 @@
 - 真实 Office 365 / WPS 目检：人工验收项（两轨共用）；
 - OFL 字体迁移 20 主题：独立批次（防线 A 能力已就位）；
 - 既有问题未修：tech-ikb-v3 的 22 处 16px 小字（老 deck 口径）、f1_texture_check.py 游离脚本过时。
+
+## 09-24：cmb-retail 真实还原基准 deck 建成
+
+- `tests/decks/cmb-retail/`：54 页招商银行×天弘基金高拜材料从 source-content.md（pptx 解析包）1:1 高密度还原——主题 B1 瑞士国际主义基底 IKB 蓝（金融机构商务风，只选不改），脚手架（封面/目录/章节页范例 + 页计划表 page-plan.md）→ 7 片段分包施工 → 整合终验；
+- 终验：j_render_check 54 页全 PASS（合并后修掉 p33/p35 masthead 与标题 1px 级叠压——页眉 68px logo 推高家具底线至 113px，标题 margin-top 16→26px）；check-images 零错误（~80 槽位三方绑定全过）；k_nav_check 五章三通道全过；extract-manifest --write-hashes 写入 54 页 content-hash；
+- 文本逐字总审计（一次性脚本 /tmp/text_audit.py，源侧逐页 × HTML data-editable 叶子，去空白子串口径）：修复真缺失——p21 十个 kv 标签丢全角冒号、p20 两个板块标注、p25 图题、p27 漏配履历（贺雨轩卡重复沙川履历，换入漏配的嘉实基金履历——z-order 归属不可考，记偏差）、p42 体系口号、p45 章节题「计划/规划」逐字分保；残余"缺失"全部为图表源数据表工件（类别/系列1/列2 等提取残留列头与原始小数列），非幻灯片可见文本；
+- 图表数值直标补全：p5 折线中间 6 点、p34 柱图中间 6 柱（原仅首尾直标）；
+- 接入回归：run_e2e DECKS 加入 cmb-retail（T1 往返幂等覆盖 54 页真实 deck）；可编辑轨首次实战冒烟 `export-pptx.py --track editable`（读数见当次汇报）。
