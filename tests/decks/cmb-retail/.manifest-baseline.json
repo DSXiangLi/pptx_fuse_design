@@ -2,7 +2,7 @@
   "deck": {
     "title": "天弘基金业务情况汇报 · 致招商银行",
     "skeleton_version": "7.4",
-    "extracted_at": "2026-09-24T03:44:51.972875+00:00"
+    "extracted_at": "2026-09-29T04:47:44.822549+00:00"
   },
   "theme": {
     "id": null,
@@ -299,13 +299,13 @@
           "role": "title",
           "content": "4,823.67亿元",
           "line_count": 1,
-          "advance_width": 511
+          "advance_width": 501
         },
         {
           "role": "body",
           "content": "非货币公募总规模",
           "line_count": 1,
-          "advance_width": 511
+          "advance_width": 501
         },
         {
           "role": "body",
@@ -847,73 +847,73 @@
           "role": "body",
           "content": "主动权益团队：",
           "line_count": 1,
-          "advance_width": 170
+          "advance_width": 158
         },
         {
           "role": "body",
           "content": "43人，其中基金经理14人，平均金融行业从业年限12.6年，研究员21人，交易团队7人。",
           "line_count": 1,
-          "advance_width": 1046
+          "advance_width": 1054
         },
         {
           "role": "body",
           "content": "固收投资团队：",
           "line_count": 1,
-          "advance_width": 170
+          "advance_width": 158
         },
         {
           "role": "body",
           "content": "105人，其中基金经理28人，平均金融行业从业年限12.6年，基金经理助理10人，平均金融从业年限9年，研究员30人，交易团队32人。",
           "line_count": 2,
-          "advance_width": 1046
+          "advance_width": 1054
         },
         {
           "role": "body",
           "content": "指数投资团队：",
           "line_count": 1,
-          "advance_width": 170
+          "advance_width": 158
         },
         {
           "role": "body",
           "content": "10人，其中基金经理7人，研究员3人。",
           "line_count": 1,
-          "advance_width": 1046
+          "advance_width": 1054
         },
         {
           "role": "body",
           "content": "量化投资团队：",
           "line_count": 1,
-          "advance_width": 170
+          "advance_width": 158
         },
         {
           "role": "body",
           "content": "10人，其中基金经理4人，研究员6人。",
           "line_count": 1,
-          "advance_width": 1046
+          "advance_width": 1054
         },
         {
           "role": "body",
           "content": "海外投资团队：",
           "line_count": 1,
-          "advance_width": 170
+          "advance_width": 158
         },
         {
           "role": "body",
           "content": "7人，其中基金经理3人，平均金融从业年限15年。",
           "line_count": 1,
-          "advance_width": 1046
+          "advance_width": 1054
         },
         {
           "role": "body",
           "content": "养老金投资团队：",
           "line_count": 1,
-          "advance_width": 170
+          "advance_width": 158
         },
         {
           "role": "body",
           "content": "5人，其中基金经理3人，平均金融从业年限12.7年。",
           "line_count": 1,
-          "advance_width": 1046
+          "advance_width": 1054
         },
         {
           "role": "body",
@@ -1147,13 +1147,13 @@
           "role": "annotation",
           "content": "* 数据来源：天弘基金，截至2026.3.31。",
           "line_count": 1,
-          "advance_width": 1662
+          "advance_width": 1646
         },
         {
           "role": "annotation",
           "content": "* 数据来源：天相基金管理人综合评级结果，截至2025.6.30。银河证券2025年度基金管理人五星评级，截至2025.12.31。国泰海通证券基金管理公司债券投资能力评级，截至2026.4.29。国泰海通证券《基金公司资产业绩排行榜》，截至2026.3.31。“固收类大型公司”说明请见末页。",
           "line_count": 2,
-          "advance_width": 1662
+          "advance_width": 1646
         },
         {
           "role": "furniture",
@@ -1425,19 +1425,19 @@
           "role": "annotation",
           "content": "累计服务公募用户数",
           "line_count": 1,
-          "advance_width": 342
+          "advance_width": 292
         },
         {
           "role": "body",
           "content": "7.9亿",
           "line_count": 1,
-          "advance_width": 342
+          "advance_width": 292
         },
         {
           "role": "body",
           "content": "累计服务用户规模持续扩大",
           "line_count": 1,
-          "advance_width": 342
+          "advance_width": 292
         },
         {
           "role": "annotation",
@@ -1449,43 +1449,43 @@
           "role": "annotation",
           "content": "较24年末(7.5亿)增长",
           "line_count": 1,
-          "advance_width": 342
+          "advance_width": 292
         },
         {
           "role": "annotation",
           "content": "非货累计客户总数",
           "line_count": 1,
-          "advance_width": 342
+          "advance_width": 292
         },
         {
           "role": "body",
           "content": "6107.6万",
           "line_count": 1,
-          "advance_width": 342
+          "advance_width": 292
         },
         {
           "role": "body",
           "content": "客户基础持续稳固",
           "line_count": 1,
-          "advance_width": 342
+          "advance_width": 292
         },
         {
           "role": "annotation",
           "content": "累计为用户创造收益",
           "line_count": 1,
-          "advance_width": 342
+          "advance_width": 292
         },
         {
           "role": "body",
           "content": "3668.4亿",
           "line_count": 1,
-          "advance_width": 342
+          "advance_width": 292
         },
         {
           "role": "body",
           "content": "收益贡献稳步增长",
           "line_count": 1,
-          "advance_width": 342
+          "advance_width": 292
         },
         {
           "role": "annotation",
@@ -1497,25 +1497,25 @@
           "role": "annotation",
           "content": "较24年末(3187.6亿)增长",
           "line_count": 1,
-          "advance_width": 342
+          "advance_width": 292
         },
         {
           "role": "annotation",
           "content": "非货累计收益金额",
           "line_count": 1,
-          "advance_width": 342
+          "advance_width": 292
         },
         {
           "role": "body",
           "content": "453.7亿",
           "line_count": 1,
-          "advance_width": 342
+          "advance_width": 292
         },
         {
           "role": "body",
           "content": "客户整体收益规模显著增长",
           "line_count": 1,
-          "advance_width": 342
+          "advance_width": 292
         },
         {
           "role": "body",
@@ -1527,19 +1527,19 @@
           "role": "annotation",
           "content": "累计盈利客户占比",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "body",
           "content": "91.9%",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "body",
           "content": "客户整体盈利面改善",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "annotation",
@@ -1551,43 +1551,43 @@
           "role": "annotation",
           "content": "较24年末(91.5%)增长",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "annotation",
           "content": "非货持有盈利客户占比",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "body",
           "content": "76.7%",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "body",
           "content": "客户持仓收益能力显著增强",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "annotation",
           "content": "客户平均持仓收益率",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "body",
           "content": "15.32%",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "body",
           "content": "增长显著，持仓收益能力增强",
-          "line_count": 2,
-          "advance_width": 218.7
+          "line_count": 1,
+          "advance_width": 252
         },
         {
           "role": "annotation",
@@ -1599,19 +1599,19 @@
           "role": "annotation",
           "content": "较2024年（5.46%）显著提升",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "annotation",
           "content": "正收益客户平均收益",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "body",
           "content": "23.40%",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "annotation",
@@ -1623,19 +1623,19 @@
           "role": "annotation",
           "content": "亏损客户平均亏损",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "body",
           "content": "-11.23%",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "body",
           "content": "风控与回撤管理成效显著",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "annotation",
@@ -1647,19 +1647,19 @@
           "role": "annotation",
           "content": "客均持有产品数",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "body",
           "content": "2.15",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "body",
           "content": "资产配置趋于多元化",
           "line_count": 1,
-          "advance_width": 218.7
+          "advance_width": 252
         },
         {
           "role": "annotation",
@@ -2058,6 +2058,12 @@
           "advance_width": 240
         },
         {
+          "role": "annotation",
+          "content": "存量数据",
+          "line_count": 1,
+          "advance_width": 56
+        },
+        {
           "role": "body",
           "content": "持仓客户数",
           "line_count": 1,
@@ -2092,12 +2098,6 @@
           "content": "+5.48%（对比2025年同期）",
           "line_count": 2,
           "advance_width": 301
-        },
-        {
-          "role": "annotation",
-          "content": "存量数据",
-          "line_count": 1,
-          "advance_width": 893.1
         },
         {
           "role": "body",
@@ -2396,7 +2396,7 @@
           "src": "assets/s11_01.png"
         }
       ],
-      "content_hash": "0fa2b34ec0fc"
+      "content_hash": "60991b759b62"
     },
     {
       "slide_id": "holding-experience",
@@ -2617,7 +2617,7 @@
           "role": "body",
           "content": "收益率10%以上，持有期90天以上",
           "line_count": 1,
-          "advance_width": 1210
+          "advance_width": 1190
         },
         {
           "role": "body",
@@ -2635,7 +2635,7 @@
           "role": "body",
           "content": "收益率-5% ~ 10%",
           "line_count": 1,
-          "advance_width": 1210
+          "advance_width": 1190
         },
         {
           "role": "body",
@@ -2653,7 +2653,7 @@
           "role": "body",
           "content": "收益率-10% ~ -5%",
           "line_count": 1,
-          "advance_width": 1210
+          "advance_width": 1190
         },
         {
           "role": "body",
@@ -2671,7 +2671,7 @@
           "role": "body",
           "content": "收益率-10%以下",
           "line_count": 1,
-          "advance_width": 1210
+          "advance_width": 1190
         },
         {
           "role": "annotation",
@@ -2962,13 +2962,13 @@
         {
           "role": "body",
           "content": "深度参与开放平台和生态建设，超30家分行线上经营对接",
-          "line_count": 1,
+          "line_count": 2,
           "advance_width": 466.7
         },
         {
           "role": "body",
           "content": "合作上线首个由Agent驱动，“用AI、投AI”的基金投资专区",
-          "line_count": 1,
+          "line_count": 2,
           "advance_width": 466.7
         },
         {
@@ -3159,7 +3159,7 @@
           "role": "body",
           "content": "安利、优利等固收 持营销量超 80 亿",
           "line_count": 1,
-          "advance_width": 428
+          "advance_width": 412
         },
         {
           "role": "body",
@@ -3171,7 +3171,7 @@
           "role": "body",
           "content": "优利、招利等固收 持营销量超150亿",
           "line_count": 1,
-          "advance_width": 428
+          "advance_width": 412
         },
         {
           "role": "body",
@@ -3183,7 +3183,7 @@
           "role": "body",
           "content": "招利持营销量296 亿",
           "line_count": 1,
-          "advance_width": 428
+          "advance_width": 412
         },
         {
           "role": "body",
@@ -3195,7 +3195,7 @@
           "role": "body",
           "content": "安康颐睿一年持有固收+持营30亿",
           "line_count": 1,
-          "advance_width": 428
+          "advance_width": 412
         },
         {
           "role": "body",
@@ -3207,13 +3207,13 @@
           "role": "body",
           "content": "启明星 “求稳” 价值共享 销量 21 亿",
           "line_count": 1,
-          "advance_width": 428
+          "advance_width": 412
         },
         {
           "role": "body",
           "content": "启明星 “求赚” 智航量化 销量 20 亿",
           "line_count": 1,
-          "advance_width": 428
+          "advance_width": 412
         },
         {
           "role": "annotation",
@@ -3557,19 +3557,19 @@
           "role": "body",
           "content": "指数工具打底获客：全量上线天弘指数产品，持续布局各类新系列指数，并在招行 App 上线指数专区、行业轮动模型、智能定投工具，适配年轻小额分批投入需求；",
           "line_count": 2,
-          "advance_width": 1168
+          "advance_width": 1152
         },
         {
           "role": "body",
           "content": "轻量化线上投教 IP 运营：打造 “小弘花” 短视频、直播、财富号图文，匹配招行线上财富社区，做基础财商普及，挖掘高潜力客户线索推送远程理财师；",
           "line_count": 2,
-          "advance_width": 1168
+          "advance_width": 1152
         },
         {
           "role": "body",
           "content": "渠道数字化赋能：输出 FinAgent 金融智能体嵌入招行手机银行，提供持仓诊断、市场解读、风险测评自动匹配基金，减少人工依赖，适配线上海量自助客户；",
           "line_count": 2,
-          "advance_width": 1168
+          "advance_width": 1152
         },
         {
           "role": "body",
@@ -3593,25 +3593,25 @@
           "role": "body",
           "content": "参与远程团队队伍共建，系统分享投研知识，助力新人培训；",
           "line_count": 1,
-          "advance_width": 1168
+          "advance_width": 1152
         },
         {
           "role": "body",
           "content": "围绕同存等重点产品共建销售矩阵，实现销量破冰；",
           "line_count": 1,
-          "advance_width": 1168
+          "advance_width": 1152
         },
         {
           "role": "body",
           "content": "试点探索远程业务精品直播、博客等创新项目；",
           "line_count": 1,
-          "advance_width": 1168
+          "advance_width": 1152
         },
         {
           "role": "body",
           "content": "定期投研观点同步输出，陪伴服务助力经营；",
           "line_count": 1,
-          "advance_width": 1168
+          "advance_width": 1152
         },
         {
           "role": "body",
@@ -3635,25 +3635,25 @@
           "role": "body",
           "content": "根据总行”TREE”资产配置服务体系， 提供多元化资产配置产品及工具，支撑各品类产品全周期配置；",
           "line_count": 1,
-          "advance_width": 1168
+          "advance_width": 1152
         },
         {
           "role": "body",
           "content": "布局全国属地渠道团队，驻场各分行中心，提供常态化线下服务；",
           "line_count": 1,
-          "advance_width": 1168
+          "advance_width": 1152
         },
         {
           "role": "body",
           "content": "落地线下资产沙龙、基金经理线下面对面交流、客户专属分享会等线下经营活动；",
           "line_count": 1,
-          "advance_width": 1168
+          "advance_width": 1152
         },
         {
           "role": "body",
           "content": "AI 赋能陪伴：小弘书、金牌 AI 陪练等数字化赋能工具，赋能一线理财师；",
           "line_count": 1,
-          "advance_width": 1168
+          "advance_width": 1152
         },
         {
           "role": "body",
@@ -3677,13 +3677,13 @@
           "role": "body",
           "content": "专属策略方案：基于私行客户风险偏好，提供天弘全谱系产品定制化配置方案；",
           "line_count": 1,
-          "advance_width": 1168
+          "advance_width": 1152
         },
         {
           "role": "body",
           "content": "高净值私享会：举办行业主题闭门沙龙、宏观投研策略深度分享、基金经理面对面交流等圈层活动。",
           "line_count": 1,
-          "advance_width": 1168
+          "advance_width": 1152
         },
         {
           "role": "furniture",
@@ -3765,13 +3765,13 @@
           "role": "body",
           "content": "当前市场面临低利率和不确定性常态化等结构性变化。监管政策推动现金理财、净值化估值、保险预定利率下调及公募基金高质量发展等一系列改革，促使财富管理行业回归“真实收益、真实风险”的本源。",
           "line_count": 2,
-          "advance_width": 1653
+          "advance_width": 1637
         },
         {
           "role": "body",
           "content": "此背景下，客户更期待获得“长期、稳健、持续良好”的综合财富管理体验。",
           "line_count": 1,
-          "advance_width": 1653
+          "advance_width": 1637
         },
         {
           "role": "body",
@@ -3783,61 +3783,61 @@
           "role": "body",
           "content": "产品多元化与严选定制",
           "line_count": 1,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "完善产品矩阵，打造“五星之选”严选品牌及“长盈”“启明星”定制产品",
           "line_count": 1,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "深化资产配置服务",
           "line_count": 1,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "强化从需求洞察到动态再平衡的全流程专业服务，加强投顾服务能力",
           "line_count": 1,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "提升全球资产配置能力",
           "line_count": 1,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "拓宽跨境产品线，在外币理财、QDII基金、互认基金、跨境理财通等领域持续丰富供给",
           "line_count": 1,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "推动AI技术与财富管理深度融合",
           "line_count": 1,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "对外迭代智能服务，对内打造“小助”工具，提升服务效率与专业水平",
           "line_count": 1,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "加快保障型保险转型",
           "line_count": 1,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "从客户真实需求出发，区分保障与投资功能，聚焦各类保障场景",
           "line_count": 1,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
@@ -3849,61 +3849,61 @@
           "role": "body",
           "content": "多元化投资策略与定制产品合作",
           "line_count": 1,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "坚持“精而足”的产品策略，覆盖多策略",
           "line_count": 1,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "2026H1已展开2只“启明星”品牌定制产品合作",
           "line_count": 1,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "专业的综合配置解决方案",
           "line_count": 1,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "构建“全周期、多策略、系统化”投资体系，融合主观研判与量化工具，为客户匹配不同风险收益特征的解决方案，向“可穿越周期的资产配置解决方案服务商”转型",
           "line_count": 2,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "全球资配，持续拓展互认基金",
           "line_count": 1,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "截至2025年7月，QDII累计获批额度达21.2亿美元（约合人民币超150亿元），排名行业前列",
-          "line_count": 1,
-          "advance_width": 748
+          "line_count": 2,
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "旗下拥有7只QDII基金，覆盖美、越、港股市场；同时积极布局互认基金业务，目前存量约260亿",
           "line_count": 2,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "AI赋能投研与销售全链路",
           "line_count": 1,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "body",
           "content": "投研端打造“弘研智策”平台，依托“弘思大模型”及FinAgent智能体，实现分钟级研报生成与深度分析；销售端推出“AI陪练”等工具，助力客户经理提供专业服务",
           "line_count": 2,
-          "advance_width": 748
+          "advance_width": 732
         },
         {
           "role": "furniture",
@@ -4062,7 +4062,7 @@
         {
           "role": "body",
           "content": "权益类指数持有人户数超1435万，行业第1",
-          "line_count": 1,
+          "line_count": 2,
           "advance_width": 362.5
         },
         {
@@ -4147,7 +4147,7 @@
           "role": "body",
           "content": "构建“渠道经营+客户体验”双维度投后陪伴体系，注重客户全生命周期价值经营；强化专业服务温度，持续提升客户持有体验、信任度与留存率。",
           "line_count": 1,
-          "advance_width": 1248
+          "advance_width": 1232
         },
         {
           "role": "body",
@@ -4159,7 +4159,7 @@
           "role": "body",
           "content": "深耕渠道合作链路，持续沉淀渠道特征、客户行为、投资偏好等指标，建立渠道/客户分层画像，捕捉客户短中长期的财富管理需求。",
           "line_count": 1,
-          "advance_width": 1248
+          "advance_width": 1232
         },
         {
           "role": "body",
@@ -4171,13 +4171,13 @@
           "role": "body",
           "content": "依托宏观研判，紧跟权益、固收、商品等市场阶段性波动，兼顾长期配置框架与短期市场弹性，为客户提供可落地、易理解的资产解决方案。",
           "line_count": 1,
-          "advance_width": 1248
+          "advance_width": 1232
         },
         {
           "role": "annotation",
           "content": "*规模数据来源：Wind、天弘基金，截至2026.3.31。主动权益包含主动股票及指数增强。权益指数已剔除ETF联接基金市值 。天弘固收+规模包含天弘固收+团队管理的高弹性产品。固收类大型公司收益及排名来自海通证券基金公司权益及固定收益类资产业绩排行榜。",
           "line_count": 2,
-          "advance_width": 1657
+          "advance_width": 1641
         },
         {
           "role": "furniture",
@@ -4742,20 +4742,20 @@
         {
           "role": "body",
           "content": "标 产品为招行托管产品，包括中证软件，半导体材料设备，央企红利50，科创创业AI，智选价值领先50",
-          "line_count": 1,
-          "advance_width": 828
+          "line_count": 2,
+          "advance_width": 800
         },
         {
           "role": "body",
           "content": "虚线框内产品为创系列，包括创新能源，创业板金融科技，创业板算力，创业板传媒，创业板电池",
           "line_count": 1,
-          "advance_width": 828
+          "advance_width": 800
         },
         {
           "role": "body",
           "content": "灰底产品为储备产品，包括标普A股红利，智选价值领先50，创业板金融科技，创业板算力，创业板传媒，创业板电池，科创创业AI",
           "line_count": 2,
-          "advance_width": 828
+          "advance_width": 800
         },
         {
           "role": "annotation",
@@ -5016,13 +5016,13 @@
         {
           "role": "body",
           "content": "2019 年发行第一只QDII 公募基金，当前共有 8 只产品。累计 QDII 额度共计 22 亿美元。",
-          "line_count": 1,
+          "line_count": 2,
           "advance_width": 744
         },
         {
           "role": "body",
           "content": "招商银行托管QDII产品天弘全球高端制造，近1年收益138%，业绩表现亮眼。",
-          "line_count": 1,
+          "line_count": 2,
           "advance_width": 744
         },
         {
@@ -5041,7 +5041,7 @@
           "role": "body",
           "content": "标普 500、纳指 100",
           "line_count": 1,
-          "advance_width": 584
+          "advance_width": 568
         },
         {
           "role": "body",
@@ -5053,7 +5053,7 @@
           "role": "body",
           "content": "中美互联网 20 指数",
           "line_count": 1,
-          "advance_width": 584
+          "advance_width": 568
         },
         {
           "role": "body",
@@ -5065,7 +5065,7 @@
           "role": "body",
           "content": "恒生科技 ETF 及 联接",
           "line_count": 1,
-          "advance_width": 584
+          "advance_width": 568
         },
         {
           "role": "body",
@@ -5083,7 +5083,7 @@
           "role": "body",
           "content": "全球高端制造、全球新能源车",
           "line_count": 1,
-          "advance_width": 584
+          "advance_width": 568
         },
         {
           "role": "body",
@@ -5101,7 +5101,7 @@
           "role": "body",
           "content": "越南市场基金",
           "line_count": 1,
-          "advance_width": 584
+          "advance_width": 568
         },
         {
           "role": "body",
@@ -5125,7 +5125,7 @@
           "role": "body",
           "content": "香港管理人、内地代理人、内地代销机构：三方共享管理费",
           "line_count": 1,
-          "advance_width": 554
+          "advance_width": 538
         },
         {
           "role": "body",
@@ -5137,7 +5137,7 @@
           "role": "body",
           "content": "与多家香港资管机构合作，产品覆盖环球股票、亚太债券、全球混合配置等不同策略",
           "line_count": 2,
-          "advance_width": 554
+          "advance_width": 538
         },
         {
           "role": "body",
@@ -5149,7 +5149,7 @@
           "role": "body",
           "content": "境内基金代理海外关联公司产品为主（摩根资产、汇丰晋信，南方基金等），天弘是最大的第三方代理人",
           "line_count": 2,
-          "advance_width": 554
+          "advance_width": 538
         },
         {
           "role": "body",
@@ -5161,7 +5161,7 @@
           "role": "body",
           "content": "共 44 支互认基金，总汇出规模￥1200 亿人民币，距离政策上限￥3000 亿仍有较大增长空间",
           "line_count": 2,
-          "advance_width": 554
+          "advance_width": 538
         },
         {
           "role": "body",
@@ -5173,13 +5173,13 @@
           "role": "body",
           "content": "QDII 额度稀缺，能够投资海外的选择有限，香港互认基金将持续受益于境外配置需求",
           "line_count": 2,
-          "advance_width": 554
+          "advance_width": 538
         },
         {
           "role": "annotation",
           "content": "*数据来源：天弘基金，截至20260630。",
           "line_count": 1,
-          "advance_width": 1657
+          "advance_width": 1641
         },
         {
           "role": "furniture",
@@ -5673,73 +5673,73 @@
           "role": "body",
           "content": "1214",
           "line_count": 1,
-          "advance_width": 249.8
+          "advance_width": 243.2
         },
         {
           "role": "body",
           "content": "人参与",
           "line_count": 1,
-          "advance_width": 249.8
+          "advance_width": 243.2
         },
         {
           "role": "body",
           "content": "6824",
           "line_count": 1,
-          "advance_width": 249.8
+          "advance_width": 243.2
         },
         {
           "role": "body",
           "content": "次训练",
           "line_count": 1,
-          "advance_width": 249.8
+          "advance_width": 243.2
         },
         {
           "role": "body",
           "content": "380",
           "line_count": 1,
-          "advance_width": 249.8
+          "advance_width": 243.2
         },
         {
           "role": "body",
           "content": "个场景",
           "line_count": 1,
-          "advance_width": 249.8
+          "advance_width": 243.2
         },
         {
           "role": "body",
           "content": "19",
           "line_count": 1,
-          "advance_width": 249.8
+          "advance_width": 243.2
         },
         {
           "role": "body",
           "content": "次活动",
           "line_count": 1,
-          "advance_width": 249.8
+          "advance_width": 243.2
         },
         {
           "role": "body",
           "content": "201",
           "line_count": 1,
-          "advance_width": 249.8
+          "advance_width": 243.2
         },
         {
           "role": "body",
           "content": "只产品",
           "line_count": 1,
-          "advance_width": 249.8
+          "advance_width": 243.2
         },
         {
           "role": "body",
           "content": "5W+",
           "line_count": 1,
-          "advance_width": 249.8
+          "advance_width": 243.2
         },
         {
           "role": "body",
           "content": "分钟",
           "line_count": 1,
-          "advance_width": 249.8
+          "advance_width": 243.2
         },
         {
           "role": "furniture",
@@ -5854,8 +5854,8 @@
         {
           "role": "annotation",
           "content": "*数据来源：天弘基金，截至20260331。",
-          "line_count": 1,
-          "advance_width": 266
+          "line_count": 2,
+          "advance_width": 258
         },
         {
           "role": "body",
@@ -6128,8 +6128,8 @@
         {
           "role": "body",
           "content": "截至2026年3月31日，天弘权益类指数总规模1601亿元，行业排名TOP9，权益ETF总规模875亿。",
-          "line_count": 1,
-          "advance_width": 784
+          "line_count": 2,
+          "advance_width": 760
         },
         {
           "role": "body",
@@ -6195,25 +6195,25 @@
           "role": "annotation",
           "content": "*数据来源：wind，天弘基金，已剔除ETF联接基金重复投资部分；",
           "line_count": 1,
-          "advance_width": 1666
+          "advance_width": 1650
         },
         {
           "role": "annotation",
           "content": "天弘权益类指数基金规模包含旗下QDII指数基金规模，不包含旗下指数增强基金规模，数据截至2026年3月31日；",
           "line_count": 1,
-          "advance_width": 1666
+          "advance_width": 1650
         },
         {
           "role": "annotation",
           "content": "天弘权益ETF总规模未剔除ETF联接基金持有市值，数据截至2026年3月31日。",
           "line_count": 1,
-          "advance_width": 1666
+          "advance_width": 1650
         },
         {
           "role": "annotation",
           "content": "*数据来源：天弘基金，截至20260331。",
           "line_count": 1,
-          "advance_width": 1666
+          "advance_width": 1650
         },
         {
           "role": "furniture",
@@ -6527,31 +6527,31 @@
           "role": "body",
           "content": "数据",
           "line_count": 1,
-          "advance_width": 316.8
+          "advance_width": 300.8
         },
         {
           "role": "body",
           "content": "特征",
           "line_count": 1,
-          "advance_width": 316.8
+          "advance_width": 300.8
         },
         {
           "role": "body",
           "content": "Alpha 模型",
           "line_count": 1,
-          "advance_width": 316.8
+          "advance_width": 300.8
         },
         {
           "role": "body",
           "content": "风险优化模型",
           "line_count": 1,
-          "advance_width": 316.8
+          "advance_width": 300.8
         },
         {
           "role": "body",
           "content": "算法交易",
           "line_count": 1,
-          "advance_width": 316.8
+          "advance_width": 300.8
         },
         {
           "role": "body",
@@ -6611,19 +6611,19 @@
           "role": "annotation",
           "content": "公司策略研究",
           "line_count": 1,
-          "advance_width": 316.8
+          "advance_width": 300.8
         },
         {
           "role": "annotation",
           "content": "公司主动投研",
           "line_count": 1,
-          "advance_width": 316.8
+          "advance_width": 300.8
         },
         {
           "role": "annotation",
           "content": "公司IT团队 数据组支持",
           "line_count": 1,
-          "advance_width": 316.8
+          "advance_width": 300.8
         },
         {
           "role": "annotation",
@@ -6725,7 +6725,7 @@
           "role": "annotation",
           "content": "*数据来源：天弘基金，截至20260331。",
           "line_count": 1,
-          "advance_width": 1666
+          "advance_width": 1650
         },
         {
           "role": "furniture",
@@ -7132,7 +7132,7 @@
         {
           "role": "body",
           "content": "2015年开始证券从业，2019年起开始管理基金",
-          "line_count": 1,
+          "line_count": 2,
           "advance_width": 378
         },
         {
@@ -7557,13 +7557,13 @@
           "role": "body",
           "content": "天弘基金混和资产部“固收+”业务从产品线、组织架构、决策机制、分工协作构筑了四大核心竞争力。",
           "line_count": 1,
-          "advance_width": 1616
+          "advance_width": 1592
         },
         {
           "role": "body",
           "content": "天弘固收+业务依托多元产品矩阵与全链条投研作业模式，构建了以专业化分工协作、动态资产配置为核心，覆盖宏观、债券、转债、股票四大细分领域的科学决策与风险闭环机制。截至2026年Q1，固收+产品线总规模567亿，行业排名第16。",
           "line_count": 2,
-          "advance_width": 1616
+          "advance_width": 1592
         },
         {
           "role": "body",
@@ -7665,13 +7665,13 @@
           "role": "annotation",
           "content": "* 数据来源：Wind、天弘基金，截至2026.3.31。",
           "line_count": 1,
-          "advance_width": 1662
+          "advance_width": 1646
         },
         {
           "role": "annotation",
           "content": "*数据来源：天弘基金，截至20260331。",
           "line_count": 1,
-          "advance_width": 1662
+          "advance_width": 1646
         },
         {
           "role": "furniture",
@@ -7717,13 +7717,13 @@
           "role": "body",
           "content": "混合资产投研团队拥有股票、可转债及纯债多资产配置能力，以五大投资组为基石，构建宏观与微观双向驱动的多资产投研体系，形成“价值-成长-均衡-量化” 四位一体的权益策略矩阵，管理近40只全风险收益谱系的“固收+”产品体系。",
           "line_count": 2,
-          "advance_width": 1616
+          "advance_width": 1592
         },
         {
           "role": "body",
           "content": "团队成员超20人，核心投资人员平均从业年限超10年。",
           "line_count": 1,
-          "advance_width": 1616
+          "advance_width": 1592
         },
         {
           "role": "body",
@@ -7913,55 +7913,55 @@
           "role": "annotation",
           "content": "2018",
           "line_count": 1,
-          "advance_width": 83.5
+          "advance_width": 33.6
         },
         {
           "role": "annotation",
           "content": "2019",
           "line_count": 1,
-          "advance_width": 83.6
+          "advance_width": 33.6
         },
         {
           "role": "annotation",
           "content": "2020",
           "line_count": 1,
-          "advance_width": 83.5
+          "advance_width": 33.6
         },
         {
           "role": "annotation",
           "content": "2021",
           "line_count": 1,
-          "advance_width": 83.6
+          "advance_width": 33.6
         },
         {
           "role": "annotation",
           "content": "2022",
           "line_count": 1,
-          "advance_width": 83.5
+          "advance_width": 33.6
         },
         {
           "role": "annotation",
           "content": "2023",
           "line_count": 1,
-          "advance_width": 83.6
+          "advance_width": 33.6
         },
         {
           "role": "annotation",
           "content": "2024",
           "line_count": 1,
-          "advance_width": 83.5
+          "advance_width": 33.6
         },
         {
           "role": "annotation",
           "content": "2025",
           "line_count": 1,
-          "advance_width": 83.6
+          "advance_width": 33.6
         },
         {
           "role": "annotation",
           "content": "2026Q1",
           "line_count": 1,
-          "advance_width": 83.6
+          "advance_width": 50.4
         },
         {
           "role": "annotation",
@@ -8015,31 +8015,31 @@
           "role": "body",
           "content": "科学的天弘五周期模型",
           "line_count": 1,
-          "advance_width": 640
+          "advance_width": 624
         },
         {
           "role": "body",
           "content": "赋能投资的宏观研究能力",
           "line_count": 1,
-          "advance_width": 640
+          "advance_width": 624
         },
         {
           "role": "body",
           "content": "坚持基本面绝对优先的信评体系",
           "line_count": 1,
-          "advance_width": 640
+          "advance_width": 624
         },
         {
           "role": "body",
           "content": "创造价值的智能风控能力",
           "line_count": 1,
-          "advance_width": 640
+          "advance_width": 624
         },
         {
           "role": "body",
           "content": "强大的交易能力",
           "line_count": 1,
-          "advance_width": 640
+          "advance_width": 624
         },
         {
           "role": "furniture",
@@ -8605,13 +8605,13 @@
           "role": "annotation",
           "content": "* 数据来源：Wind、天弘基金，截至2026.3.31。",
           "line_count": 1,
-          "advance_width": 542
+          "advance_width": 526
         },
         {
           "role": "annotation",
           "content": "*数据来源：天弘基金，截至20260331。",
           "line_count": 1,
-          "advance_width": 542
+          "advance_width": 526
         },
         {
           "role": "body",
@@ -8733,9 +8733,15 @@
         },
         {
           "role": "annotation",
-          "content": "养老金投资部总经理助理 基金经理",
-          "line_count": 2,
-          "advance_width": 198.3
+          "content": "养老金投资部总经理助理",
+          "line_count": 1,
+          "advance_width": 154
+        },
+        {
+          "role": "annotation",
+          "content": "基金经理",
+          "line_count": 1,
+          "advance_width": 56
         },
         {
           "role": "body",
@@ -8926,7 +8932,7 @@
           "src": "assets/s37_09.jpg"
         }
       ],
-      "content_hash": "e2454d3758ba"
+      "content_hash": "1e7f53d3ccbb"
     },
     {
       "slide_id": "intl-business",
@@ -9033,7 +9039,7 @@
           "role": "annotation",
           "content": "*数据来源：天弘基金，截至20260331。",
           "line_count": 1,
-          "advance_width": 1662
+          "advance_width": 1646
         },
         {
           "role": "furniture",
@@ -9079,7 +9085,7 @@
           "role": "body",
           "content": "国际业务部投资团队：主要负责QDII与港股指数产品的管理和研究工作。目前共有7人，全部具有硕士及以上学历，基金经理团队成员均具有来自国内外知名机构的投资、研究、运营、交易管理等复合背景，平均从业年限7.2年。团队成员背景涵盖经济、金融、会计、计算机等。",
           "line_count": 2,
-          "advance_width": 1616
+          "advance_width": 1592
         },
         {
           "role": "body",
@@ -9309,7 +9315,7 @@
           "role": "body",
           "content": "市场 | 产品 | 投资团队 | 销售队伍",
           "line_count": 1,
-          "advance_width": 477.3
+          "advance_width": 461.3
         },
         {
           "role": "body",
@@ -9487,121 +9493,121 @@
           "role": "body",
           "content": "客户沙龙",
           "line_count": 2,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "APP专区建设",
           "line_count": 1,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "分行协同推动",
           "line_count": 1,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "指数训练营",
           "line_count": 1,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "专业培训",
           "line_count": 2,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "AI陪练",
           "line_count": 1,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "日拱一卒 深度经营",
           "line_count": 1,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "问题处理",
           "line_count": 2,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "品宣",
           "line_count": 1,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "线上线下一体化",
           "line_count": 1,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "资讯陪伴",
           "line_count": 2,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "市场天气播报、产品运作汇报",
           "line_count": 2,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "早中晚、日周月市场分析",
           "line_count": 2,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "投前中后，全流程陪伴",
-          "line_count": 2,
-          "advance_width": 178
+          "line_count": 1,
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "营赛结合",
           "line_count": 2,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "收益挑战赛",
           "line_count": 1,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "客户画像",
           "line_count": 1,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "客户行为跟踪分析",
           "line_count": 1,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "分众投放",
           "line_count": 1,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
           "content": "微博、微信、媒体、大V宣传",
           "line_count": 2,
-          "advance_width": 178
+          "advance_width": 186
         },
         {
           "role": "body",
@@ -9619,13 +9625,13 @@
           "role": "body",
           "content": "队伍共建共创平台",
           "line_count": 1,
-          "advance_width": 366
+          "advance_width": 354
         },
         {
           "role": "body",
           "content": "队伍赋能项目 | 产能提升/队伍共建/训战结合",
           "line_count": 1,
-          "advance_width": 366
+          "advance_width": 354
         },
         {
           "role": "body",
@@ -9637,7 +9643,7 @@
           "role": "body",
           "content": "客户陪伴平台",
           "line_count": 1,
-          "advance_width": 366
+          "advance_width": 354
         },
         {
           "role": "body",
@@ -9649,13 +9655,13 @@
           "role": "body",
           "content": "小弘书、AI陪练等",
           "line_count": 1,
-          "advance_width": 366
+          "advance_width": 354
         },
         {
           "role": "body",
           "content": "收益挑战赛 | 覆盖渠道35+，理财师22万+",
           "line_count": 1,
-          "advance_width": 366
+          "advance_width": 354
         },
         {
           "role": "body",
@@ -9667,7 +9673,7 @@
           "role": "body",
           "content": "客户分层服务赋能",
           "line_count": 1,
-          "advance_width": 366
+          "advance_width": 354
         },
         {
           "role": "annotation",
@@ -9845,7 +9851,7 @@
           "role": "annotation",
           "content": "客户服务体系建设、行为金融轨迹管理、理财经理队伍共建",
           "line_count": 1,
-          "advance_width": 1662
+          "advance_width": 1646
         },
         {
           "role": "furniture",
@@ -10585,25 +10591,25 @@
           "role": "body",
           "content": "天弘盈悦稳健配置6个月（FOF）| 余浩",
           "line_count": 1,
-          "advance_width": 492
+          "advance_width": 524
         },
         {
           "role": "body",
           "content": "低波策略（15%以下权益仓位），2025年11月成立",
           "line_count": 1,
-          "advance_width": 492
+          "advance_width": 524
         },
         {
           "role": "body",
           "content": "天弘盈享多元领航3个月持有（FOF）| 余浩",
           "line_count": 1,
-          "advance_width": 492
+          "advance_width": 524
         },
         {
           "role": "body",
           "content": "高波策略（70%以上权益仓位），2026年2月成立",
           "line_count": 1,
-          "advance_width": 492
+          "advance_width": 524
         },
         {
           "role": "body",
@@ -10620,8 +10626,8 @@
         {
           "role": "body",
           "content": "科创芯片、双创AI、红利质量、标普红利、智选价值50 等",
-          "line_count": 1,
-          "advance_width": 492
+          "line_count": 2,
+          "advance_width": 524
         },
         {
           "role": "body",
@@ -10639,25 +10645,25 @@
           "role": "body",
           "content": "求稳：天弘价值共享混合 | 杜广",
           "line_count": 1,
-          "advance_width": 492
+          "advance_width": 524
         },
         {
           "role": "body",
           "content": "价值策略，2026年4月成立",
           "line_count": 1,
-          "advance_width": 492
+          "advance_width": 524
         },
         {
           "role": "body",
           "content": "求赚：天弘智航量化混合 | 杨超",
           "line_count": 1,
-          "advance_width": 492
+          "advance_width": 524
         },
         {
           "role": "body",
           "content": "量化策略，2026年5月成立",
           "line_count": 1,
-          "advance_width": 492
+          "advance_width": 524
         },
         {
           "role": "annotation",
@@ -10669,13 +10675,13 @@
           "role": "body",
           "content": "均衡策略 | 薛莉丽",
           "line_count": 1,
-          "advance_width": 492
+          "advance_width": 508
         },
         {
           "role": "body",
           "content": "港股策略 | 贾 腾",
           "line_count": 1,
-          "advance_width": 492
+          "advance_width": 508
         },
         {
           "role": "body",
@@ -10693,25 +10699,25 @@
           "role": "body",
           "content": "天弘慧选增利六个月持有 | 宋洋",
           "line_count": 1,
-          "advance_width": 492
+          "advance_width": 524
         },
         {
           "role": "body",
           "content": "量化策略，低中波固收+",
           "line_count": 1,
-          "advance_width": 492
+          "advance_width": 524
         },
         {
           "role": "body",
           "content": "量化固收+ | 杨超",
           "line_count": 1,
-          "advance_width": 492
+          "advance_width": 524
         },
         {
           "role": "body",
           "content": "量化策略，中波固收+",
           "line_count": 1,
-          "advance_width": 492
+          "advance_width": 524
         },
         {
           "role": "furniture",
@@ -11351,7 +11357,7 @@
           "role": "annotation",
           "content": "*数据来源：天弘基金，截至20260717。",
           "line_count": 1,
-          "advance_width": 1666
+          "advance_width": 1650
         },
         {
           "role": "furniture",

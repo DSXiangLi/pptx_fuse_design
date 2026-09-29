@@ -694,25 +694,7 @@ def cmd_export(deck_html, force, track='both'):
     tracks = {}
     gate_blocked = None
 
-    # 可编辑轨（基础设施失败不阻断保真轨）
-    if track in ('both', 'editable'):
-        try:
-            rep = _load_editable().run_export(deck_html, os.path.join(export_dir, 'deck.pptx'))
-            tracks['editable'] = {
-                'ok': True, 'pptx': 'deck.pptx',
-                'native_text_ratio': rep['native_text_ratio'],
-                'native_infographic_ratio': rep.get('native_infographic_ratio'),
-                'rasterized': rep['totals']['raster'],
-                'uncovered': sorted({u for p in rep['pages'] for u in p['uncovered']}),
-                'fonts_embedded': rep.get('fonts_embedded'),
-                'fonts_skipped': rep.get('fonts_skipped'),
-                'fonts_note': rep.get('fonts_note'),
-            }
-        except Exception as e:  # 单轨失败诚实声明，另一轨继续
-            tracks['editable'] = {'ok': False, 'error': str(e)}
-            log('可编辑轨失败（保真轨继续）：%s' % e)
-
-    # 保真轨
+    # 保真轨先行：可编辑轨 L5 逐页降级可借 export/ 的 page-NN.svg/png 矢量件
     if track in ('both', 'vector'):
         try:
             manifest = run_vector(deck_html, deck_dir, export_dir, t0)
@@ -725,9 +707,34 @@ def cmd_export(deck_html, force, track='both'):
             tracks['vector'] = {'ok': False, 'gate': gate_blocked}
         except Exception as e:
             tracks['vector'] = {'ok': False, 'error': str(e)}
-            log('保真轨失败（可编辑轨已产出）：%s' % e)
+            log('保真轨失败（可编辑轨继续）：%s' % e)
 
-    # 门禁阻断 → 已产出的可编辑轨作废（坏版式不交付，门禁语义覆盖双轨）
+    # 可编辑轨（基础设施失败不阻断保真轨成果）
+    if track in ('both', 'editable') and not gate_blocked:
+        try:
+            rep = _load_editable().run_export(deck_html,
+                                              os.path.join(export_dir, 'deck.pptx'),
+                                              vector_dir=export_dir)
+            tracks['editable'] = {
+                'ok': True, 'pptx': 'deck.pptx',
+                'native_text_ratio': rep['native_text_ratio'],
+                'native_infographic_ratio': rep.get('native_infographic_ratio'),
+                'rasterized': rep['totals']['raster'],
+                'uncovered': sorted({u for p in rep['pages'] for u in p['uncovered']}),
+                'fonts_embedded': rep.get('fonts_embedded'),
+                'fonts_skipped': rep.get('fonts_skipped'),
+                'fonts_note': rep.get('fonts_note'),
+                'margin_mode': rep.get('margin_mode'),
+                'verify': (rep.get('verify') or {}).get('status'),
+                'degraded_pages': (rep.get('verify') or {}).get('degraded_pages'),
+            }
+        except Exception as e:  # 单轨失败诚实声明，另一轨继续
+            tracks['editable'] = {'ok': False, 'error': str(e)}
+            log('可编辑轨失败（保真轨成果保留）：%s' % e)
+
+    # 门禁阻断 → 可编辑轨不跑/已产出即撤下（坏版式不交付，门禁语义覆盖双轨）
+    if gate_blocked:
+        tracks.setdefault('editable', {'ok': False, 'gate': '门禁阻断，可编辑轨未产出'})
     if gate_blocked and os.path.isfile(os.path.join(export_dir, 'deck.pptx')):
         os.remove(os.path.join(export_dir, 'deck.pptx'))
         rep_json = os.path.join(export_dir, 'deck.report.json')

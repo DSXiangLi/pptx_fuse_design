@@ -2390,6 +2390,18 @@ def test_editable_check():
            '子进程退出码 %d：%s%s' % (r.returncode, tail,
                                       ('\n' + r.stdout + r.stderr) if r.returncode else ''))
 
+# ---------- 测试 28：生成侧容量门禁（C5a / 0924_editable_overlap_fix.md §七） ----------
+
+def test_capacity_check():
+    """q_capacity_check.py 作为子进程纳入回归（沿用 T23–T27 约定）：
+    正例 bake-mix 0 违规 / 负例合成超限容器被抓（水平+垂直+净距三规则）/ 幂等。"""
+    r = subprocess.run([sys.executable, os.path.join(ROOT, 'tests/harness/q_capacity_check.py')],
+                       capture_output=True, text=True)
+    tail = (r.stdout.strip().splitlines() or [''])[-1]
+    report('T28-capacity', '生成侧容量门禁（C5a）', r.returncode == 0,
+           '子进程退出码 %d：%s%s' % (r.returncode, tail,
+                                      ('\n' + r.stdout + r.stderr) if r.returncode else ''))
+
 # ---------- 测试 17：图片上传置 state=uploaded（迭代 E / 契约 v5） ----------
 
 def test_image_upload_state(browser):
@@ -2629,6 +2641,7 @@ def main():
             test_export_pptx()
             test_tri_view_check()
             test_editable_check()
+            test_capacity_check()
 
             browser.close()
     finally:

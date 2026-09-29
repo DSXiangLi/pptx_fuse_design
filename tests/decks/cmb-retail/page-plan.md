@@ -35,6 +35,7 @@
 - **正文页**（非仪式页）：`<header class="masthead">` 左 = 小节号 + 章节名（如 `1.1 · 整体特色及优势`，`style="letter-spacing:0"`），右 = logo `<img src="assets/s02_02.png" width="182" height="68">`（槽位 `masthead-logo-8x3`，全 deck 复用同一槽位名）；`<footer class="mastfoot">` 左 = `天弘基金 · 业务情况汇报`（letter-spacing:0），右 = 页码 `NN / 54`（NN 为原 deck 页码，两位数字）。家具文字均 data-editable。
 - **仪式页**（封面/目录/章节页/封底）：不设 masthead；章节页页码放右下角 mono 16px 低明度（范例见第 3 页）。
 - 目录页（p2）已含 logo，后续正文页从 p4 起按上述执行。
+- **导出安全几何（0929 C5c 增补）**：① 页题 accent 题花条（48×6）在 DOM 中置于 `<header class="masthead">` **之前**并带 `margin-top:14px`——masthead 是 absolute（绘制顺序高于在流元素），DOM 序相反会让导出侧把装饰条叠到刊头文字上层；② 通栏带（`background:var(--paper-tint)`）横向 padding ≥44px——导出侧文本框宽=渲染宽 ×1.02，32px padding 恰好被松量吃尽、右净距归 0；③ 单行文本在 PPT 度量（混排边界 +0.25em/对）下比 Chromium 渲染宽 5–15%，右对齐/贴边的单行要预留该余量（本 deck 两处用 max-width 限宽改双行）。
 
 ### 图片槽位约定（契约 v5，硬规则）
 - 每张图：`<img data-editable-image data-image-slot="<页语义>-<角色>-<WxH>" data-image-intent="<一句话画面描述>" data-image-state="uploaded" src="assets/<文件名>" width="W" height="H">`，`state` 一律 **uploaded**（用户真图）。

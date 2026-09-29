@@ -120,7 +120,15 @@ AI 的默认审美会收敛到平庸：居中 hero、紫蓝渐变、卡片墙。
 
 发现问题按修正阶梯处理：微调间距 → 精简文案 → 拆页。【硬规则】正文字号不得低于 18px（画布坐标系）。
 
-渲染校验通过后【硬规则】写入全 deck 页级 hash：
+渲染校验通过后【硬规则】跑容量门禁（第二闸，PPT 度量口径）：
+
+```bash
+python3 skills/html-pptx/scripts/check-capacity.py <deck目录>/index.html --json <deck目录>/capacity-report.json
+```
+
+该脚本用 PPT 侧的候选字体集度量（`pptx_text_metrics.py`，贪心换行与认证同函数）在 HTML 搭建期预演导出结果，双层检查：**容量视图**（水平/垂直/净距三规则，指名容器）+ **几何预认证**（快照经导出同款布局定型后直跑 certify 的 R1–R4c 全规则实现，指名元素——与导出认证共用同一数学，过闸即导出第一轮认证净）。容量超限或几何相碰必须在 HTML 侧重排——减字、拆卡、降档字号、加宽列、加容器/净距，不要指望导出侧补救（认证修复环只修漂移不救结构性超限）。基线报告 `capacity-report.json` 随产物落盘，供后续翻页/导出迭代对照。
+
+渲染校验与容量门禁均通过后【硬规则】写入全 deck 页级 hash：
 
 ```bash
 python3 skills/html-pptx/scripts/extract-manifest.py <deck目录>/index.html --write-hashes
@@ -216,7 +224,7 @@ python3 skills/html-pptx/scripts/export-pptx.py <deck目录>/index.html --check-
 | `export/deck.pdf` | 保真轨直出 | printToPDF 落盘，打印/审阅 |
 | `export/page-NN.svg/png/diff.png` | 保真轨中间件 | 编辑器对比视图资产 |
 
-**可编辑轨**（export-pptx-editable.py，编排时 import 复用）：渲染后 DOM 快照（真实包围盒/逐行分行/计算样式）→ L1 文本框（wrap=square 真实框宽，改字按原宽重排）+ L2 简单形状 + L3 原生 chart（数值文本 × 几何比例双源校验，容差 5%，不过烙图兜底绝不硬映射）+ L4 信息图 grpSp 分组 + L5 复杂视觉烙图（canvas FX/渐变/滤镜/未识别 svg，文字仍原生叠加）+ 字体内嵌（fonts/*.ttf → fntdata + embeddedFontLst，fsType 许可闸：installable/editable/preview 才嵌，受限跳过并报告列明）。**诚实边界**：不承诺像素级特效等价——glow/混合模式/canvas FX 等以烙图兜底，报告 rasterized 与 uncovered 分列。
+**可编辑轨**（export-pptx-editable.py，编排时 import 复用）：渲染后 DOM 快照（真实包围盒/计算样式/逻辑段分行）→ L1 文本框 + L2 简单形状 + L3 原生 chart（数值文本 × 几何比例双源校验，容差 5%，不过烙图兜底绝不硬映射）+ L4 信息图 grpSp 分组 + L5 复杂视觉烙图（canvas FX/渐变/滤镜/未识别 svg，仅限装饰层——**文本永不烙图**）+ 字体内嵌（fonts/*.ttf → fntdata + embeddedFontLst，fsType 许可闸：installable/editable/preview 才嵌，受限跳过并报告列明）。**版式一致性模型（0928 F1–F4′ 数学认证口径，取代 0924 五层）**：① 字体——run typeface 写目标机必有字体（雅黑/宋体映射，WPS 可预测），fntdata 内嵌为 365 增强，fc-match 自动解析子集化（`--no-embed-fonts` 关闭）；② 行模型——单行/标题 wrap=none 永不重排 + 框宽按候选字体集最坏实测（含**混排边界 0.25em/对**，受控实验实测值）×1.08 起；多行用逻辑段 a:p（硬换行分段、软换行交 PPT 贪心重排），lnSpc 写 spcPct 相对口径 = max(作者行高/最坏自然行高, 1.03)（随字体缩放，机制免疫行内叠字），首行基线补偿；③ 松配合——框高 +1 行、顶对齐；④ **出厂门禁 = `certify-pptx.py` 数学认证【硬规则】**——写入后重开产物 XML 纯计算认证（逐行墨水宽/逐块墨水高/行距下限/墨水盒零相碰/骑缝/容器净距 ≥4px，候选字体集逐行取最坏值），违规进修复环（挪位→缩字 normAutofit→装饰烙图），页级修不净降级保真轨 svgBlip 页（manifest tracks.editable.degraded_pages 逐页列明），**终认证全过才落盘**。Step 5 容量门禁（check-capacity 几何预认证层）与本认证共用同一数学——生成侧过闸则导出第一轮认证净。**诚实边界**：不承诺像素级特效等价（glow/混合模式/canvas FX 以烙图兜底，rasterized 与 uncovered 分列）；WPS 不吃内嵌字体，WPS 用户引导保真轨交付。
 
 **保真轨**（既有 M3 管线，参数 spike 实测固化）：防线 C 门禁（渲染校验 + 排版漂移对比，不过不产 PDF——门禁属 deck 级，阻断时两轨都不产出）→ freeze 后 printToPDF（13.333″×7.5″）→ pdftocairo 逐页转曲 SVG → PNG 副本 → svgBlip 双写组装 → postflight 重开包 → 保真分 + 差异热区。
 
