@@ -18,6 +18,11 @@ tools/edit.py —— 编辑器本地伴随服务（零第三方依赖，仅标�
 - 回滚前若工作区有未提交改动，先自动做一次 pre-rollback 提交（永不丢数据）；
 - 目录不是 git 仓库时不擅自 init：/api/save 需调用方显式带 init:true
   （编辑器 UI 弹过一次确认后才带）。
+
+转换触发（opt-in，--convert）：/api/convert 只做一件事——以子进程调用
+技能脚本 skills/html-pptx/scripts/export-pptx.py（转换逻辑全部在技能侧，
+本服务不含任何转换实现，只是"代为按下技能按钮"）。默认关闭，显式加
+--convert 才开启；/api/health 的 convert 字段向外宣告该能力。
 """
 import argparse
 import functools
@@ -155,6 +160,7 @@ class Handler(SimpleHTTPRequestHandler):
                     'ok': True,
                     'git': GIT is not None,
                     'gitReady': is_repo(self.server.workdir),
+                    'convert': bool(getattr(self.server, 'allow_convert', False)),
                 })
             if path == '/api/versions':
                 return self.api_versions(parse_qs(urlparse(self.path).query))
@@ -173,6 +179,8 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.api_save(self._read_json())
             if path == '/api/rollback':
                 return self.api_rollback(self._read_json())
+            if path == '/api/convert':
+                return self.api_convert(self._read_json())
             raise ApiError(404, '未知 API')
         except ApiError as e:
             self._send_json({'ok': False, 'error': e.message}, e.status)
@@ -264,12 +272,34 @@ class Handler(SimpleHTTPRequestHandler):
         atomic_write(full, r.stdout)
         self._send_json({'ok': True, 'path': rel, 'preRollback': pre})
 
+    def api_convert(self, body):
+        """代为触发技能导出管线（opt-in）。转换实现 100% 在技能脚本里，
+        本端点只是触发器：找不到脚本或脚本失败都如实回传，不自作聪明。"""
+        if not getattr(self.server, 'allow_convert', False):
+            raise ApiError(403, '伴随服务未启用转换（以 --convert 启动可开启）')
+        full, rel = safe_path(self.server.workdir, body.get('path'))
+        if not rel.lower().endswith('.html') or not os.path.isfile(full):
+            raise ApiError(400, '目标必须是工作目录内已存在的 .html deck 文件')
+        script = os.path.join(PROJECT_ROOT, 'skills/html-pptx/scripts/export-pptx.py')
+        if not os.path.isfile(script):
+            raise ApiError(501, '未找到技能导出脚本 skills/html-pptx/scripts/export-pptx.py')
+        try:
+            r = subprocess.run([sys.executable, script, full, '--force'],
+                               capture_output=True, text=True, timeout=1800)
+        except subprocess.TimeoutExpired:
+            raise ApiError(504, '转换超时（30 分钟上限）')
+        tail = (r.stdout + '\n' + r.stderr).strip().splitlines()[-30:]
+        self._send_json({'ok': r.returncode == 0, 'code': r.returncode,
+                         'tail': '\n'.join(tail)})
+
 
 def main():
     ap = argparse.ArgumentParser(description='editor.html 本地伴随服务（静态托管 + git 版本 API）')
     ap.add_argument('workdir', nargs='?', default='.', help='工作目录（deck 所在目录），默认当前目录')
     ap.add_argument('--port', type=int, default=8926)
     ap.add_argument('--no-browser', action='store_true', help='不自动打开浏览器')
+    ap.add_argument('--convert', action='store_true',
+                    help='允许 /api/convert 以子进程触发技能导出管线（export-pptx.py），默认关闭')
     args = ap.parse_args()
 
     workdir = os.path.realpath(args.workdir)
@@ -281,6 +311,7 @@ def main():
     server = ThreadingHTTPServer(('127.0.0.1', args.port), handler)
     server.daemon_threads = True
     server.workdir = workdir
+    server.allow_convert = args.convert
 
     url = 'http://127.0.0.1:%d/editor.html' % args.port
     if os.path.isfile(os.path.join(workdir, 'index.html')):
@@ -289,6 +320,8 @@ def main():
     print('编辑器：  %s' % url)
     print('git 版本：%s' % ('已就绪' if is_repo(workdir)
                             else '目录非 git 仓库（首次保存时编辑器会询问是否 init）'))
+    print('一键转换：%s' % ('已启用（/api/convert → 技能 export-pptx.py）' if args.convert
+                            else '未启用（加 --convert 后编辑器可一键触发导出管线）'))
     print('Ctrl+C 停止')
     if not args.no_browser:
         try:

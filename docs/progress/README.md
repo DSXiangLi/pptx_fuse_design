@@ -4,6 +4,7 @@
 
 ## 最近更新
 
+- 2026-09-30 · [0930_editor_v31_cmb_v2.md](0930_editor_v31_cmb_v2.md) — 编辑器 v3.1（主导航收敛为编辑/批注/导出、目录侧栏常驻+拖拽排序+拖宽+一键收起、右侧浮动栏、一键转换 opt-in 触发器、organic 视觉重设计；T4 投影污染与 curSlideIdx 漂移两坑）+ cmb-retail-v2 设计升级 deck（E4 包豪斯原色红、内容逐字不变、门禁全绿）；54/54 E2E PASS
 - 2026-09-24 · [0924_editable_overlap_fix.md](0924_editable_overlap_fix.md) — 可编辑轨文字重叠归因（行距口径/框高零冗余/字体未随档/无出厂回验）+ 五层加固方案（字体随档默认化/行高基线校准/松配合/几何自净/LO 回验逐页降级），目标 <1%
 - 2026-09-22 · [0922_tri_form_m1m4.md](0922_tri_form_m1m4.md) — 三形态翻转 M1–M4 全落地：extract-manifest+content-hash 双端一致（T23）/ 契约 v7 整页烙入+skeleton v7.3（T24）/ HTML→PPTX 保真轨 spike+管线+四道防线（T25）/ 编辑器 v3.0 三态工作台（T26）；真实 oai生图烙入 + bake-prompts.md 指令参考；可编辑 PPTX 设计评审通过进 C1–C3；51/51 PASS
 - 2026-09-21 · [0921_iter_n.md](0921_iter_n.md) — N 期：需求脑暴环节——briefing.md 八组问题 + SKILL.md Step 0.5 + 编辑器 v2.5 需求脑暴页（向导收集 → 格式化简报给 agent，嵌入态 postMessage），46/46 + 19/19
@@ -21,6 +22,7 @@
 
 | 日期 | 文档 | 摘要 |
 |---|---|---|
+| 2026-09-30 | [0930_editor_v31_cmb_v2](0930_editor_v31_cmb_v2.md) | 编辑器 v3.1（交互收敛+organic 视觉+/api/convert opt-in）+ cmb-retail-v2 E4 包豪斯设计升级版；54/54 E2E PASS |
 | 2026-09-24 | [0924_editable_overlap_fix](0924_editable_overlap_fix.md) | 可编辑轨重叠归因与五层加固方案（cmb-retail 54 页基准暴露，tencent-pptx/slide-paipai 调研佐证） |
 | 2026-09-22 | [0922_tri_form_m1m4](0922_tri_form_m1m4.md) | 三形态 M1–M4（extract-manifest/content-hash 双端一致、契约 v7 烙入、skeleton v7.3/v7.4、export-pptx 保真轨四防线、编辑器 v3.0 三态工作台、harness T23–T26）、真实 oai生图烙入、bake-prompts.md、可编辑 PPTX 设计评审通过、51/51 E2E PASS |
 | 2026-09-18 | [0918_iter_d_infographic](0918_iter_d_infographic.md) | components.md v2（六结构族 × 六 Item 皮肤 × 参数变体 + 适配矩阵 + 数据形态静态断言）、契约 v4（信息图分层 + data-ig 辅助标记）、SKILL.md 三步选型、tests/decks/infographic-d1 + harness T15、26/26 E2E PASS |

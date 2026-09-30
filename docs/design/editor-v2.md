@@ -69,7 +69,8 @@ API（全部只操作工作目录内文件，拒绝路径穿越）：
 - `GET  /api/health` → 存活探测（编辑器加载时探一次，失败则走 FSAA/下载现状路径）；
 - `POST /api/save` `{path, html}` → 原子写文件 + `git add <deck> assets/ && git commit`（message 自动生成：`edit: <timestamp>`）。目录非 git 仓库时**先询问再 init**（health 响应里带 `gitReady` 标志，UI 弹一次确认；确认后 `git init`）；
 - `GET  /api/versions?path=` → 该文件的提交列表（hash/时间/message）；
-- `POST /api/rollback` `{path, hash}` → **先对当前状态做一次 `pre-rollback` 提交**（永不丢数据），再把目标版本内容写入文件。
+- `POST /api/rollback` `{path, hash}` → **先对当前状态做一次 `pre-rollback` 提交**（永不丢数据），再把目标版本内容写入文件；
+- `POST /api/convert` `{path}` →（v3.1 增，**opt-in**：仅 `--convert` 启动时可用；health 以 `convert` 字段宣告）以子进程触发技能脚本 `skills/html-pptx/scripts/export-pptx.py --force`，30 分钟超时，返回尾部日志。**边界**：本端点只是触发器，不含任何转换实现——转换即技能的红线不变；未启用时编辑器回退"复制技能命令"。
 
 ### 编辑器侧
 

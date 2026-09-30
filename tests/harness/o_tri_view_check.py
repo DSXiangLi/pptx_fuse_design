@@ -90,30 +90,47 @@ def wait_tri_ready(page, embedded):
 
 
 def scroll_deck_to(page, sid, embedded):
-    """把 deck 滚动到指定页并等当前页落定。"""
+    """把 deck 滚动到指定页并等当前页落定。
+
+    视图从 display:none 恢复时 offsetTop 会塌缩/重建，偶发 scroll 事件丢失
+    （rAF 时序）；等不到就补发一次合成 scroll 再 wait，最多两轮。"""
     if embedded:
-        page.evaluate("""(sid) => {
-          const w = document.getElementById('ed').contentWindow;
-          const d = w.frame.contentDocument;
-          const slide = d.querySelector('section.slide[data-slide-id="' + sid + '"]');
-          const slot = slide.closest('.slide-slot') || slide;
-          d.querySelector('.deck').scrollTo({ top: slot.offsetTop, behavior: 'auto' });
-        }""", sid)
-        page.wait_for_function("""(sid) => {
+        def drive():
+            page.evaluate("""(sid) => {
+              const w = document.getElementById('ed').contentWindow;
+              const d = w.frame.contentDocument;
+              const slide = d.querySelector('section.slide[data-slide-id="' + sid + '"]');
+              const slot = slide.closest('.slide-slot') || slide;
+              d.querySelector('.deck').scrollTo({ top: slot.offsetTop, behavior: 'auto' });
+              d.querySelector('.deck').dispatchEvent(new d.defaultView.Event('scroll'));
+            }""", sid)
+        cond = """(sid) => {
           const w = document.getElementById('ed').contentWindow;
           return w.triPages[w.curSlideIdx] && w.triPages[w.curSlideIdx].slideId === sid;
-        }""", arg=sid, timeout=8000)
+        }"""
     else:
-        page.evaluate("""(sid) => {
-          const d = window.frame.contentDocument;
-          const slide = d.querySelector('section.slide[data-slide-id="' + sid + '"]');
-          const slot = slide.closest('.slide-slot') || slide;
-          d.querySelector('.deck').scrollTo({ top: slot.offsetTop, behavior: 'auto' });
-        }""", sid)
-        page.wait_for_function("""(sid) => {
+        def drive():
+            page.evaluate("""(sid) => {
+              const d = window.frame.contentDocument;
+              const slide = d.querySelector('section.slide[data-slide-id="' + sid + '"]');
+              const slot = slide.closest('.slide-slot') || slide;
+              d.querySelector('.deck').scrollTo({ top: slot.offsetTop, behavior: 'auto' });
+              d.querySelector('.deck').dispatchEvent(new d.defaultView.Event('scroll'));
+            }""", sid)
+        cond = """(sid) => {
           return window.triPages[window.curSlideIdx]
                  && window.triPages[window.curSlideIdx].slideId === sid;
-        }""", arg=sid, timeout=8000)
+        }"""
+    for _ in range(2):
+        drive()
+        try:
+            page.wait_for_function(cond, arg=sid, timeout=8000)
+            return
+        except Exception:
+            pass
+    # 最后一轮不吞异常，保留原始失败语义
+    drive()
+    page.wait_for_function(cond, arg=sid, timeout=8000)
 
 
 def main():
@@ -191,7 +208,8 @@ def main():
                   repr([(p['sid'], p['stale'], p['artifact']) for p in t1['pages']]))
 
             # ② 对比默认落定 = 并排双窗格；无产物页右窗格黑面
-            page.click('#viewSeg button[data-view="compare"]')
+            page.click('#viewSeg button[data-view="export"]')
+            page.click('#expSubSeg button[data-view="compare"]')
             page.wait_for_timeout(200)
             st2 = page.evaluate("""() => ({
               view: window.view, cmpView: window.cmpView,
@@ -322,7 +340,8 @@ def main():
                   repr({'pptx': exp6['pptxUrl'], 'guide': exp6['guideHidden']}))
 
             # 滑动分割 + 差异热区
-            page.click('#viewSeg button[data-view="compare"]')
+            page.click('#viewSeg button[data-view="export"]')
+            page.click('#expSubSeg button[data-view="compare"]')
             page.click('#cmpViewSeg button[data-cmp="swipe"]')
             page.wait_for_selector('#cmpOverlay:not([hidden])', timeout=3000)
             page.wait_for_function("""() => {
@@ -365,7 +384,8 @@ def main():
             page.wait_for_function("""() => window.state && window.state.loaded === true
                 && window.triStatus !== 'idle' && window.triStatus !== 'loading'""",
                 timeout=15000)
-            page.click('#viewSeg button[data-view="compare"]')
+            page.click('#viewSeg button[data-view="export"]')
+            page.click('#expSubSeg button[data-view="compare"]')
             page.wait_for_timeout(200)
             dg = page.evaluate("""() => ({
               status: window.triStatus,

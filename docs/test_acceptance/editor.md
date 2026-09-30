@@ -1,7 +1,19 @@
 # 编辑器验收文档（test_acceptance）
 
 > 对应模块：`editor.html` · 设计文档 `docs/design-editor.md` §11 · 自动化 harness `tests/harness/run_e2e.py`
-> 最近全量执行：2026-09-20（I/J 期），43/43 PASS（Chromium 145 headless；T9 断言 20 主题卡、T18 覆盖 44 页画廊、T1 新增 3 个 J 期终验 deck）
+> 最近全量执行：2026-09-30（v3.1 改版），54/54 PASS（Chromium headless；含 T23–T28 子进程套件）
+> 上次：2026-09-20（I/J 期），43/43 PASS
+
+## v3.1（2026-09-30）交互改版验收点
+
+| # | 验收项 | 方式 | 状态 |
+|---|---|---|---|
+| P0-7 | 主导航单条「编辑/批注/导出」：批注=编辑视图+批注模式（伪视图），无双"编辑" | 人工 + harness T7/T8（选择器已迁 #viewSeg） | ✅ |
+| P0-8 | 对比质检收进导出子页签（#expSubSeg），对比三视图/翻面/stale 闭环全保留 | harness T26（o_tri_view_check，入口已迁） | ✅ |
+| P0-9 | 目录侧栏：一键收起/展开把手（#btnToc 语义不变）、拖宽 180–420px、卡片拖拽排序置脏且保存后 DOM 序生效 | harness T11 + 人工/冒烟 | ✅ |
+| P0-10 | 渲染一致性不被编辑器 chrome 污染（贴舞台元素禁投影/禁覆盖 iframe） | harness T4（0.2% 容差内） | ✅ |
+| P1-11 | 一键转换导出 #btnConvert 三通道：嵌入 export-intent / edit.py --convert 时 /api/convert 子进程触发 / 否则复制命令；/api/convert 路径穿越与未启用 403 防线 | 手工 curl 负路径 + 冒烟 | ✅ |
+| P1-12 | 设计面板/需求脑暴入口在右侧浮动栏，脑暴为右侧浮动面板，面板开合不重载产物 iframe | harness k_brief + T9 | ✅ |
 
 ## P0（核心路径，失败即功能不可用）
 

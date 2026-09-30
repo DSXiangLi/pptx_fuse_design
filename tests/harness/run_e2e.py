@@ -637,7 +637,7 @@ def test_annotation_e2e(browser):
         load_deck(page, src, deck + '/index.html')
 
         # 切到批注模式
-        page.frame_locator('#ed').locator('#modeSeg button[data-mode="annotate"]').click()
+        page.frame_locator('#ed').locator('#viewSeg button[data-view="annotate"]').click()
         if editor_frame(page).evaluate('window.mode') != 'annotate':
             problems.append('模式切换失败')
 
@@ -821,7 +821,7 @@ def test_annotation_edges(browser):
         page.goto(BASE + '/harness.html')
         wait_editor_ready(page)
         load_deck(page, src, deck + '/index.html')
-        page.frame_locator('#ed').locator('#modeSeg button[data-mode="annotate"]').click()
+        page.frame_locator('#ed').locator('#viewSeg button[data-view="annotate"]').click()
 
         # 批注模式下文字两段手势禁用（§5.0）
         h1 = deck_loc(page, '[data-slide-id="cover"] h1[data-editable]')
@@ -878,7 +878,7 @@ def test_annotation_edges(browser):
             problems.append('批注流程置脏')
 
         # 切回文字编辑模式：手势恢复
-        page.frame_locator('#ed').locator('#modeSeg button[data-mode="edit"]').click()
+        page.frame_locator('#ed').locator('#viewSeg button[data-view="edit"]').click()
         h1.click(); h1.click()
         if h1.get_attribute('contenteditable') != 'plaintext-only':
             problems.append('切回文字编辑模式后手势未恢复')
