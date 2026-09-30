@@ -158,6 +158,10 @@ def main():
     with open(mf_path, encoding='utf-8') as f:
         mf0 = json.load(f)
     os.remove(os.path.join(export_dir, 'page-02.svg'))   # ch-now 无产物 → 黑面
+    # v3.1 原生预览：svg 与 native 页图同为该页产物，模拟"缺失"须一并删除
+    _nat2 = os.path.join(export_dir, 'native', 'page-02.png')
+    if os.path.isfile(_nat2):
+        os.remove(_nat2)
 
     srv = subprocess.Popen([sys.executable, '-m', 'http.server', str(PORT),
                             '--bind', '127.0.0.1', '-d', serve],
@@ -237,9 +241,10 @@ def main():
                   and '翻转' in black2['text']
                   and '加载中' not in black2['text'] and 'loading' not in black2['text'].lower(),
                   repr(black2['text']))
-            check('②d 有产物页右窗格就绪（img 指向 export/page-01.svg）',
+            check('②d 有产物页右窗格就绪（img 指向产物：native 优先 / SVG 回落）',
                   black2['ready'] == 'ready' and black2['img']
-                  and 'export/page-01.svg' in black2['img'], repr(black2['img']))
+                  and ('export/native/page-01.png' in black2['img']
+                       or 'export/page-01.svg' in black2['img']), repr(black2['img']))
 
             # 页清单徽标三分量 + 保真分排序（红→绿）
             rows2 = page.evaluate("""() => Array.from(
@@ -263,9 +268,10 @@ def main():
                        img: f && f.querySelector('img') ? f.querySelector('img').src : null,
                        pe: document.getElementById('deckFrame').style.pointerEvents };
             }""")
-            check('③a 翻面就绪：背面 img 渲染 export/page-01.svg（角标触发，iframe 指针禁用）',
+            check('③a 翻面就绪：背面 img 渲染产物（native 优先 / SVG 回落；角标触发，iframe 指针禁用）',
                   back3['state'] == 'ready' and back3['img']
-                  and 'export/page-01.svg' in back3['img'] and back3['pe'] == 'none',
+                  and ('export/native/page-01.png' in back3['img']
+                       or 'export/page-01.svg' in back3['img']) and back3['pe'] == 'none',
                   repr(back3))
             page.click('#flipBadge')   # 翻回
             page.wait_for_function("""() =>
@@ -346,7 +352,8 @@ def main():
             page.wait_for_selector('#cmpOverlay:not([hidden])', timeout=3000)
             page.wait_for_function("""() => {
               const i = document.getElementById('cmpOlImg');
-              return i && i.src.indexOf('export/page-01.svg') >= 0;
+              return i && (i.src.indexOf('export/native/page-01.png') >= 0
+                           || i.src.indexOf('export/page-01.svg') >= 0);
             }""", timeout=8000)
             clip0 = page.evaluate(
                 "document.getElementById('cmpOlHolder').style.clipPath")

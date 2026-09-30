@@ -2101,7 +2101,7 @@ CHART_IGS = {'chart-progress', 'chart-stacked', 'chart-grouped', 'chart-area',
              'chart-funnel', 'chart-heatmap'}
 
 def test_gallery_f2(browser):
-    """gallery/index.html（skeleton v4，52 页，多主题 sampler + 20 主题样张 + §13 六型容器 + v7.2 文字呈现/装饰线页组）：
+    """gallery/index.html（skeleton v4，53 页，多主题 sampler + 21 主题样张 + §13 六型容器 + v7.2 文字呈现/装饰线页组）：
     (a) 零溢出：每页全部 [data-editable] 元素矩形落在画布内（±2px）；
     (b) 零重叠：同页可编辑元素两两矩形不相交（>16px² 才算，排除祖先包含）；
     (c) data-ig 根：族×皮肤 ∈ 白名单、项数 ∈ 区间（复用 T15 镜像表，chart- 前缀跳过）；
@@ -2284,7 +2284,7 @@ def test_gallery_f2(browser):
 
         report('T18-gallery-f2', '组件画廊 F2+F3', not problems,
                '；'.join(problems) if problems else
-               '52 页零溢出零重叠；13 族根 + 10 图表根白名单/分层全过；6 族 × 6 皮肤全覆盖；6 谱系无连续 3 页同谱系；'
+               '53 页零溢出零重叠；13 族根 + 10 图表根白名单/分层全过；6 族 × 6 皮肤全覆盖；6 谱系无连续 3 页同谱系；'
                '瀑布水位/雷达顶点/斜率端点几何抽验通过')
     finally:
         ctx.close()

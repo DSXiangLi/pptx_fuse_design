@@ -18,7 +18,7 @@
    主主题 B1 克莱因蓝，单页用 section 级 style 覆盖整套 token
    演示其它主题。普通 deck 禁止中途换主题（themes.md 禁忌）。
 
-   【G/I 期样张页组 · 仅属本文件】末尾 20 页（theme-a1 … theme-e11）
+   【G/I 期样张页组 · 仅属本文件】末尾 21 页（theme-a1 … theme-e12）
    是主题七层表达力栈的渲染验收物：同一封面文案 × 20 套 section 级
    token 全量注入（六色 + 三字体 + 三 texture + 缓动签名）；各主题
    G9 母题 css（.mt-* 规则，不含 :root{} 行，类名全库唯一无冲突）
@@ -183,7 +183,7 @@ body{
 @keyframes mend-final{to{transform:scaleX(calc(var(--val,100)/100))}}
 
 /* 文字效果词汇 .tt-*（v7.1/v7.2，逐字抄自骨架——本画廊是 v4 无此规则，
-   为 p51 文字呈现实例内联于此；规则见 references/typography.md §7）。
+   为 p52 文字呈现实例内联于此；规则见 references/typography.md §7）。
    纯 CSS、文字保持纯文本可编辑；--tt-c 是效果色槽位。 */
 .tt-outline{--tt-c:var(--ink);color:transparent;-webkit-text-stroke:1.5px var(--tt-c)}
 .tt-strike{text-decoration:line-through;text-decoration-thickness:.07em;text-decoration-color:var(--tt-c,currentColor)}
@@ -193,7 +193,7 @@ body{
 .tt-glow{text-shadow:0 0 .4em color-mix(in srgb,var(--accent) 55%,transparent)}
 .tt-cond{display:inline-block;transform:scaleY(1.22);transform-origin:bottom left}
 
-/* 装饰线词汇 .rl-*（v7.2，逐字抄自骨架——同上，为 p52 装饰线实例内联；
+/* 装饰线词汇 .rl-*（v7.2，逐字抄自骨架——同上，为 p53 装饰线实例内联；
    规则见 references/components.md §14。全部装饰件，产物标 data-editable-skip）。 */
 .rl-dashed{height:0;border-top:1px dashed color-mix(in srgb,var(--ink) 35%,transparent)}
 .rl-ticks{height:10px;background-image:repeating-linear-gradient(90deg,color-mix(in srgb,var(--ink) 45%,transparent) 0 1px,transparent 1px 12px);background-size:100% 6px;background-repeat:no-repeat;background-position:bottom}
@@ -395,6 +395,16 @@ body{
 .mt-tix-field b{font-weight:700;color:var(--ink)}
 .mt-tix-stub{background:color-mix(in srgb,var(--accent) 8%,var(--paper));border-left:1px solid color-mix(in srgb,var(--ink) 35%,transparent);padding:1em 1.2em}
 
+/* E12 商务粗野 · 装饰母题 */
+.mt-nb-ring,.mt-nb-disc,.mt-nb-block,.mt-nb-star{position:absolute;pointer-events:none;user-select:none}
+.mt-nb-ring{border:3px solid var(--ink);border-radius:50%}
+.mt-nb-disc{border:3px solid var(--ink);border-radius:50%;box-shadow:8px 8px 0 var(--ink)}
+.mt-nb-block{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
+.mt-nb-block-ink{position:absolute;pointer-events:none;user-select:none;border:3px solid var(--ink);background:var(--ink);box-shadow:8px 8px 0 var(--accent)}
+.mt-nb-star{clip-path:polygon(50% 0,61% 12%,75% 4%,79% 19%,95% 15%,91% 31%,100% 38%,90% 50%,100% 62%,91% 69%,95% 85%,79% 81%,75% 96%,61% 88%,50% 100%,39% 88%,25% 96%,21% 81%,5% 85%,9% 69%,0 62%,10% 50%,0 38%,9% 31%,5% 15%,21% 19%,25% 4%,39% 12%);background:var(--accent)}
+.mt-nb-line{display:block;height:3px;background:var(--ink)}
+.mt-nb-chip{display:inline-block;border:2.5px solid var(--ink);background:var(--accent);color:var(--accent-on);box-shadow:5px 5px 0 var(--ink);padding:.25em .7em}
+
 /* 打印：每页一张 1920×1080（PDF 导出请用 Chrome/Edge） */
 @media print{
   @page{size:1920px 1080px;margin:0}
@@ -441,10 +451,10 @@ body{
 
   <!-- 02 · 使用说明（B1 主主题 · 容器四档图例 + 豁免声明） -->
   <div class="slide-slot">
-    <section class="slide" data-slide-id="guide" data-content-hash="e901711cd32d">
+    <section class="slide" data-slide-id="guide" data-content-hash="9c4f640eb9f6">
       <header class="masthead">
         <span data-editable>GUIDE · 使用说明</span>
-        <span data-editable>02 / 52</span>
+        <span data-editable>02 / 53</span>
       </header>
       <h2 data-editable class="reveal" style="font-size:64px;line-height:1.25;font-weight:300;letter-spacing:-.02em">规则管合法，实例管出色</h2>
       <div style="margin-top:48px;display:grid;grid-template-columns:repeat(3,1fr);gap:48px">
@@ -1705,7 +1715,7 @@ body{
   </div>
 
   <!-- ==========================================================
-       G/I 期 · 主题样张页组（25–44）：同一封面文案 × 20 重主题，
+       G/I 期 · 主题样张页组（25–45）：同一封面文案 × 21 重主题，
        差异全部来自七层表达力栈。每页 section 级 style 注入该主题
        完整 token 集（六色 + 三字体 + 三 texture + 缓动签名），
        母题类（.mt-*）样式见上方 <style> 合入区。仪式页从简，
@@ -1714,7 +1724,7 @@ body{
 
   <!-- 25 · 主题样张 A1 电子杂志（母题：Ghost 残影巨字 / 竖排题字条 / 墨点） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-a1" style="--paper:#f1efea;--paper-tint:#e8e5de;--ink:#0a0a0b;--ink-tint:#18181a;--accent:#0a0a0b;--accent-on:#f1efea;--font-display:'Songti SC','Noto Serif SC','STSong',serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:glow;--texture-layer:radial-gradient(75% 55% at 80% 10%,color-mix(in srgb,var(--ink) 6%,transparent),transparent 65%);--texture-scope:cover" data-content-hash="1942be434a3f">
+    <section class="slide cover-page" data-slide-id="theme-a1" style="--paper:#f1efea;--paper-tint:#e8e5de;--ink:#0a0a0b;--ink-tint:#18181a;--accent:#0a0a0b;--accent-on:#f1efea;--font-display:'Songti SC','Noto Serif SC','STSong',serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:glow;--texture-layer:radial-gradient(75% 55% at 80% 10%,color-mix(in srgb,var(--ink) 6%,transparent),transparent 65%);--texture-scope:cover" data-content-hash="e0bee3faaaf6">
       <div class="mt-ghost" data-editable-skip style="right:72px;bottom:24px;font-size:460px">形</div>
       <div class="mt-vquote" data-editable-skip style="position:absolute;right:64px;top:196px">SHAPE OF IMAGINATION</div>
       <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;font-family:var(--font-body)">
@@ -1723,7 +1733,7 @@ body{
           <p data-editable style="font-family:var(--font-mono);font-size:18px;letter-spacing:.12em;opacity:.55">THEME SAMPLES · G</p>
         </div>
         <h1 data-editable class="reveal" style="--d:.12s;margin-top:44px;font-family:var(--font-display);font-size:150px;line-height:1.25;font-weight:600">想象的形状</h1>
-        <p data-editable class="reveal" style="--d:.24s;margin-top:40px;font-size:28px;line-height:1.8;opacity:.75">同一段内容，二十个世界</p>
+        <p data-editable class="reveal" style="--d:.24s;margin-top:40px;font-size:28px;line-height:1.8;opacity:.75">同一段内容，二十一个世界</p>
       </div>
       <p data-editable style="position:absolute;left:120px;bottom:60px;font-family:var(--font-mono);font-size:15px;font-weight:500;opacity:.55">A1 · 电子杂志 · 墨黑</p>
     </section>
@@ -1731,7 +1741,7 @@ body{
 
   <!-- 26 · 主题样张 B1 瑞士国际主义（母题：网格点阵 / 加号角标 ×4 / 色块编号；缓动签名内联） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-b1" style="--paper:#fafaf8;--paper-tint:#f0f0ee;--ink:#0a0a0a;--ink-tint:#1a1a1a;--accent:#002FA7;--accent-on:#ffffff;--font-display:'Helvetica Neue','PingFang SC','Noto Sans SC',sans-serif;--font-body:'Helvetica Neue','PingFang SC','Noto Sans SC',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:flat;--texture-layer:none;--texture-scope:cover;--ease-out:cubic-bezier(.2,.9,.25,1)" data-content-hash="111cfbc72122">
+    <section class="slide cover-page" data-slide-id="theme-b1" style="--paper:#fafaf8;--paper-tint:#f0f0ee;--ink:#0a0a0a;--ink-tint:#1a1a1a;--accent:#002FA7;--accent-on:#ffffff;--font-display:'Helvetica Neue','PingFang SC','Noto Sans SC',sans-serif;--font-body:'Helvetica Neue','PingFang SC','Noto Sans SC',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:flat;--texture-layer:none;--texture-scope:cover;--ease-out:cubic-bezier(.2,.9,.25,1)" data-content-hash="f6bd2e68d639">
       <div class="mt-grid-dots" data-editable-skip></div>
       <span class="mt-cross" data-editable-skip style="left:120px;top:96px"></span>
       <span class="mt-cross" data-editable-skip style="right:120px;top:96px"></span>
@@ -1743,7 +1753,7 @@ body{
           <p data-editable style="font-family:var(--font-mono);font-size:18px;font-weight:500;letter-spacing:.12em;opacity:.55">THEME SAMPLES · G</p>
         </div>
         <h1 data-editable class="reveal" style="--d:.1s;margin-top:48px;font-size:168px;line-height:1.1;font-weight:200;letter-spacing:-.03em">想象的形状</h1>
-        <p data-editable class="reveal" style="--d:.2s;margin-top:44px;font-size:26px;line-height:1.7;opacity:.72">同一段内容，二十个世界</p>
+        <p data-editable class="reveal" style="--d:.2s;margin-top:44px;font-size:26px;line-height:1.7;opacity:.72">同一段内容，二十一个世界</p>
       </div>
       <p data-editable style="position:absolute;left:120px;bottom:60px;font-family:var(--font-mono);font-size:15px;font-weight:500;opacity:.55">B1 · 瑞士国际主义 · 克莱因蓝</p>
     </section>
@@ -1751,7 +1761,7 @@ body{
 
   <!-- 27 · 主题样张 C1 信号黑（母题：信号条 / 巨号页码 / 信号方块；缓动签名内联） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-c1" style="--paper:#1a1a1a;--paper-tint:#242424;--ink:#ffffff;--ink-tint:#0f0f0f;--accent:#FF5722;--accent-on:#1a1a1a;--font-display:'Arial Black','PingFang SC','Noto Sans SC',sans-serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:flat;--texture-layer:none;--texture-scope:cover;--ease-out:cubic-bezier(.2,1.25,.3,1)" data-content-hash="12dd24739cfb">
+    <section class="slide cover-page" data-slide-id="theme-c1" style="--paper:#1a1a1a;--paper-tint:#242424;--ink:#ffffff;--ink-tint:#0f0f0f;--accent:#FF5722;--accent-on:#1a1a1a;--font-display:'Arial Black','PingFang SC','Noto Sans SC',sans-serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:flat;--texture-layer:none;--texture-scope:cover;--ease-out:cubic-bezier(.2,1.25,.3,1)" data-content-hash="091eb8f956e8">
       <div class="mt-sig-folio" data-editable-skip style="right:56px;bottom:0;font-size:520px">G</div>
       <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;font-family:var(--font-body)">
         <span class="mt-sig-bar reveal" data-editable-skip></span>
@@ -1759,7 +1769,7 @@ body{
         <h1 data-editable class="reveal" style="--d:.16s;margin-top:40px;font-family:var(--font-display);font-size:156px;line-height:1.15;font-weight:900;letter-spacing:-.01em">想象的形状</h1>
         <div class="reveal" style="--d:.24s;margin-top:44px;display:flex;align-items:center;gap:16px">
           <span class="mt-sig-mark" data-editable-skip style="width:14px;height:14px"></span>
-          <p data-editable style="font-size:26px;line-height:1.7;opacity:.75">同一段内容，二十个世界</p>
+          <p data-editable style="font-size:26px;line-height:1.7;opacity:.75">同一段内容，二十一个世界</p>
         </div>
       </div>
       <p data-editable style="position:absolute;left:120px;bottom:60px;font-family:var(--font-mono);font-size:15px;font-weight:500;opacity:.55">C1 · 信号黑 · 信号橙</p>
@@ -1768,13 +1778,13 @@ body{
 
   <!-- 28 · 主题样张 C2 暗夜植物园（母题：叶脉侧缘 / 图鉴编号签 / 标本引线 / 拉丁学名） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-c2" style="--paper:#0f0f0f;--paper-tint:#1a1816;--ink:#e8e4df;--ink-tint:#2a2724;--accent:#d4a574;--accent-on:#0f0f0f;--font-display:'Songti SC','Noto Serif SC','STSong',serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:glow;--texture-layer:radial-gradient(90% 70% at 78% 8%,color-mix(in srgb,var(--accent) 10%,transparent),transparent 60%);--texture-scope:cover" data-content-hash="8930f3b873f6">
+    <section class="slide cover-page" data-slide-id="theme-c2" style="--paper:#0f0f0f;--paper-tint:#1a1816;--ink:#e8e4df;--ink-tint:#2a2724;--accent:#d4a574;--accent-on:#0f0f0f;--font-display:'Songti SC','Noto Serif SC','STSong',serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:glow;--texture-layer:radial-gradient(90% 70% at 78% 8%,color-mix(in srgb,var(--accent) 10%,transparent),transparent 60%);--texture-scope:cover" data-content-hash="ea2d230f96af">
       <div class="mt-bot-vein" data-editable-skip style="left:120px;top:96px;height:888px"></div>
       <div class="mt-bot-tag" data-editable-skip style="position:absolute;right:120px;top:96px">NO.G · PL.XX</div>
       <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;padding-left:160px;font-family:var(--font-body)">
         <p data-editable class="reveal" style="font-family:var(--font-mono);font-size:18px;letter-spacing:.12em;opacity:.55">THEME SAMPLES · G</p>
         <h1 data-editable class="reveal" style="--d:.12s;margin-top:44px;font-family:var(--font-display);font-size:140px;line-height:1.3;font-weight:500">想象的形状</h1>
-        <p data-editable class="reveal" style="--d:.22s;margin-top:36px;font-size:26px;line-height:1.8;opacity:.78">同一段内容，二十个世界</p>
+        <p data-editable class="reveal" style="--d:.22s;margin-top:36px;font-size:26px;line-height:1.8;opacity:.78">同一段内容，二十一个世界</p>
         <div class="mt-bot-lead reveal" style="--d:.32s;margin-top:72px;max-width:680px"><span data-editable>FIELD NOTE · 想象标本观察记录</span></div>
         <p class="mt-bot-latin reveal" data-editable style="--d:.4s;margin-top:24px;font-size:21px">Forma imaginationis — 想象之形，标本第廿号</p>
       </div>
@@ -1784,11 +1794,11 @@ body{
 
   <!-- 29 · 主题样张 C3 终端绿（母题：ASCII 框 / 闪烁光标 / 提示符；命令行文本可编辑） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-c3" style="--paper:#0d1117;--paper-tint:#161b22;--ink:#e6edf3;--ink-tint:#1c2128;--accent:#39d353;--accent-on:#0d1117;--font-display:'SF Mono','JetBrains Mono','Menlo',monospace;--font-body:'SF Mono','JetBrains Mono','Menlo',monospace;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:grain;--texture-layer:repeating-linear-gradient(0deg,color-mix(in srgb,var(--ink) 4%,transparent) 0 1px,transparent 1px 4px);--texture-scope:all" data-content-hash="c8d5b4ff1d95">
+    <section class="slide cover-page" data-slide-id="theme-c3" style="--paper:#0d1117;--paper-tint:#161b22;--ink:#e6edf3;--ink-tint:#1c2128;--accent:#39d353;--accent-on:#0d1117;--font-display:'SF Mono','JetBrains Mono','Menlo',monospace;--font-body:'SF Mono','JetBrains Mono','Menlo',monospace;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:grain;--texture-layer:repeating-linear-gradient(0deg,color-mix(in srgb,var(--ink) 4%,transparent) 0 1px,transparent 1px 4px);--texture-scope:all" data-content-hash="a3add88bf540">
       <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;font-family:var(--font-body)">
         <p data-editable class="reveal" style="font-size:18px;letter-spacing:.12em;opacity:.55">THEME SAMPLES · G</p>
         <h1 data-editable class="reveal" style="--d:.1s;margin-top:40px;font-family:var(--font-display);font-size:104px;line-height:1.3;font-weight:600">想象的形状<span class="mt-term-caret" data-editable-skip></span></h1>
-        <p data-editable class="reveal" style="--d:.2s;margin-top:32px;font-size:24px;opacity:.8">同一段内容，二十个世界</p>
+        <p data-editable class="reveal" style="--d:.2s;margin-top:32px;font-size:24px;opacity:.8">同一段内容，二十一个世界</p>
         <div class="mt-term-box reveal" style="--d:.3s;margin-top:80px;width:780px;padding:30px 36px">
           <p data-editable class="mt-term-prompt" style="font-size:20px">render --deck gallery --themes 20</p>
           <p data-editable style="margin-top:16px;font-size:20px;opacity:.8">ok · 20 worlds rendered · 1 deck</p>
@@ -1800,12 +1810,12 @@ body{
 
   <!-- 30 · 主题样张 C4 纸与墨（母题：题花 / 引文拉页 / 首字下沉；文本载体母题保持可编辑） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-c4" style="--paper:#faf9f7;--paper-tint:#efece7;--ink:#1a1a1a;--ink-tint:#2b2b2b;--accent:#c41e3a;--accent-on:#faf9f7;--font-display:'Songti SC','Noto Serif SC','STSong',serif;--font-body:'Songti SC','Noto Serif SC','STSong',serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:paper;--texture-layer:radial-gradient(80% 60% at 25% 12%,color-mix(in srgb,var(--ink) 3%,transparent),transparent 65%);--texture-scope:cover" data-content-hash="a2c54c584642">
+    <section class="slide cover-page" data-slide-id="theme-c4" style="--paper:#faf9f7;--paper-tint:#efece7;--ink:#1a1a1a;--ink-tint:#2b2b2b;--accent:#c41e3a;--accent-on:#faf9f7;--font-display:'Songti SC','Noto Serif SC','STSong',serif;--font-body:'Songti SC','Noto Serif SC','STSong',serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:paper;--texture-layer:radial-gradient(80% 60% at 25% 12%,color-mix(in srgb,var(--ink) 3%,transparent),transparent 65%);--texture-scope:cover" data-content-hash="fddbd68b07f1">
       <div style="position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:var(--font-body)">
         <p data-editable class="reveal" style="font-family:var(--font-mono);font-size:18px;letter-spacing:.12em;opacity:.55">THEME SAMPLES · G</p>
         <h1 data-editable class="reveal" style="--d:.1s;margin-top:40px;font-family:var(--font-display);font-size:140px;line-height:1.3;font-weight:700">想象的形状</h1>
         <div class="mt-pub-orn reveal" data-editable-skip style="--d:.18s;margin-top:36px;font-size:26px">❧</div>
-        <p data-editable class="mt-pub-pull reveal" style="--d:.26s;margin-top:40px;font-size:24px;text-align:left">同一段内容，二十个世界</p>
+        <p data-editable class="mt-pub-pull reveal" style="--d:.26s;margin-top:40px;font-size:24px;text-align:left">同一段内容，二十一个世界</p>
         <p data-editable class="mt-pub-dropcap reveal" style="--d:.34s;margin-top:64px;max-width:620px;font-size:21px;line-height:1.9;text-align:left;opacity:.85">纸面铺开，墨色落定。同一句话落在不同的纸上，就长成不同的世界。排版从不是装饰——它是内容抵达读者之前，最后一次被郑重对待的机会。字有墨色，纸有呼吸。</p>
       </div>
       <p data-editable style="position:absolute;left:120px;bottom:60px;font-family:var(--font-mono);font-size:15px;font-weight:500;opacity:.55">C4 · 纸与墨 · 绯红</p>
@@ -1814,7 +1824,7 @@ body{
 
   <!-- 31 · 主题样张 D1 奶油物语（母题：贴纸徽章 / 奶油圆点 / 扇贝花边；缓动签名内联） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-d1" style="--paper:#fbf6ee;--paper-tint:#f4ecdc;--ink:#3d3229;--ink-tint:#544738;--accent:#c08334;--accent-on:#fffaf0;--font-display:'Yuanti SC','PingFang SC','Noto Sans SC',sans-serif;--font-body:'Yuanti SC','PingFang SC','Noto Sans SC',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:flat;--texture-layer:none;--texture-scope:cover;--ease-out:cubic-bezier(.34,1.56,.64,1)" data-content-hash="1fb39729b5e8">
+    <section class="slide cover-page" data-slide-id="theme-d1" style="--paper:#fbf6ee;--paper-tint:#f4ecdc;--ink:#3d3229;--ink-tint:#544738;--accent:#c08334;--accent-on:#fffaf0;--font-display:'Yuanti SC','PingFang SC','Noto Sans SC',sans-serif;--font-body:'Yuanti SC','PingFang SC','Noto Sans SC',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:flat;--texture-layer:none;--texture-scope:cover;--ease-out:cubic-bezier(.34,1.56,.64,1)" data-content-hash="10c39a0e38c6">
       <div style="position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--font-body)">
         <div class="reveal" style="position:relative;background:var(--paper-tint);border-radius:36px;box-shadow:0 8px 24px color-mix(in srgb,var(--ink) 8%,transparent);padding:88px 132px;text-align:center">
           <span class="mt-crm-sticker" data-editable-skip style="position:absolute;top:-22px;right:-30px;font-size:17px">G · 限定</span>
@@ -1824,7 +1834,7 @@ body{
             <span class="mt-crm-dot" data-editable-skip></span>
           </div>
           <h1 data-editable style="margin-top:36px;font-family:var(--font-display);font-size:120px;line-height:1.3;font-weight:600">想象的形状</h1>
-          <p data-editable style="margin-top:28px;font-size:26px;opacity:.75">同一段内容，二十个世界</p>
+          <p data-editable style="margin-top:28px;font-size:26px;opacity:.75">同一段内容，二十一个世界</p>
         </div>
         <div class="mt-crm-scallop reveal" data-editable-skip style="--d:.2s;margin-top:64px;width:440px"></div>
       </div>
@@ -1834,7 +1844,7 @@ body{
 
   <!-- 32 · 主题样张 D2 柔光暗房（母题：胶片齿孔条 / 光束角标 / 显影晕；缓动签名内联） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-d2" style="--paper:#14110e;--paper-tint:#211b16;--ink:#f0e6d8;--ink-tint:#2c241d;--accent:#e8a34c;--accent-on:#14110e;--font-display:'Songti SC','Noto Serif SC','STSong',serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:glow;--texture-layer:radial-gradient(120% 90% at 70% 10%,color-mix(in srgb,var(--accent) 14%,transparent),transparent 60%);--texture-scope:cover;--ease-out:cubic-bezier(.1,.7,.2,1)" data-content-hash="ceed9c75cc82">
+    <section class="slide cover-page" data-slide-id="theme-d2" style="--paper:#14110e;--paper-tint:#211b16;--ink:#f0e6d8;--ink-tint:#2c241d;--accent:#e8a34c;--accent-on:#14110e;--font-display:'Songti SC','Noto Serif SC','STSong',serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:glow;--texture-layer:radial-gradient(120% 90% at 70% 10%,color-mix(in srgb,var(--accent) 14%,transparent),transparent 60%);--texture-scope:cover;--ease-out:cubic-bezier(.1,.7,.2,1)" data-content-hash="5ac09ff6eb58">
       <div class="mt-drk-film" data-editable-skip style="position:absolute;left:0;right:0;top:0"></div>
       <div class="mt-drk-beam" data-editable-skip style="right:0;top:0;transform:scaleX(-1)"></div>
       <div style="position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:var(--font-body)">
@@ -1842,7 +1852,7 @@ body{
         <div class="mt-drk-halo reveal" style="--d:.12s;margin-top:48px">
           <h1 data-editable style="font-family:var(--font-display);font-size:150px;line-height:1.3;font-weight:400">想象的形状</h1>
         </div>
-        <p data-editable class="reveal" style="--d:.26s;margin-top:48px;font-size:26px;opacity:.78">同一段内容，二十个世界</p>
+        <p data-editable class="reveal" style="--d:.26s;margin-top:48px;font-size:26px;opacity:.78">同一段内容，二十一个世界</p>
       </div>
       <p data-editable style="position:absolute;left:120px;bottom:60px;font-family:var(--font-mono);font-size:15px;font-weight:500;opacity:.55">D2 · 柔光暗房 · 琥珀</p>
     </section>
@@ -1850,12 +1860,12 @@ body{
 
   <!-- 33 · 主题样张 D3 手绘油彩（母题：虚线圈注 / 笔触块 / 画框双描边） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-d3" style="--paper:#e9e5da;--paper-tint:#dcd6c6;--ink:#33413a;--ink-tint:#46564d;--accent:#a05f3c;--accent-on:#f5f1e6;--font-display:'Kaiti SC','STKaiti','Songti SC','Noto Serif SC',serif;--font-body:'Kaiti SC','STKaiti','Songti SC','Noto Serif SC',serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:paper;--texture-layer:radial-gradient(80% 60% at 30% 20%,color-mix(in srgb,var(--accent) 5%,transparent),transparent 70%),radial-gradient(70% 80% at 75% 85%,color-mix(in srgb,var(--ink) 4%,transparent),transparent 70%);--texture-scope:all" data-content-hash="26eba0c13a5a">
+    <section class="slide cover-page" data-slide-id="theme-d3" style="--paper:#e9e5da;--paper-tint:#dcd6c6;--ink:#33413a;--ink-tint:#46564d;--accent:#a05f3c;--accent-on:#f5f1e6;--font-display:'Kaiti SC','STKaiti','Songti SC','Noto Serif SC',serif;--font-body:'Kaiti SC','STKaiti','Songti SC','Noto Serif SC',serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:paper;--texture-layer:radial-gradient(80% 60% at 30% 20%,color-mix(in srgb,var(--accent) 5%,transparent),transparent 70%),radial-gradient(70% 80% at 75% 85%,color-mix(in srgb,var(--ink) 4%,transparent),transparent 70%);--texture-scope:all" data-content-hash="357f5c0e6831">
       <div class="mt-art-frame" data-editable-skip style="position:absolute;right:220px;bottom:200px;width:190px;height:140px;background:color-mix(in srgb,var(--accent) 16%,var(--paper))"></div>
       <div style="position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:var(--font-body)">
         <p data-editable class="mt-art-circle reveal" style="font-family:var(--font-mono);font-size:16px;font-weight:500;letter-spacing:.12em">THEME SAMPLES · G</p>
         <h1 data-editable class="reveal" style="--d:.12s;margin-top:56px;font-family:var(--font-display);font-size:150px;line-height:1.35;font-weight:500">想象的<span class="mt-art-brush">形状</span></h1>
-        <p data-editable class="reveal" style="--d:.24s;margin-top:48px;font-size:26px;opacity:.8">同一段内容，二十个世界</p>
+        <p data-editable class="reveal" style="--d:.24s;margin-top:48px;font-size:26px;opacity:.8">同一段内容，二十一个世界</p>
       </div>
       <p data-editable style="position:absolute;left:120px;bottom:60px;font-family:var(--font-mono);font-size:15px;font-weight:500;opacity:.55">D3 · 手绘油彩 · 赭石</p>
     </section>
@@ -1863,13 +1873,13 @@ body{
 
   <!-- 34 · 主题样张 E1 孔版印刷（母题：套色错位叠印块 / 裁剪虚线 / 网目调点块；缓动签名内联） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-e1" style="--paper:#f7f2e6;--paper-tint:#ece5d3;--ink:#221d16;--ink-tint:#332c22;--accent:#FF48B0;--accent-on:#fdfaf3;--font-display:'Helvetica Neue','Arial Black','PingFang SC','Noto Sans SC',sans-serif;--font-body:'Helvetica Neue','PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'Courier New','SF Mono','JetBrains Mono',monospace;--texture-type:grain;--texture-layer:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22240%22 height=%22240%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3CfeColorMatrix type=%22saturate%22 values=%220%22/%3E%3C/filter%3E%3Crect width=%22240%22 height=%22240%22 filter=%22url(%23n)%22 opacity=%220.05%22/%3E%3C/svg%3E'),radial-gradient(70% 60% at 75% 85%,color-mix(in srgb,var(--accent) 4%,transparent),transparent 65%);--texture-scope:all;--ease-out:cubic-bezier(.3,1.4,.4,1)" data-content-hash="923e93d64c77">
+    <section class="slide cover-page" data-slide-id="theme-e1" style="--paper:#f7f2e6;--paper-tint:#ece5d3;--ink:#221d16;--ink-tint:#332c22;--accent:#FF48B0;--accent-on:#fdfaf3;--font-display:'Helvetica Neue','Arial Black','PingFang SC','Noto Sans SC',sans-serif;--font-body:'Helvetica Neue','PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'Courier New','SF Mono','JetBrains Mono',monospace;--texture-type:grain;--texture-layer:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22240%22 height=%22240%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3CfeColorMatrix type=%22saturate%22 values=%220%22/%3E%3C/filter%3E%3Crect width=%22240%22 height=%22240%22 filter=%22url(%23n)%22 opacity=%220.05%22/%3E%3C/svg%3E'),radial-gradient(70% 60% at 75% 85%,color-mix(in srgb,var(--accent) 4%,transparent),transparent 65%);--texture-scope:all;--ease-out:cubic-bezier(.3,1.4,.4,1)" data-content-hash="7e6f2e123c8e">
       <div class="mt-ris-halftone" data-editable-skip style="right:120px;top:96px;width:220px;height:160px"></div>
       <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;font-family:var(--font-body)">
         <div class="reveal"><span style="display:inline-block;background:var(--paper-tint);padding:10px 22px;transform:rotate(-1.5deg)"><span data-editable style="font-family:var(--font-mono);font-size:17px;font-weight:600;letter-spacing:.12em">THEME SAMPLES · G</span></span></div>
         <h1 data-editable class="reveal" style="--d:.12s;margin-top:56px;font-family:var(--font-display);font-size:150px;line-height:1.2;font-weight:800">想象的<span class="mt-ris-misreg">形状</span></h1>
         <hr class="mt-ris-cut reveal" data-editable-skip style="--d:.2s;margin-top:56px;width:640px">
-        <p data-editable class="reveal" style="--d:.28s;margin-top:32px;font-size:26px;line-height:1.7;opacity:.78">同一段内容，二十个世界</p>
+        <p data-editable class="reveal" style="--d:.28s;margin-top:32px;font-size:26px;line-height:1.7;opacity:.78">同一段内容，二十一个世界</p>
       </div>
       <p data-editable style="position:absolute;left:120px;bottom:60px;font-family:var(--font-mono);font-size:15px;font-weight:600;opacity:.6">E1 · 孔版印刷 · 荧光粉</p>
     </section>
@@ -1877,14 +1887,14 @@ body{
 
   <!-- 35 · 主题样张 E2 蓝图（母题：双线图框 / 图框标题栏 / 尺寸标注线） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-e2" style="--paper:#14304a;--paper-tint:#1b3d5c;--ink:#f2f6f9;--ink-tint:#0f2438;--accent:#35C8E8;--accent-on:#0e2a3f;--font-display:'Helvetica Neue','PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-body:'Helvetica Neue','PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:paper;--texture-layer:repeating-linear-gradient(0deg,color-mix(in srgb,var(--ink) 5%,transparent) 0 1px,transparent 1px 7px),repeating-linear-gradient(90deg,color-mix(in srgb,var(--ink) 5%,transparent) 0 1px,transparent 1px 7px),repeating-linear-gradient(0deg,color-mix(in srgb,var(--ink) 12%,transparent) 0 1px,transparent 1px 35px),repeating-linear-gradient(90deg,color-mix(in srgb,var(--ink) 12%,transparent) 0 1px,transparent 1px 35px);--texture-scope:all" data-content-hash="b285785b9229">
+    <section class="slide cover-page" data-slide-id="theme-e2" style="--paper:#14304a;--paper-tint:#1b3d5c;--ink:#f2f6f9;--ink-tint:#0f2438;--accent:#35C8E8;--accent-on:#0e2a3f;--font-display:'Helvetica Neue','PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-body:'Helvetica Neue','PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:paper;--texture-layer:repeating-linear-gradient(0deg,color-mix(in srgb,var(--ink) 5%,transparent) 0 1px,transparent 1px 7px),repeating-linear-gradient(90deg,color-mix(in srgb,var(--ink) 5%,transparent) 0 1px,transparent 1px 7px),repeating-linear-gradient(0deg,color-mix(in srgb,var(--ink) 12%,transparent) 0 1px,transparent 1px 35px),repeating-linear-gradient(90deg,color-mix(in srgb,var(--ink) 12%,transparent) 0 1px,transparent 1px 35px);--texture-scope:all" data-content-hash="18c869de0932">
       <div class="mt-bp-frame" data-editable-skip style="position:absolute;inset:56px 72px">
         <div class="mt-bp-tag"><span>DWG-G20</span><span>SCALE 1:20</span><span>2026-09</span></div>
       </div>
       <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;font-family:var(--font-body)">
         <p data-editable class="reveal" style="font-family:var(--font-mono);font-size:18px;letter-spacing:.3em;color:var(--accent)">THEME SAMPLES · G</p>
         <h1 data-editable class="reveal" style="--d:.1s;margin-top:44px;font-family:var(--font-display);font-size:140px;line-height:1.25;font-weight:600;letter-spacing:.04em">想象的形状</h1>
-        <p data-editable class="reveal" style="--d:.2s;margin-top:36px;font-size:26px;line-height:1.7;opacity:.8">同一段内容，二十个世界</p>
+        <p data-editable class="reveal" style="--d:.2s;margin-top:36px;font-size:26px;line-height:1.7;opacity:.8">同一段内容，二十一个世界</p>
         <div class="mt-bp-dim reveal" data-editable-skip style="--d:.3s;margin-top:72px;width:720px"><i></i><span>WIDTH 720 · 1 TEXT / 20 WORLDS</span><i></i></div>
       </div>
       <p data-editable style="position:absolute;left:120px;bottom:88px;font-family:var(--font-mono);font-size:15px;font-weight:500;opacity:.6">E2 · 蓝图 · 经典蓝图</p>
@@ -1893,14 +1903,14 @@ body{
 
   <!-- 36 · 主题样张 E3 装饰艺术（母题：扇形放射 / 双线金框 / 菱形分隔符） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-e3" style="--paper:#111110;--paper-tint:#1b1b18;--ink:#f0e9d6;--ink-tint:#0a0a09;--accent:#c9a227;--accent-on:#111110;--font-display:'Songti SC','Noto Serif SC','STSong',serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:flat;--texture-layer:none;--texture-scope:cover" data-content-hash="d2e8bca25de7">
+    <section class="slide cover-page" data-slide-id="theme-e3" style="--paper:#111110;--paper-tint:#1b1b18;--ink:#f0e9d6;--ink-tint:#0a0a09;--accent:#c9a227;--accent-on:#111110;--font-display:'Songti SC','Noto Serif SC','STSong',serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:flat;--texture-layer:none;--texture-scope:cover" data-content-hash="614df63e7c6d">
       <div class="mt-deco-sun" data-editable-skip style="position:absolute;left:50%;top:0;transform:translateX(-50%)"></div>
       <div class="mt-deco-frame" data-editable-skip style="position:absolute;inset:64px 80px;pointer-events:none"></div>
       <div style="position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:var(--font-body)">
         <p data-editable class="reveal" style="font-family:var(--font-mono);font-size:17px;font-weight:500;letter-spacing:.32em;color:var(--accent)">THEME SAMPLES · G</p>
         <h1 data-editable class="reveal" style="--d:.14s;margin-top:48px;font-family:var(--font-display);font-size:144px;line-height:1.3;font-weight:600;letter-spacing:.06em">想象的形状</h1>
         <div class="mt-deco-divider reveal" data-editable-skip style="--d:.24s;margin-top:52px"><span class="mt-deco-rhombus"></span></div>
-        <p data-editable class="reveal" style="--d:.32s;margin-top:52px;font-size:26px;line-height:1.8;opacity:.8">同一段内容，二十个世界</p>
+        <p data-editable class="reveal" style="--d:.32s;margin-top:52px;font-size:26px;line-height:1.8;opacity:.8">同一段内容，二十一个世界</p>
       </div>
       <p data-editable style="position:absolute;left:120px;bottom:92px;font-family:var(--font-mono);font-size:15px;font-weight:500;opacity:.6">E3 · 装饰艺术 · 墨黑金</p>
     </section>
@@ -1908,7 +1918,7 @@ body{
 
   <!-- 37 · 主题样张 E4 包豪斯（母题：基本形三件套不对称构成 + 粗网格线） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-e4" style="--paper:#f4f0e4;--paper-tint:#e9e3d3;--ink:#141412;--ink-tint:#26241f;--accent:#D1342B;--accent-on:#f4f0e4;--font-display:'Helvetica Neue','PingFang SC','Noto Sans SC',sans-serif;--font-body:'Helvetica Neue','PingFang SC','Noto Sans SC',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:flat;--texture-layer:none;--texture-scope:cover" data-content-hash="5ac7ac70eaa1">
+    <section class="slide cover-page" data-slide-id="theme-e4" style="--paper:#f4f0e4;--paper-tint:#e9e3d3;--ink:#141412;--ink-tint:#26241f;--accent:#D1342B;--accent-on:#f4f0e4;--font-display:'Helvetica Neue','PingFang SC','Noto Sans SC',sans-serif;--font-body:'Helvetica Neue','PingFang SC','Noto Sans SC',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:flat;--texture-layer:none;--texture-scope:cover" data-content-hash="bb60255024dc">
       <div class="mt-bau-circle mt-bau-fill-accent" data-editable-skip style="right:200px;top:390px;width:300px;height:300px"></div>
       <div class="mt-bau-square mt-bau-fill-ink" data-editable-skip style="right:524px;top:236px;width:88px;height:88px"></div>
       <div class="mt-bau-tri mt-bau-tint" data-editable-skip style="right:560px;bottom:180px;width:168px;height:146px"></div>
@@ -1916,7 +1926,7 @@ body{
         <p data-editable class="reveal" style="font-family:var(--font-mono);font-size:18px;font-weight:600;letter-spacing:.14em;opacity:.6">THEME SAMPLES · G</p>
         <span class="mt-bau-line reveal" data-editable-skip style="--d:.08s;margin-top:28px;width:120px"></span>
         <h1 data-editable class="reveal" style="--d:.16s;margin-top:44px;font-family:var(--font-display);font-size:168px;line-height:1.1;font-weight:200;letter-spacing:-.03em">想象的形状</h1>
-        <p data-editable class="reveal" style="--d:.26s;margin-top:44px;font-size:26px;line-height:1.7;font-weight:500;opacity:.75">同一段内容，二十个世界</p>
+        <p data-editable class="reveal" style="--d:.26s;margin-top:44px;font-size:26px;line-height:1.7;font-weight:500;opacity:.75">同一段内容，二十一个世界</p>
       </div>
       <p data-editable style="position:absolute;left:120px;bottom:60px;font-family:var(--font-mono);font-size:15px;font-weight:600;opacity:.6">E4 · 包豪斯 · 原色红</p>
     </section>
@@ -1924,13 +1934,13 @@ body{
 
   <!-- 38 · 主题样张 E5 构成主义（母题：对角切割带 / 粗黑横杠 / 阶梯错排；缓动签名内联） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-e5" style="--paper:#eadfc4;--paper-tint:#ddd0b0;--ink:#171310;--ink-tint:#2b241a;--accent:#9E1B1E;--accent-on:#eadfc4;--font-display:'Arial Black','PingFang SC','Noto Sans SC',sans-serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:grain;--texture-layer:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22240%22 height=%22240%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3CfeColorMatrix type=%22saturate%22 values=%220%22/%3E%3C/filter%3E%3Crect width=%22240%22 height=%22240%22 filter=%22url(%23n)%22 opacity=%220.05%22/%3E%3C/svg%3E');--texture-scope:cover;--ease-out:cubic-bezier(.8,0,.2,1)" data-content-hash="825c6387a525">
+    <section class="slide cover-page" data-slide-id="theme-e5" style="--paper:#eadfc4;--paper-tint:#ddd0b0;--ink:#171310;--ink-tint:#2b241a;--accent:#9E1B1E;--accent-on:#eadfc4;--font-display:'Arial Black','PingFang SC','Noto Sans SC',sans-serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:grain;--texture-layer:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22240%22 height=%22240%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3CfeColorMatrix type=%22saturate%22 values=%220%22/%3E%3C/filter%3E%3Crect width=%22240%22 height=%22240%22 filter=%22url(%23n)%22 opacity=%220.05%22/%3E%3C/svg%3E');--texture-scope:cover;--ease-out:cubic-bezier(.8,0,.2,1)" data-content-hash="8c38a796ffc4">
       <div class="mt-con-diag" data-editable-skip style="top:660px"></div>
       <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;font-family:var(--font-body)">
         <p data-editable class="reveal" style="font-family:var(--font-mono);font-size:18px;font-weight:600;letter-spacing:.14em;opacity:.6">THEME SAMPLES · G</p>
         <span class="mt-con-bar mt-con-bar--accent reveal" data-editable-skip style="--d:.08s;margin-top:36px;margin-left:56px;font-size:64px"></span>
         <h1 data-editable class="reveal" style="--d:.16s;margin-top:28px;margin-left:112px;font-family:var(--font-display);font-size:150px;line-height:1.15;font-weight:900;letter-spacing:.02em">想象的形状</h1>
-        <p data-editable class="reveal" style="--d:.24s;margin-top:40px;margin-left:168px;font-size:26px;line-height:1.7;font-weight:500;opacity:.78">同一段内容，二十个世界</p>
+        <p data-editable class="reveal" style="--d:.24s;margin-top:40px;margin-left:168px;font-size:26px;line-height:1.7;font-weight:500;opacity:.78">同一段内容，二十一个世界</p>
       </div>
       <p data-editable style="position:absolute;left:120px;bottom:60px;font-family:var(--font-mono);font-size:15px;font-weight:600;opacity:.6">E5 · 构成主义 · 革命红</p>
     </section>
@@ -1938,7 +1948,7 @@ body{
 
   <!-- 39 · 主题样张 E6 孟菲斯（母题：彩纸屑碎形 ×5 / 粗描边圆角卡 / 之字波浪线；缓动签名内联） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-e6" style="--paper:#FFF8EE;--paper-tint:#FFE9C7;--ink:#1A1A2E;--ink-tint:#3A3A55;--accent:#FF3DA5;--accent-on:#FFF8EE;--font-display:'Futura','Century Gothic','PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:flat;--texture-layer:none;--texture-scope:cover;--ease-out:cubic-bezier(.5,1.7,.4,1)" data-content-hash="b6798b9de807">
+    <section class="slide cover-page" data-slide-id="theme-e6" style="--paper:#FFF8EE;--paper-tint:#FFE9C7;--ink:#1A1A2E;--ink-tint:#3A3A55;--accent:#FF3DA5;--accent-on:#FFF8EE;--font-display:'Futura','Century Gothic','PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:flat;--texture-layer:none;--texture-scope:cover;--ease-out:cubic-bezier(.5,1.7,.4,1)" data-content-hash="a7c1e69ef90a">
       <div class="mt-mem-confetti" data-editable-skip>
         <i class="mt-mem-dot" style="left:200px;top:200px"></i>
         <i class="mt-mem-tri" style="right:240px;top:176px"></i>
@@ -1950,7 +1960,7 @@ body{
         <div class="mt-mem-card reveal" style="padding:72px 104px;text-align:center">
           <p data-editable style="font-family:var(--font-mono);font-size:17px;font-weight:600;letter-spacing:.14em;opacity:.6">THEME SAMPLES · G</p>
           <h1 data-editable style="margin-top:32px;font-family:var(--font-display);font-size:124px;line-height:1.2;font-weight:800">想象的形状</h1>
-          <p data-editable style="margin-top:28px;font-size:26px;opacity:.78">同一段内容，二十个世界</p>
+          <p data-editable style="margin-top:28px;font-size:26px;opacity:.78">同一段内容，二十一个世界</p>
         </div>
         <div class="mt-mem-zig reveal" data-editable-skip style="--d:.2s;margin-top:64px;width:480px"></div>
       </div>
@@ -1960,7 +1970,7 @@ body{
 
   <!-- 40 · 主题样张 E7 浮世绘（母题：浪花带页缘 / 姓名印落款 / 竖排题跋——题跋文字可编辑） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-e7" style="--paper:#F5EFE2;--paper-tint:#E9DFC9;--ink:#23201B;--ink-tint:#3D3A33;--accent:#B03A2E;--accent-on:#F5EFE2;--font-display:'Songti SC','Noto Serif SC','STSong',serif;--font-body:'Songti SC','Noto Serif SC','STSong',serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:paper;--texture-layer:radial-gradient(90% 70% at 20% 15%,color-mix(in srgb,var(--ink) 3%,transparent),transparent 60%),radial-gradient(80% 70% at 80% 90%,color-mix(in srgb,var(--ink) 2%,transparent),transparent 65%);--texture-scope:all" data-content-hash="6be5fff9646c">
+    <section class="slide cover-page" data-slide-id="theme-e7" style="--paper:#F5EFE2;--paper-tint:#E9DFC9;--ink:#23201B;--ink-tint:#3D3A33;--accent:#B03A2E;--accent-on:#F5EFE2;--font-display:'Songti SC','Noto Serif SC','STSong',serif;--font-body:'Songti SC','Noto Serif SC','STSong',serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:paper;--texture-layer:radial-gradient(90% 70% at 20% 15%,color-mix(in srgb,var(--ink) 3%,transparent),transparent 60%),radial-gradient(80% 70% at 80% 90%,color-mix(in srgb,var(--ink) 2%,transparent),transparent 65%);--texture-scope:all" data-content-hash="71cf1461b6d9">
       <div class="mt-uki-wave" data-editable-skip style="position:absolute;left:0;right:0;bottom:0"></div>
       <div class="mt-uki-seal" data-editable-skip style="position:absolute;right:150px;bottom:96px;font-size:40px">想象</div>
       <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;font-family:var(--font-body)">
@@ -1969,7 +1979,7 @@ body{
           <h1 data-editable style="font-family:var(--font-display);font-size:148px;line-height:1.25;font-weight:600">想象的形状</h1>
           <span class="mt-uki-inscription" data-editable style="font-size:24px;margin-top:14px">同文廿界</span>
         </div>
-        <p data-editable class="reveal" style="--d:.26s;margin-top:44px;font-size:26px;line-height:1.9;opacity:.78">同一段内容，二十个世界</p>
+        <p data-editable class="reveal" style="--d:.26s;margin-top:44px;font-size:26px;line-height:1.9;opacity:.78">同一段内容，二十一个世界</p>
       </div>
       <p data-editable style="position:absolute;left:120px;bottom:64px;font-family:var(--font-mono);font-size:15px;font-weight:500;opacity:.55">E7 · 浮世绘 · 印泥红</p>
     </section>
@@ -1977,13 +1987,13 @@ body{
 
   <!-- 41 · 主题样张 E8 号外报纸（母题：报头徽标条 / 通栏粗细双线 / 三栏文本——栏内文字可编辑） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-e8" style="--paper:#f4f1ea;--paper-tint:#e8e4da;--ink:#111111;--ink-tint:#232323;--accent:#C8102E;--accent-on:#fdf9f4;--font-display:'Arial Black','Impact','SimHei','PingFang SC','Noto Sans SC',sans-serif;--font-body:'Georgia','Times New Roman','Songti SC','SimSun',serif;--font-mono:'Consolas','Courier New','SF Mono',monospace;--texture-type:paper;--texture-layer:radial-gradient(85% 60% at 15% 8%,color-mix(in srgb,var(--ink) 4%,transparent),transparent 60%);--texture-scope:cover" data-content-hash="7c76a2efbee6">
+    <section class="slide cover-page" data-slide-id="theme-e8" style="--paper:#f4f1ea;--paper-tint:#e8e4da;--ink:#111111;--ink-tint:#232323;--accent:#C8102E;--accent-on:#fdf9f4;--font-display:'Arial Black','Impact','SimHei','PingFang SC','Noto Sans SC',sans-serif;--font-body:'Georgia','Times New Roman','Songti SC','SimSun',serif;--font-mono:'Consolas','Courier New','SF Mono',monospace;--texture-type:paper;--texture-layer:radial-gradient(85% 60% at 15% 8%,color-mix(in srgb,var(--ink) 4%,transparent),transparent 60%);--texture-scope:cover" data-content-hash="e66112656437">
       <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;font-family:var(--font-body)">
         <div class="mt-news-mast" data-editable-skip><span>The Gallery Gazette</span><span>Theme Samples Extra · 2026-09 · No.20</span></div>
         <p data-editable class="reveal" style="margin-top:56px;font-family:var(--font-mono);font-size:17px;letter-spacing:.14em;color:var(--accent);font-weight:600">THEME SAMPLES · G</p>
         <h1 data-editable class="reveal" style="--d:.1s;margin-top:24px;font-family:var(--font-display);font-size:140px;line-height:1.15;font-weight:900;letter-spacing:.01em">想象的形状</h1>
         <hr class="mt-news-rule reveal" data-editable-skip style="--d:.18s;margin-top:40px">
-        <p data-editable class="reveal" style="--d:.26s;margin-top:32px;font-size:26px;line-height:1.7;opacity:.85">同一段内容，二十个世界</p>
+        <p data-editable class="reveal" style="--d:.26s;margin-top:32px;font-size:26px;line-height:1.7;opacity:.85">同一段内容，二十一个世界</p>
         <p data-editable class="mt-news-cols reveal" style="--d:.34s;margin-top:48px;max-width:1500px;font-size:16px;line-height:1.8;opacity:.75">同一句话印在不同的纸上，就成了不同的世界。版式是编辑部的第一种声音：通栏规则一压，头条一黑到底，三栏小字紧随其后，一张纸就有了街头的分量。本报试以二十种版式各印一次，结果如读者所见——内容从未更改，世界已然二十个。</p>
       </div>
       <p data-editable style="position:absolute;left:120px;bottom:60px;font-family:var(--font-mono);font-size:15px;font-weight:500;opacity:.55">E8 · 号外报纸 · 号外红</p>
@@ -1992,14 +2002,14 @@ body{
 
   <!-- 42 · 主题样张 E9 地质地层（母题：层理色带页底 / 岩芯样本条 / 年代标注签） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-e9" style="--paper:#f0e9d8;--paper-tint:#e3d9c3;--ink:#2c251d;--ink-tint:#413729;--accent:#a85a2a;--accent-on:#f0e9d8;--font-display:'Avenir Next','Helvetica Neue','PingFang SC','Noto Sans SC',sans-serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'JetBrains Mono','SF Mono','Menlo',monospace;--texture-type:grain;--texture-layer:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22240%22 height=%22240%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3CfeColorMatrix type=%22saturate%22 values=%220%22/%3E%3C/filter%3E%3Crect width=%22240%22 height=%22240%22 filter=%22url(%23n)%22 opacity=%220.05%22/%3E%3C/svg%3E');--texture-scope:all" data-content-hash="640ee7a92e0f">
+    <section class="slide cover-page" data-slide-id="theme-e9" style="--paper:#f0e9d8;--paper-tint:#e3d9c3;--ink:#2c251d;--ink-tint:#413729;--accent:#a85a2a;--accent-on:#f0e9d8;--font-display:'Avenir Next','Helvetica Neue','PingFang SC','Noto Sans SC',sans-serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'JetBrains Mono','SF Mono','Menlo',monospace;--texture-type:grain;--texture-layer:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22240%22 height=%22240%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3CfeColorMatrix type=%22saturate%22 values=%220%22/%3E%3C/filter%3E%3Crect width=%22240%22 height=%22240%22 filter=%22url(%23n)%22 opacity=%220.05%22/%3E%3C/svg%3E');--texture-scope:all" data-content-hash="d7f150c81928">
       <div class="mt-geo-strata" data-editable-skip></div>
       <div class="mt-geo-core" data-editable-skip style="position:absolute;right:280px;top:200px;height:520px"></div>
       <div class="mt-geo-tag" data-editable-skip style="position:absolute;right:330px;top:238px"><span>CORE G-20 · HOLOCENE</span></div>
       <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;font-family:var(--font-body);padding-bottom:120px">
         <p data-editable class="reveal" style="font-family:var(--font-mono);font-size:17px;letter-spacing:.14em;opacity:.55">THEME SAMPLES · G</p>
         <h1 data-editable class="reveal" style="--d:.12s;margin-top:44px;font-family:var(--font-display);font-size:140px;line-height:1.25;font-weight:600">想象的形状</h1>
-        <p data-editable class="reveal" style="--d:.24s;margin-top:40px;font-size:26px;line-height:1.7;opacity:.78">同一段内容，二十个世界</p>
+        <p data-editable class="reveal" style="--d:.24s;margin-top:40px;font-size:26px;line-height:1.7;opacity:.78">同一段内容，二十一个世界</p>
       </div>
       <p data-editable style="position:absolute;left:120px;bottom:136px;font-family:var(--font-mono);font-size:15px;font-weight:500;opacity:.6">E9 · 地质地层 · 赭石</p>
     </section>
@@ -2007,7 +2017,7 @@ body{
 
   <!-- 43 · 主题样张 E10 星图（母题：黄道坐标网格 / 星座件 5 星 4 连线 / 斜体星名 + 星等注记——星名与注记文字可编辑；无 canvas fx） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-e10" style="--paper:#0b1426;--paper-tint:#152138;--ink:#dfe7f2;--ink-tint:#1d2c47;--accent:#e8b64c;--accent-on:#0b1426;--font-display:'Songti SC','Noto Serif SC','STSong',serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:grain;--texture-layer:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22240%22 height=%22240%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3CfeColorMatrix type=%22saturate%22 values=%220%22/%3E%3C/filter%3E%3Crect width=%22240%22 height=%22240%22 filter=%22url(%23n)%22 opacity=%220.04%22/%3E%3C/svg%3E');--texture-scope:cover" data-content-hash="0ea9842a6671">
+    <section class="slide cover-page" data-slide-id="theme-e10" style="--paper:#0b1426;--paper-tint:#152138;--ink:#dfe7f2;--ink-tint:#1d2c47;--accent:#e8b64c;--accent-on:#0b1426;--font-display:'Songti SC','Noto Serif SC','STSong',serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:grain;--texture-layer:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22240%22 height=%22240%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3CfeColorMatrix type=%22saturate%22 values=%220%22/%3E%3C/filter%3E%3Crect width=%22240%22 height=%22240%22 filter=%22url(%23n)%22 opacity=%220.04%22/%3E%3C/svg%3E');--texture-scope:cover" data-content-hash="6fe10b6f59b4">
       <div class="mt-star-grid" data-editable-skip></div>
       <div data-editable-skip>
         <span class="mt-star-dot" style="left:1240px;top:300px"></span>
@@ -2025,7 +2035,7 @@ body{
       <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;font-family:var(--font-body)">
         <p data-editable class="reveal" style="font-family:var(--font-mono);font-size:17px;letter-spacing:.22em;color:var(--accent)">THEME SAMPLES · G</p>
         <h1 data-editable class="reveal" style="--d:.14s;margin-top:48px;max-width:900px;font-family:var(--font-display);font-size:144px;line-height:1.3;font-weight:400;letter-spacing:.08em">想象的形状</h1>
-        <p data-editable class="reveal" style="--d:.26s;margin-top:44px;font-size:26px;line-height:1.8;opacity:.78">同一段内容，二十个世界</p>
+        <p data-editable class="reveal" style="--d:.26s;margin-top:44px;font-size:26px;line-height:1.8;opacity:.78">同一段内容，二十一个世界</p>
       </div>
       <p data-editable style="position:absolute;left:120px;bottom:60px;font-family:var(--font-mono);font-size:15px;font-weight:500;opacity:.55">E10 · 星图 · 深夜蓝金</p>
     </section>
@@ -2033,7 +2043,7 @@ body{
 
   <!-- 44 · 主题样张 E11 票据（母题：票根字段行 / 齿孔撕线 / 条码——字段文字可编辑） -->
   <div class="slide-slot">
-    <section class="slide cover-page" data-slide-id="theme-e11" style="--paper:#FDFCF9;--paper-tint:#F2F0E8;--ink:#1D2129;--ink-tint:#3A3F4A;--accent:#0F4C81;--accent-on:#FDFCF9;--font-display:'Arial Black','Avenir Next Heavy','PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:flat;--texture-layer:none;--texture-scope:cover" data-content-hash="ddca03580220">
+    <section class="slide cover-page" data-slide-id="theme-e11" style="--paper:#FDFCF9;--paper-tint:#F2F0E8;--ink:#1D2129;--ink-tint:#3A3F4A;--accent:#0F4C81;--accent-on:#FDFCF9;--font-display:'Arial Black','Avenir Next Heavy','PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-body:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:flat;--texture-layer:none;--texture-scope:cover" data-content-hash="f491e3cdeba0">
       <div class="mt-tix-barcode" data-editable-skip style="position:absolute;left:120px;right:120px;bottom:0"></div>
       <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;font-family:var(--font-body)">
         <div class="reveal" style="border:1px solid color-mix(in srgb,var(--ink) 30%,transparent)">
@@ -2045,11 +2055,11 @@ body{
             </div>
             <p data-editable style="margin-top:48px;font-family:var(--font-mono);font-size:17px;font-weight:600;letter-spacing:.14em;color:var(--accent)">THEME SAMPLES · G</p>
             <h1 data-editable style="margin-top:20px;font-family:var(--font-display);font-size:112px;line-height:1.15;font-weight:800;letter-spacing:.01em">想象的形状</h1>
-            <p data-editable style="margin-top:24px;font-size:25px;opacity:.78">同一段内容，二十个世界</p>
+            <p data-editable style="margin-top:24px;font-size:25px;opacity:.78">同一段内容，二十一个世界</p>
           </div>
           <div class="mt-tix-perf" data-editable-skip></div>
           <div class="mt-tix-stub" style="display:flex;justify-content:space-between;align-items:baseline">
-            <span class="mt-tix-field" data-editable style="font-size:15px"><small>STUB</small><b>ADMIT TWENTY WORLDS</b></span>
+            <span class="mt-tix-field" data-editable style="font-size:15px"><small>STUB</small><b>ADMIT TWENTY-ONE WORLDS</b></span>
             <span class="mt-tix-field" data-editable style="font-size:15px"><small>CLASS</small><b>THEME / G</b></span>
           </div>
         </div>
@@ -2058,8 +2068,25 @@ body{
     </section>
   </div>
 
+  <!-- 45 · 主题样张 E12 商务粗野（母题：爆炸星 / 描边圆环 / 圆盘 / 墨色块 / 结构线 / 贴纸 chip） -->
+  <div class="slide-slot">
+    <section class="slide cover-page" data-slide-id="theme-e12" style="--paper:#FFF6E3;--paper-tint:#F8EAC6;--ink:#17140E;--ink-tint:#2C2517;--accent:#E43D25;--accent-on:#FFF6E3;--font-display:'Helvetica Neue','PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-body:'Helvetica Neue','PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;--font-mono:'SF Mono','JetBrains Mono','Menlo',monospace;--texture-type:flat;--texture-layer:none;--texture-scope:cover" data-content-hash="d5ab34245865">
+      <div class="mt-nb-ring" data-editable-skip style="right:-160px;bottom:-160px;width:420px;height:420px"></div>
+      <div class="mt-nb-star" data-editable-skip style="right:150px;top:110px;width:150px;height:150px"></div>
+      <div class="mt-nb-disc" data-editable-skip style="right:430px;top:330px;width:120px;height:120px;background:var(--paper)"></div>
+      <div class="mt-nb-block-ink" data-editable-skip style="right:620px;top:540px;width:40px;height:40px"></div>
+      <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;font-family:var(--font-body)">
+        <div class="reveal"><span class="mt-nb-chip" style="font-family:var(--font-mono);font-size:17px;font-weight:600;letter-spacing:.14em"><span data-editable>THEME SAMPLES · G</span></span></div>
+        <h1 data-editable class="tt-mark" style="margin-top:48px;font-family:var(--font-display);font-size:112px;line-height:1.15;font-weight:800">想象的形状</h1>
+        <div class="mt-nb-line" data-editable-skip style="margin-top:40px;width:140px"></div>
+        <p data-editable style="margin-top:32px;font-size:25px;opacity:.78">同一段内容，二十一个世界</p>
+      </div>
+      <p data-editable style="position:absolute;left:120px;bottom:76px;font-family:var(--font-mono);font-size:15px;font-weight:500;opacity:.55">E12 · 商务粗野 · 朱红</p>
+    </section>
+  </div>
+
   <!-- ==========================================================
-       K 期 · §13 文本容器页组（45–50）：六型文本容器各一页高密度
+       K 期 · §13 文本容器页组（46–51）：六型文本容器各一页高密度
        实例，全部用画廊主主题 B1 渲染（无 section 级覆盖）。容器内
        层次遵守四层字阶纪律：① eyebrow mono 低明度 → ② 题 → ③ 体
        → ④ 注 mono 低明度。内容语境复用 SmartForge 内容包口径
@@ -2474,7 +2501,7 @@ body{
 </div>
 
 <!-- SLOT: 页码初始文本——生成时把 "1 / 1" 改为 "1 / N"（N=总页数） -->
-<div class="deck-chrome" id="chrome">1 / 52</div>
+<div class="deck-chrome" id="chrome">1 / 53</div>
 
 <script>
 /* ============================================================

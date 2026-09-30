@@ -2129,6 +2129,22 @@ def run_export(deck_html, out_path, vector_dir=None, embed_fonts_enabled=True,
             json.dump(report, f, ensure_ascii=False, indent=2)
             f.write('\n')
 
+        # LO 参考渲染页图持久化（编辑器"原生 PPTX 预览"消费；
+        # 无 soffice / --skip-verify 时缺省——诚实降级，不伪造）
+        lo_dir = os.path.join(work, 'lo')
+        if os.path.isdir(lo_dir):
+            native_dir = os.path.join(os.path.dirname(out_path), 'native')
+            saved = 0
+            for fn in sorted(os.listdir(lo_dir)):
+                if fn.startswith('lo-') and fn.endswith('.png'):
+                    os.makedirs(native_dir, exist_ok=True)
+                    shutil.copy(os.path.join(lo_dir, fn),
+                                os.path.join(native_dir, 'page-' + fn[3:]))
+                    saved += 1
+            if saved:
+                report['native_preview'] = 'native/page-NN.png（LibreOffice 参考渲染，非真实 PowerPoint）'
+                log('原生预览页图已持久化：%s（%d 页，LO 参考渲染）' % (native_dir, saved))
+
         dt = (datetime.now(timezone.utc) - t0).total_seconds()
         log('导出完成：%s（%d 页，文本 %d 框 / 形状 %d / 图片 %d / 原生图表 %d / 烙图 %d，耗时 %.1fs）'
             % (out_path, n_pages, report['totals']['text'],

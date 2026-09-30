@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* sync-themes.mjs —— 主题数据单源化同步 + Schema 校验
  *
- * 数据源：skills/html-pptx/references/themes.md（20 套七层重主题 + 配色变体，
+ * 数据源：skills/html-pptx/references/themes.md（21 套七层重主题 + 配色变体，
  *         Schema 化 G0–G9 字段组，唯一事实源；Schema 规范见
  *         docs/design/theme-schema.md 与 docs/design/theme-expression-stack.md）
  * 目标：  editor.html 内 PANEL_DATA.questions[0].options（面板主题卡片，
@@ -49,7 +49,7 @@ import { dirname, join } from 'node:path';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const THEMES_MD = join(ROOT, 'skills/html-pptx/references/themes.md');
 const EDITOR = join(ROOT, 'editor.html');
-const EXPECTED_COUNT = 20;
+const EXPECTED_COUNT = 21;
 const COLOR_TOKENS = ['--paper', '--paper-tint', '--ink', '--ink-tint', '--accent', '--accent-on'];
 const FONT_TOKENS = ['--font-display', '--font-body', '--font-mono'];
 const TEXTURE_TOKENS = ['--texture-type', '--texture-layer', '--texture-scope'];

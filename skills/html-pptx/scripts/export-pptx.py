@@ -657,9 +657,10 @@ def run_vector(deck_html, deck_dir, export_dir, t0):
             f.write('\n')
 
         # 落盘 export/（--force 覆盖）；清理上一版的过期产物——keep 按本次
-        # 实际产物名构建，并保护可编辑轨产物（deck.pptx / deck.report.json）
+        # 实际产物名构建，并保护可编辑轨产物（deck.pptx / deck.report.json /
+        # native/ 原生预览页图目录——可编辑轨持久化的 LO 参考渲染，同属交付产物）
         os.makedirs(export_dir, exist_ok=True)
-        keep = {'manifest.json', 'deck.pptx', 'deck.report.json'}
+        keep = {'manifest.json', 'deck.pptx', 'deck.report.json', 'native'}
         for name in os.listdir(work):
             if name in ('manifest.json',):
                 continue

@@ -62,7 +62,7 @@ def main():
             n_cards_after = page.evaluate("document.querySelectorAll('.theme-card').length")
             check('① 覆盖层打开；主题卡懒渲染（开前 %d → 开后 %d）'
                   % (n_cards_before, n_cards_after),
-                  n_cards_before == 20 and n_cards_after == 40)
+                  n_cards_before == 21 and n_cards_after == 42)
 
             # 缺省项视觉标注
             n_def = page.evaluate("document.querySelectorAll('#briefOverlay .def-tag').length")

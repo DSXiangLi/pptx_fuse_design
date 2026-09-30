@@ -660,6 +660,18 @@
   .exp-table .mono{font-family:"SF Mono","Menlo",monospace}
   .exp-table .exp-hint{color:var(--warn-text);font-size:11px}
   .exp-row button{padding:3px 10px;font-size:11px;margin-right:4px}
+  /* 下载交付件合一下拉 */
+  .dl-wrap{position:relative}
+  .dl-menu{
+    position:absolute;top:calc(100% + 6px);right:0;z-index:30;min-width:250px;
+    display:flex;flex-direction:column;gap:4px;padding:6px;
+    background:var(--bar);border:1px solid var(--border);border-radius:16px;
+    box-shadow:var(--shadow-lift);
+  }
+  .dl-menu[hidden]{display:none}
+  .dl-menu button{text-align:left;border:0;background:transparent;border-radius:10px;padding:8px 12px;box-shadow:none}
+  .dl-menu button:hover{background:var(--accent-soft);transform:none}
+  .dl-menu button[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -726,6 +738,7 @@
           <button id="btnTriRefresh" title="技能重新翻转后点此重新读取 export/ 目录">重新读取产物</button>
           <span class="cmp-note" id="cmpNote"></span>
         </div>
+        <div class="cmp-note">对比目标 = 原生 PPTX（deck.pptx）的 LibreOffice 参考渲染——近似真实 PowerPoint，比转曲 SVG 有信息量；老导出无 native/ 页图时自动回落矢量件。</div>
       </div>
       <div class="cmp-rows" id="cmpRows"></div>
     </div>
@@ -786,9 +799,14 @@
         </div>
         <button id="btnConvert" class="primary" title="一键运行技能导出管线（产出 deck.pptx / deck-vector.pptx / deck.pdf / 逐页 SVG / 逐页 PNG 全套）；嵌入态向宿主发转换请求">一键转换导出</button>
         <button id="btnExpRefresh" title="技能重新翻转后点此重新读取 export/ 目录">重新读取产物</button>
-        <button id="btnDlPptx" data-url="" title="下载可编辑轨 PPTX 主交付件（HTTP 态直链/FSAA 另存；嵌入态由宿主交付）">下载 deck.pptx（可编辑）</button>
-        <button id="btnDlVector" data-url="" hidden title="下载保真轨 PPTX（转曲 SVG，视觉封存/老 Office 走 PNG）">deck-vector.pptx</button>
-        <button id="btnDlPdf" data-url="" hidden title="下载保真轨直出 PDF">deck.pdf</button>
+        <div class="dl-wrap" id="dlWrap">
+          <button id="btnDlMain" title="下载交付件（多格式合一下拉）">下载交付件 ▾</button>
+          <div class="dl-menu" id="dlMenu" hidden>
+            <button id="btnDlPptx" data-url="" title="下载可编辑轨 PPTX 主交付件（HTTP 态直链/FSAA 另存；嵌入态由宿主交付）">deck.pptx（可编辑轨 · 主交付）</button>
+            <button id="btnDlVector" data-url="" hidden title="下载保真轨 PPTX（转曲 SVG，视觉封存/老 Office 走 PNG）">deck-vector.pptx（保真轨 · 视觉封存）</button>
+            <button id="btnDlPdf" data-url="" hidden title="下载保真轨直出 PDF">deck.pdf（打印审阅）</button>
+          </div>
+        </div>
       </div>
       <div class="exp-summary" id="expSummary"></div>
       <div class="exp-guide" id="expGuide" hidden></div>
@@ -2528,6 +2546,120 @@ var PANEL_DATA = {
                   "paper": "#FDFCF9",
                   "ink": "#1D2129",
                   "accent": "#D6336C"
+                }
+              }
+            ]
+          },
+          {
+            "id": "e12",
+            "label": "商务粗野",
+            "series": "E",
+            "vibe": "奶油纸 + 墨黑粗描边 + 策展五色平涂，每个色块拖着一块没对准的纯墨硬影——完整粗野的商务驯化版，有棱角的商务",
+            "description": "金融科技、高密度数据汇报、消费/零售、产品与增长叙事、需要\"多彩但不戏谑\"的商务场合；奶油纸 + 墨黑粗描边 + 策展五色平涂，每个色块拖着一块没对准的纯墨硬影——完整粗野的商务驯化版，有棱角的商务",
+            "focus": [
+              "G1",
+              "G4"
+            ],
+            "focus_label": "配色 + 形态",
+            "group": "shape",
+            "group_label": "形态主导",
+            "visual": {
+              "paper": "#FFF6E3",
+              "ink": "#17140E",
+              "accent": "#E43D25",
+              "font_display": "sans",
+              "font_body": "sans"
+            },
+            "tokens": {
+              "--paper": "#FFF6E3",
+              "--paper-tint": "#F8EAC6",
+              "--ink": "#17140E",
+              "--ink-tint": "#2C2517",
+              "--accent": "#E43D25",
+              "--accent-on": "#FFF6E3",
+              "--font-display": "\"Helvetica Neue\",\"PingFang SC\",\"Noto Sans SC\",\"Microsoft YaHei\",sans-serif",
+              "--font-body": "\"Helvetica Neue\",\"PingFang SC\",\"Noto Sans SC\",\"Microsoft YaHei\",sans-serif",
+              "--font-mono": "\"SF Mono\",\"JetBrains Mono\",\"Menlo\",monospace",
+              "--texture-type": "flat",
+              "--texture-layer": "none",
+              "--texture-scope": "cover"
+            },
+            "theme_css": "/* E12 商务粗野 · 装饰母题 */\n.mt-nb-ring,.mt-nb-disc,.mt-nb-block,.mt-nb-star{position:absolute;pointer-events:none;user-select:none}\n.mt-nb-ring{border:3px solid var(--ink);border-radius:50%}\n.mt-nb-disc{border:3px solid var(--ink);border-radius:50%;box-shadow:8px 8px 0 var(--ink)}\n.mt-nb-block{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}\n.mt-nb-block-ink{position:absolute;pointer-events:none;user-select:none;border:3px solid var(--ink);background:var(--ink);box-shadow:8px 8px 0 var(--accent)}\n.mt-nb-star{clip-path:polygon(50% 0,61% 12%,75% 4%,79% 19%,95% 15%,91% 31%,100% 38%,90% 50%,100% 62%,91% 69%,95% 85%,79% 81%,75% 96%,61% 88%,50% 100%,39% 88%,25% 96%,21% 81%,5% 85%,9% 69%,0 62%,10% 50%,0 38%,9% 31%,5% 15%,21% 19%,25% 4%,39% 12%);background:var(--accent)}\n.mt-nb-line{display:block;height:3px;background:var(--ink)}\n.mt-nb-chip{display:inline-block;border:2.5px solid var(--ink);background:var(--accent);color:var(--accent-on);box-shadow:5px 5px 0 var(--ink);padding:.25em .7em}",
+            "variants": [
+              {
+                "id": "e12-v1",
+                "label": "钴蓝",
+                "vibe": "墨框里的钴蓝——冷静理性的机构感，五色板里最商务的一格——金融机构、企业服务、研究发布",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#FFF6E3",
+                  "--paper-tint": "#F8EAC6",
+                  "--ink": "#17140E",
+                  "--ink-tint": "#2C2517",
+                  "--accent": "#2456D6",
+                  "--accent-on": "#FFF6E3"
+                },
+                "visual": {
+                  "paper": "#FFF6E3",
+                  "ink": "#17140E",
+                  "accent": "#2456D6"
+                }
+              },
+              {
+                "id": "e12-v2",
+                "label": "松绿",
+                "vibe": "墨框里的松绿——稳健增长与可持续的联想——ESG、农业食品、健康、长期主义叙事",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#FFF6E3",
+                  "--paper-tint": "#F8EAC6",
+                  "--ink": "#17140E",
+                  "--ink-tint": "#2C2517",
+                  "--accent": "#1F9D64",
+                  "--accent-on": "#FFF6E3"
+                },
+                "visual": {
+                  "paper": "#FFF6E3",
+                  "ink": "#17140E",
+                  "accent": "#1F9D64"
+                }
+              },
+              {
+                "id": "e12-v3",
+                "label": "明黄",
+                "vibe": "墨框里的明黄——海报压强最高的一格，街头海报与促销的直给——零售、活动、消费品牌；**accent-on 反墨字**（黄底深字才读得清）",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#FFF6E3",
+                  "--paper-tint": "#F8EAC6",
+                  "--ink": "#17140E",
+                  "--ink-tint": "#2C2517",
+                  "--accent": "#F2B100",
+                  "--accent-on": "#17140E"
+                },
+                "visual": {
+                  "paper": "#FFF6E3",
+                  "ink": "#17140E",
+                  "accent": "#F2B100"
+                }
+              },
+              {
+                "id": "e12-v4",
+                "label": "青碧",
+                "vibe": "墨框里的青碧——清爽现代的科技消费感——互联网产品、出海品牌、生活方式",
+                "accent_note": "",
+                "tokens": {
+                  "--paper": "#FFF6E3",
+                  "--paper-tint": "#F8EAC6",
+                  "--ink": "#17140E",
+                  "--ink-tint": "#2C2517",
+                  "--accent": "#0E8F8A",
+                  "--accent-on": "#FFF6E3"
+                },
+                "visual": {
+                  "paper": "#FFF6E3",
+                  "ink": "#17140E",
+                  "accent": "#0E8F8A"
                 }
               }
             ]
@@ -4781,6 +4913,16 @@ var cmpOlSid = null;         // 叠层内容当前对应的页（变化时重建
 
 function pad2(n){ return ('0' + n).slice(-2); }
 
+/* 原生 PPTX 预览（v3.1）：可编辑轨 deck.pptx 的 LibreOffice 参考渲染页图
+   （管线持久化在 export/native/page-NN.png）。对比/翻面的第一优先载体——
+   SVG 转曲件与 HTML 同源，对比信息量低；LO 渲染近似真实 PowerPoint。
+   无 native 产物（无 soffice/老导出）时回退 SVG。烙入页直通位图，无意义返回 null。 */
+function nativeUrlOf(ps){
+  if (!triBaseUrl || !ps || !ps.manifest) return null;
+  if (ps.renderMode === 'baked' || ps.carrier === 'baked') return null;
+  return triBaseUrl + 'native/page-' + pad2(ps.manifestIdx + 1) + '.png';
+}
+
 /* deck 相对路径 → 可加载 URL；无基址（file:// 直开 / 宿主未给）返回 null */
 function deckAssetUrl(rel){
   if (!rel) return null;
@@ -4905,8 +5047,16 @@ function buildArtifactFace(ps){
   face.dataset.artState = ps.stale ? 'stale' : 'ready';
   var img = document.createElement('img');
   img.alt = '第 ' + (ps.idx + 1) + ' 页翻转产物';
-  img.src = ps.artifact + triCacheBust();
+  var nat = nativeUrlOf(ps);
+  face.dataset.artKind = nat ? 'native' : (ps.carrier || 'svg');
+  img.src = (nat || ps.artifact) + triCacheBust();
   img.addEventListener('error', function(){
+    if (nat && !img.dataset.fbk){   /* 无 native 渲染 → 回退矢量件 */
+      img.dataset.fbk = '1';
+      face.dataset.artKind = (ps.carrier || 'svg');
+      img.src = ps.artifact + triCacheBust();
+      return;
+    }
     triMissing[ps.artifact] = true;
     renderTriViews();   /* 产物文件缺失 → 重渲染为黑面（triMissing 防回环） */
   });
@@ -5071,7 +5221,7 @@ function applyCmpView(){
   });
   $('cmpDivider').style.display = cmpView === 'swipe' ? '' : 'none';
   $('cmpDiffCtl').style.display = cmpView === 'diff' ? '' : 'none';
-  $('cmpTagR').textContent = cmpView === 'diff' ? '差异热区' : '导出件';
+  $('cmpTagR').textContent = cmpView === 'diff' ? '差异热区' : '翻转产物（原生 PPTX 渲染优先）';
   cmpOlSid = null;
   if (inCmp){ positionCmpOverlay(true); startCmpRaf(); }
 }
@@ -5240,7 +5390,7 @@ function buildCmpOlContent(ps){
     if (triStatus === 'unavailable') blackLine = '无法读取 export/（file:// 直开）';
     else if (!triManifest || !ps.manifest) blackLine = '未翻转 · 请运行翻转技能';
     else if (!ps.artifact) blackLine = '产物地址未知 · 请让宿主提供 exportBaseUrl';
-    else url = ps.artifact;
+    else url = nativeUrlOf(ps) || ps.artifact;   /* 原生 PPTX 渲染优先，矢量件回落 */
   }
   if (url && triMissing[url + '#ol']){ url = null; blackLine = '产物缺失 · 请重新运行翻转技能'; }
   if (url){
@@ -5250,6 +5400,13 @@ function buildCmpOlContent(ps){
     img.src = url + triCacheBust();
     if (cmpView === 'diff') img.style.opacity = diffOpacity;
     img.addEventListener('error', function(){
+      /* 原生渲染缺失时回退矢量件（一次性），仍缺则黑面 */
+      if (url.indexOf('/native/') >= 0 && ps && ps.artifact && !img.dataset.fbk){
+        img.dataset.fbk = '1';
+        url = ps.artifact;
+        img.src = url + triCacheBust();
+        return;
+      }
       triMissing[url + '#ol'] = true;
       cmpOlSid = null;
       positionCmpOverlay(true);
@@ -5338,6 +5495,7 @@ function renderExportView(){
   rows.innerHTML = '';
   guide.hidden = true; table.hidden = true; sum.textContent = '';
   $('btnDlPptx').dataset.url = (triStatus === 'ready' && triBaseUrl) ? triBaseUrl + 'deck.pptx' : '';
+  $('btnDlMain').disabled = !$('btnDlPptx').dataset.url;
   /* 双轨产物（C3）：保真轨下载件仅在新 schema（tracks 字段）且保真轨成功时显示；
      旧 schema manifest（无 tracks）保持单按钮现状，不报错 */
   var exp0 = (triManifest && triManifest.export) || {};
@@ -5477,6 +5635,15 @@ $('btnDlVector').addEventListener('click', function(){
 $('btnDlPdf').addEventListener('click', function(){
   downloadAsset(this.dataset.url || null, 'deck.pdf');
 });
+/* 下载交付件：多格式合一下拉（v3.1） */
+$('btnDlMain').addEventListener('click', function(e){
+  e.stopPropagation();
+  $('dlMenu').hidden = !$('dlMenu').hidden;
+});
+document.addEventListener('click', function(e){
+  if (!e.target.closest || !e.target.closest('#dlWrap')) $('dlMenu').hidden = true;
+});
+$('dlMenu').addEventListener('click', function(){ $('dlMenu').hidden = true; });
 
 /* 「重新翻转」只表达意图：嵌入态发 export-intent，其余复制技能命令——
    转换发生与否由宿主侧 AI 工作流决定（转换即技能红线） */
