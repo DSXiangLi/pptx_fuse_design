@@ -668,10 +668,10 @@
   <div class="brand">HTML PPTX 编辑器<small>v3.1</small></div>
   <button id="btnOpen">打开文件</button>
   <button id="btnSave" class="primary" disabled title="将修改写回原文件">保存 (⌘S)</button>
-  <div class="seg seg-main" id="viewSeg" title="编辑=就地改字换图 / 批注=框选写意见 / 导出=产物清单与对比质检">
+  <div class="seg seg-main" id="viewSeg" title="编辑=就地改字换图 / 批注=框选写意见 / 翻转=产物清单与对比质检">
     <button data-view="edit" class="on">编辑</button>
     <button data-view="annotate">批注</button>
-    <button data-view="export">导出</button>
+    <button data-view="export">翻转</button>
   </div>
   <div class="file-name" id="fileName">未打开文件</div>
   <div class="spacer"></div>
@@ -697,6 +697,7 @@
 
 <div class="warn-banner" id="warnBanner">
   <span id="warnText"></span>
+  <button id="warnAction" style="display:none"></button>
   <span class="spacer"></span>
   <button id="warnClose">知道了</button>
 </div>
@@ -721,7 +722,7 @@
           <button data-cmp="diff">差异热区</button>
         </div>
         <div class="cmp-tools">
-          <button id="btnCmpBack" title="返回导出 · 产物清单">← 产物清单</button>
+          <button id="btnCmpBack" title="返回翻转 · 产物清单">← 产物清单</button>
           <button id="btnTriRefresh" title="技能重新翻转后点此重新读取 export/ 目录">重新读取产物</button>
           <span class="cmp-note" id="cmpNote"></span>
         </div>
@@ -778,7 +779,7 @@
   <div class="export-view" id="exportView" hidden>
     <div class="exp-inner">
       <div class="exp-head">
-        <h2>导出</h2>
+        <h2>翻转产物</h2>
         <div class="seg exp-sub" id="expSubSeg" title="产物清单=页级交付态表格 / 对比质检=并排·滑动分割·差异热区">
           <button data-view="artifacts" class="on">产物清单</button>
           <button data-view="compare">对比质检</button>
@@ -788,7 +789,6 @@
         <button id="btnDlPptx" data-url="" title="下载可编辑轨 PPTX 主交付件（HTTP 态直链/FSAA 另存；嵌入态由宿主交付）">下载 deck.pptx（可编辑）</button>
         <button id="btnDlVector" data-url="" hidden title="下载保真轨 PPTX（转曲 SVG，视觉封存/老 Office 走 PNG）">deck-vector.pptx</button>
         <button id="btnDlPdf" data-url="" hidden title="下载保真轨直出 PDF">deck.pdf</button>
-        <button id="btnExpReflip" title="嵌入态向宿主发送重新翻转请求，否则复制技能命令">重新翻转导出</button>
       </div>
       <div class="exp-summary" id="expSummary"></div>
       <div class="exp-guide" id="expGuide" hidden></div>
@@ -2624,8 +2624,24 @@ function toast(msg){
   toast._t = setTimeout(function(){ t.classList.remove('show'); }, 2600);
 }
 
-function showWarn(msg){ $('warnText').textContent = msg; $('warnBanner').classList.add('show'); }
-function hideWarn(){ $('warnBanner').classList.remove('show'); }
+function showWarn(msg, actionLabel, actionFn){
+  $('warnText').textContent = msg;
+  var act = $('warnAction');
+  if (actionLabel && actionFn){
+    act.textContent = actionLabel;
+    act.style.display = '';
+    act.onclick = actionFn;
+  } else {
+    act.style.display = 'none';
+    act.onclick = null;
+  }
+  $('warnBanner').classList.add('show');
+}
+function hideWarn(){
+  $('warnBanner').classList.remove('show');
+  var act = $('warnAction');
+  act.style.display = 'none'; act.onclick = null;
+}
 $('warnClose').addEventListener('click', hideWarn);
 
 /* ============================================================
@@ -2732,11 +2748,13 @@ function openHtml(text, name, handle, assetsUrl, deckPath, opts){
   opts = opts || {};
   triManifest = (opts.exportManifest && typeof opts.exportManifest === 'object') ? opts.exportManifest : null;
   triInjected = !!triManifest;
-  triDeckBase = deckPath ? deckPath.slice(0, deckPath.lastIndexOf('/') + 1)
+  /* deckPath 已知即 HTTP 态——注意根目录 deck（index.html）切片得 ''，
+     空串是合法的"当前目录"基址，不能用真值判断（v3.1 一键启动流踩实） */
+  triDeckBase = (deckPath != null) ? deckPath.slice(0, deckPath.lastIndexOf('/') + 1)
               : (assetsUrl ? String(assetsUrl).replace(/\/?$/, '/') : null);
   triBaseUrl = (typeof opts.exportBaseUrl === 'string' && opts.exportBaseUrl)
              ? opts.exportBaseUrl.replace(/\/?$/, '/')
-             : (triDeckBase ? triDeckBase + 'export/' : null);
+             : (triDeckBase !== null ? triDeckBase + 'export/' : null);
   triPages = []; triMissing = {}; triStatus = 'idle';
   /* 换文件复位：翻回正面、退出源层编辑、回到编辑态 */
   flipped = false;
@@ -2827,6 +2845,59 @@ var INJECTED_CSS = [
     'background:var(--paper,#fff);overflow:auto;padding:5% 7%}'
 ].join('\n');
 
+/* ---------- 素材路径修复（v3.1）：FSAA/拖拽打开时无 assetsUrl，
+   deck 内相对路径素材（assets/ 等）会按 editor.html 所在目录解析而破图。
+   检测破图 → 引导授权 deck 目录 → 破图换成 blob: URL。
+   会话级修复：原 src 存 data-editor-blob-orig，保存时 serializeClean 还原。 ---------- */
+var blobUrlPool = [];
+function sweepBrokenImages(){
+  var d = doc(); if (!d) return;
+  if (triDeckBase !== null) return;     /* ?deck= / 嵌入态已有正确基址（'' = 服务根目录亦合法） */
+  var broken = 0;
+  Array.prototype.forEach.call(d.querySelectorAll('img[src]'), function(img){
+    var src = (img.getAttribute('src') || '').split('?')[0];
+    if (!src || /^(https?:|blob:|data:)/i.test(src)) return;
+    if (img.complete && img.naturalWidth === 0) broken++;
+  });
+  if (!broken) return;
+  if (window.showDirectoryPicker){
+    showWarn('有 ' + broken + ' 张图片素材未能加载：本地打开的文件不知道 deck 所在目录。授权素材目录后可立即修复（也可改用 python3 tools/edit.py 打开）。',
+             '选择素材目录修复', fixAssetsWithDir);
+  } else {
+    showWarn('有 ' + broken + ' 张图片素材未能加载：请改用伴随服务打开（python3 tools/edit.py deck目录）以获得正确素材路径。');
+  }
+}
+async function fixAssetsWithDir(){
+  var dir;
+  try { dir = await window.showDirectoryPicker({ mode:'read' }); }
+  catch(e){ return; }   /* 用户取消 */
+  var d = doc(); if (!d) return;
+  var fixed = 0, failed = 0;
+  var imgs = Array.prototype.slice.call(d.querySelectorAll('img[src]'));
+  for (var i = 0; i < imgs.length; i++){
+    var img = imgs[i];
+    var src = (img.getAttribute('src') || '').split('?')[0];
+    if (!src || /^(https?:|blob:|data:)/i.test(src)) continue;
+    if (img.complete && img.naturalWidth > 0) continue;   /* 没破 */
+    try {
+      var parts = src.split('/').filter(Boolean);
+      var h = dir;
+      for (var k = 0; k < parts.length - 1; k++) h = await h.getDirectoryHandle(parts[k]);
+      var fh = await h.getFileHandle(parts[parts.length - 1]);
+      var f = await fh.getFile();
+      var url = URL.createObjectURL(f);
+      if (!img.hasAttribute('data-editor-blob-orig')) img.setAttribute('data-editor-blob-orig', src);
+      img.src = url;
+      blobUrlPool.push(url);
+      fixed++;
+    } catch(e){ failed++; }
+  }
+  if (fixed) buildToc();   /* 缩略图重克隆（换源后重渲染） */
+  if (failed) toast('已修复 ' + fixed + ' 张，' + failed + ' 张在所选目录下未找到（路径按 deck 内相对引用解析）');
+  else if (fixed){ hideWarn(); toast('已修复 ' + fixed + ' 张图片素材'); }
+  else toast('所选目录下未找到素材（路径按 deck 内相对引用解析，如 assets/…）');
+}
+
 function initEditLayer(){
   var d = doc();
   if (!d || !d.body) return;
@@ -2850,6 +2921,7 @@ function initEditLayer(){
   collectStyleMeta();   /* v1.6 §1：主题字体栈/色板来自 deck 的 :root computed style */
   renderSwatches();
   buildToc();           /* v1.6 §2：目录侧栏（懒渲染缩略图） */
+  setTimeout(sweepBrokenImages, 1500);   /* v3.1：FSAA/拖拽打开时检测素材破图并引导修复 */
   updateStatusBar();
 }
 
@@ -3584,6 +3656,12 @@ async function serializeClean(){
     n.removeAttribute('class');
   });
 
+  /* 素材修复的 blob: URL 还原为原始相对路径（会话级修复，不进产物） */
+  Array.prototype.forEach.call(clone.querySelectorAll('[data-editor-blob-orig]'), function(n){
+    n.setAttribute('src', n.getAttribute('data-editor-blob-orig'));
+    n.removeAttribute('data-editor-blob-orig');
+  });
+
   /* 3. 框架运行时状态归位：html 上的 --slide-scale 与整个 class 属性
      （js 动效门槛、texture-cover 质感范围、no-sdt 回退标记均为运行时产物）、
      .in-view、[data-anim] 上的 --i 阶梯序号（含 mask-lines 的 .ml-inner）、
@@ -3666,8 +3744,8 @@ async function serializeClean(){
 function updateSaveButton(){
   var btn = $('btnSave');
   if (!state.fsaa && !state.embedded){
-    btn.textContent = '导出下载';
-    btn.title = '当前浏览器不支持文件系统访问，保存将以下载方式导出';
+    btn.textContent = '保存下载';
+    btn.title = '当前浏览器不支持文件系统访问，修改将以下载方式保存为文件';
   } else {
     btn.textContent = '保存 (⌘S)';
     btn.title = '将修改写回原文件';
@@ -3757,7 +3835,7 @@ async function saveDeck(){
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(a.href); }, 5000);
     setDirty(false); $('sbMsg').textContent = ''; applySavedHashes();
-    toast('已导出下载');
+    toast('已保存为下载文件');
     return true;
   } catch(e){ toast('导出失败：' + e.message); return false; }
 }
@@ -4707,7 +4785,7 @@ function pad2(n){ return ('0' + n).slice(-2); }
 function deckAssetUrl(rel){
   if (!rel) return null;
   if (/^(https?:|data:|blob:|\/)/i.test(rel)) return rel;
-  return triDeckBase ? triDeckBase + rel : null;
+  return triDeckBase !== null ? triDeckBase + rel : null;
 }
 
 /* 产物 URL 缓存破击：manifest 的 exported_at 每次导出必变 */
@@ -5418,12 +5496,38 @@ function reFlip(slideIds){
              : '请让 AI 重新翻转（运行技能 export-pptx.py）');
   });
 }
-$('btnExpReflip').addEventListener('click', function(){ reFlip(null); });
 
 /* 一键转换导出（v3.1）：转换逻辑只在技能脚本里（export-pptx.py），编辑器按环境
    三通道分发——嵌入态→宿主 export-intent；伴随服务且其以 --convert 启动→代为触发
-   脚本子进程（edit.py 不含任何转换实现）；都没有→复制命令交给 AI agent。 */
+   脚本子进程（edit.py 不含任何转换实现，异步任务制 + 状态轮询）；都没有→复制命令。 */
 var converting = false;
+var convertPollTimer = null;
+function pollConvertStatus(){
+  if (convertPollTimer) return;
+  convertPollTimer = setInterval(function(){
+    fetch('api/convert-status', { cache:'no-store' })
+      .then(function(r){ return r.json().catch(function(){ return null; }); })
+      .then(function(j){
+        if (!j) return;
+        if (j.status === 'running') return;   /* 继续等 */
+        clearInterval(convertPollTimer); convertPollTimer = null;
+        converting = false;
+        var btn = $('btnConvert');
+        btn.disabled = false; btn.textContent = '一键转换导出';
+        if (j.status === 'done'){
+          toast('转换完成：export/ 已更新（deck.pptx / deck-vector.pptx / deck.pdf / 逐页 SVG·PNG）');
+          refreshExport();
+        } else if (j.status === 'failed'){
+          toast('转换失败：' + (j.tail || '请查看伴随服务控制台').toString().slice(0, 200));
+        }
+      })
+      .catch(function(){
+        clearInterval(convertPollTimer); convertPollTimer = null;
+        converting = false;
+        $('btnConvert').disabled = false; $('btnConvert').textContent = '一键转换导出';
+      });
+  }, 5000);
+}
 function convertDeck(){
   if (converting || !state.loaded) return;
   if (state.embedded){
@@ -5444,16 +5548,18 @@ function convertDeck(){
     }).then(function(r){ return r.json().catch(function(){ return null; }); })
       .then(function(j){
         if (j && j.ok){
-          toast('转换完成：export/ 已更新（deck.pptx / deck-vector.pptx / deck.pdf / 逐页 SVG·PNG）');
-          refreshExport();
+          /* 异步任务制：启动成功（或复用运行中的任务）→ 轮询状态 */
+          pollConvertStatus();
         } else {
+          converting = false;
+          btn.disabled = false; btn.textContent = '一键转换导出';
           toast('转换失败：' + ((j && (j.error || j.tail)) || '请查看伴随服务控制台'));
         }
       })
-      .catch(function(){ toast('转换请求失败：伴随服务不可达'); })
-      .finally(function(){
+      .catch(function(){
         converting = false;
         btn.disabled = false; btn.textContent = '一键转换导出';
+        toast('转换请求失败：伴随服务不可达');
       });
     return;
   }
@@ -5465,6 +5571,22 @@ function convertDeck(){
   });
 }
 $('btnConvert').addEventListener('click', convertDeck);
+/* 打开编辑器时若伴随服务正在转换（--convert 启动即转），接续显示进度 */
+function resumeConvertIfRunning(){
+  if (!state.backend || !state.backend.convert) return;
+  fetch('api/convert-status', { cache:'no-store' })
+    .then(function(r){ return r.json().catch(function(){ return null; }); })
+    .then(function(j){
+      if (j && j.status === 'running'){
+        converting = true;
+        var btn = $('btnConvert');
+        btn.disabled = true; btn.textContent = '转换中…（管线约 1–5 分钟）';
+        toast('检测到伴随服务正在转换当前 deck，完成后自动刷新产物');
+        pollConvertStatus();
+      }
+    })
+    .catch(function(){});
+}
 
 /* 三形态视图统一重渲染（装载 / 刷新 / 保存 / 切视图后调用） */
 function renderTriViews(){
@@ -5489,6 +5611,7 @@ function probeBackend(){
     .then(function(j){
       if (j && j.ok) state.backend = j;
       updateHistoryBtn();
+      resumeConvertIfRunning();   /* v3.1：--convert 启动即转时，编辑器打开接续显示进度 */
     })
     .catch(function(){ updateHistoryBtn(); });
 }

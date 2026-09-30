@@ -14,6 +14,9 @@
 | P0-10 | 渲染一致性不被编辑器 chrome 污染（贴舞台元素禁投影/禁覆盖 iframe） | harness T4（0.2% 容差内） | ✅ |
 | P1-11 | 一键转换导出 #btnConvert 三通道：嵌入 export-intent / edit.py --convert 时 /api/convert 子进程触发 / 否则复制命令；/api/convert 路径穿越与未启用 403 防线 | 手工 curl 负路径 + 冒烟 | ✅ |
 | P1-12 | 设计面板/需求脑暴入口在右侧浮动栏，脑暴为右侧浮动面板，面板开合不重载产物 iframe | harness k_brief + T9 | ✅ |
+| P1-13 | 素材破图检测与目录授权修复（blob 换源、保存还原原相对路径不进产物） | 手工/冒烟（harness T5 仍确认无 assetsUrl 即破图的限制语义） | ✅ |
+| P1-14 | 文案口径：无 FSAA 时保存按钮=「保存下载」；主导航「翻转」 | 冒烟 | ✅ |
+| P1-15 | 一键启动流：start-webui.sh → 服务+浏览器+启动即转；编辑器接续显示转换进度、完成自动刷新产物；根目录 deck 的 export/ 通道（triDeckBase 空串修复） | 端到端实测（bake-mix 全链路） | ✅ |
 
 ## P0（核心路径，失败即功能不可用）
 

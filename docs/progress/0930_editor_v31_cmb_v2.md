@@ -36,3 +36,13 @@
 - `tests/harness/run_e2e.py`、`tests/harness/o_tri_view_check.py`（选择器/硬化）
 - `tests/decks/cmb-retail-v2/`（新 deck：index.html + fragments/ + design-brief.md + assets 硬链接 + capacity-report.json + .manifest-baseline.json）
 - `AGENTS.md`（v3.1 与 /api/convert 边界同步）
+
+---
+
+## 追记（2026-09-30 第二轮：用户反馈修正）
+
+1. **素材路径修复通道**：用户发现"编辑器打开的 html 素材路径有问题"。根因：FSAA/拖拽打开本地文件时没有 assetsUrl 基址，deck 内 `assets/` 相对引用按 editor.html 所在目录解析 → 全破图。修复：initEditLayer 后 1.5s 扫描破图（`img.complete && naturalWidth===0` 且相对 src），警告条带「选择素材目录修复」动作按钮（showDirectoryPicker → 逐级 getDirectoryHandle 解析相对路径 → blob: URL 换源）；原 src 存 `data-editor-blob-orig`，serializeClean 还原——会话级修复不进保存产物；无 FSAA 类 API 时降级为文字引导（改用 tools/edit.py 打开）。HTTP(?deck=)/嵌入通道不受影响。
+2. **文案修正**：保存按钮的无 FSAA 降级文案「导出下载」→「保存下载」；主导航「导出」→「翻转」（data-view 值不变，harness 无感），面板标题「翻转产物」。
+3. **翻转页按钮收敛**：移除「重新翻转导出」（#btnExpReflip，与一键转换重复）；保留 一键转换导出 / 重新读取产物 / 三个下载件（下载件即交付物入口，不可省）。
+
+4. **一键启动 WebUI + 启动即转**（方案 2 落地）：`tools/start-webui.sh [deck目录]`（= `edit.py <dir> --convert`）——伴随服务启动时若工作目录有 index.html 即后台线程自动跑 export-pptx.py（异步任务制：idle→running→done/failed，重复触发幂等，`GET /api/convert-status` 查态）；编辑器加载时探测到 running 会接续显示"转换中"并在完成后自动 refreshExport。端到端实测：bake-mix 从启动到 deck.pptx 产出全链路通过。**踩实修复**：deck 位于服务根目录时 `deckPath.slice(0, lastIndexOf('/')+1)` 得空串被 falsy 吞掉 → triDeckBase 失效、export/ 通道盲——改显式 null 判断（'' = 当前目录是合法基址）。
