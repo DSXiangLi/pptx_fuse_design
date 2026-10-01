@@ -33,6 +33,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import webbrowser
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
@@ -162,6 +163,8 @@ class Handler(SimpleHTTPRequestHandler):
                     'gitReady': is_repo(self.server.workdir),
                     'convert': bool(getattr(self.server, 'allow_convert', False)),
                 })
+            if path == '/api/convert-status':
+                return self._send_json(dict(self.server.convert_state))
             if path == '/api/versions':
                 return self.api_versions(parse_qs(urlparse(self.path).query))
             if path.startswith('/api/'):
@@ -273,24 +276,47 @@ class Handler(SimpleHTTPRequestHandler):
         self._send_json({'ok': True, 'path': rel, 'preRollback': pre})
 
     def api_convert(self, body):
-        """代为触发技能导出管线（opt-in）。转换实现 100% 在技能脚本里，
-        本端点只是触发器：找不到脚本或脚本失败都如实回传，不自作聪明。"""
+        """代为触发技能导出管线（opt-in，异步任务制）。转换实现 100% 在技能脚本里，
+        本端点只是触发器：启动后台线程跑 export-pptx.py，状态经 /api/convert-status 查询。
+        重复触发幂等：管线运行中直接返回 running，不并发重跑。"""
         if not getattr(self.server, 'allow_convert', False):
             raise ApiError(403, '伴随服务未启用转换（以 --convert 启动可开启）')
         full, rel = safe_path(self.server.workdir, body.get('path'))
         if not rel.lower().endswith('.html') or not os.path.isfile(full):
             raise ApiError(400, '目标必须是工作目录内已存在的 .html deck 文件')
-        script = os.path.join(PROJECT_ROOT, 'skills/html-pptx/scripts/export-pptx.py')
-        if not os.path.isfile(script):
-            raise ApiError(501, '未找到技能导出脚本 skills/html-pptx/scripts/export-pptx.py')
+        started = start_convert(self.server, full)
+        st = dict(self.server.convert_state)
+        st.update({'ok': True, 'started': started})
+        self._send_json(st)
+
+
+def start_convert(server, deck_html):
+    """启动（或复用）后台转换线程。返回是否本次新启动。
+    状态机：idle → running → done/failed（tail 存末 30 行日志）。"""
+    st = server.convert_state
+    if st['status'] == 'running':
+        return False
+    script = os.path.join(PROJECT_ROOT, 'skills/html-pptx/scripts/export-pptx.py')
+    if not os.path.isfile(script):
+        st.update({'status': 'failed', 'tail': '未找到技能导出脚本：' + script,
+                   'path': deck_html, 'started': timestamp()})
+        return False
+    st.update({'status': 'running', 'path': deck_html, 'started': timestamp(), 'tail': ''})
+
+    def work():
         try:
-            r = subprocess.run([sys.executable, script, full, '--force'],
+            r = subprocess.run([sys.executable, script, deck_html, '--force'],
                                capture_output=True, text=True, timeout=1800)
+            tail = (r.stdout + '\n' + r.stderr).strip().splitlines()[-30:]
+            server.convert_state.update({'status': 'done' if r.returncode == 0 else 'failed',
+                                         'code': r.returncode, 'tail': '\n'.join(tail)})
         except subprocess.TimeoutExpired:
-            raise ApiError(504, '转换超时（30 分钟上限）')
-        tail = (r.stdout + '\n' + r.stderr).strip().splitlines()[-30:]
-        self._send_json({'ok': r.returncode == 0, 'code': r.returncode,
-                         'tail': '\n'.join(tail)})
+            server.convert_state.update({'status': 'failed', 'tail': '转换超时（30 分钟上限）'})
+        except Exception as e:
+            server.convert_state.update({'status': 'failed', 'tail': str(e)})
+
+    threading.Thread(target=work, daemon=True).start()
+    return True
 
 
 def main():
@@ -312,6 +338,7 @@ def main():
     server.daemon_threads = True
     server.workdir = workdir
     server.allow_convert = args.convert
+    server.convert_state = {'status': 'idle', 'path': None, 'started': None, 'tail': ''}
 
     url = 'http://127.0.0.1:%d/editor.html' % args.port
     if os.path.isfile(os.path.join(workdir, 'index.html')):
@@ -322,6 +349,14 @@ def main():
                             else '目录非 git 仓库（首次保存时编辑器会询问是否 init）'))
     print('一键转换：%s' % ('已启用（/api/convert → 技能 export-pptx.py）' if args.convert
                             else '未启用（加 --convert 后编辑器可一键触发导出管线）'))
+    # --convert 启动即转：工作目录有 index.html 就后台开跑管线，编辑器打开时转换已在进行
+    if args.convert:
+        deck = os.path.join(workdir, 'index.html')
+        if os.path.isfile(deck):
+            start_convert(server, deck)
+            print('启动即转：已开始后台转换 %s（编辑器里可看进度）' % deck)
+        else:
+            print('启动即转：工作目录无 index.html，跳过（在编辑器里打开 deck 后可一键转换）')
     print('Ctrl+C 停止')
     if not args.no_browser:
         try:

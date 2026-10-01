@@ -17,6 +17,7 @@
 | `visual-depth.md` | 视觉纵深：归藏高级感 8 要素落位、信息图/图表组件库（画廊+配方双形态）、动效词汇库 8 族与五层启用矩阵 | 2026-09-19 v2 效果诊断 + 两轮深潜调研（F1–F6 已实施完毕） |
 | `handover-theme-differentiation.md` | **session 交接文档**：进度快照 + 用户验收 comment + baoyu-design 补充调研 + 主题差异化/想象层的独立思考（七层表达力栈、隐喻库、世界采样构思法、G–J 期路线） | 2026-09-19 用户验收 comment |
 | `theme-expression-stack.md` | G+H 期设计：主题 = 七层表达力栈（L1–L7 ↔ G0–G9）；骨架 v6 主题 CSS 槽位；两级主题架构（9 重主题 + 配色变体，16 纯调色板主题诚实合并）；两两七层 diff ≥3 的机器门槛；隐喻库 + 呈现发散步 | handover §5 路线（G/H/I/J 全部实施完毕） |
+| `theme-e12-neobrutalism.md` | E12 商务粗野入库：cmb-retail-v3 deck 级定制主题的回灌蒸馏——策展五色（变体即五色）+ 粗墨描边 + 硬偏移投影 + 直角平面卡；与 E6 孟菲斯的 ≥4 层分化；章节级 data-hue 色相轮转记为 deck 级玩法（不进 G9 css 白名单） | 2026-09-30 用户验收 v3 后批准入库（已实施，sync-themes 校验 + T18 全绿） |
 | `high-density-containers.md` | K 期：高密度表达三件套——文本容器层（components.md §13 六型 + 四层字阶纪律）、章节跳转导航（skeleton v7：data-chapter/nav-link/数字键）、动效编排纪律吸收（mend-bar 双态修复条 + data-rotate 轮转高亮 + 内容→动效对照表） | 2026-09-20 用户验收意见（高密度测试缺口 + demo1 动效复盘） |
 | `tri-form-architecture.md` | 三形态架构总览：HTML（唯一真相）/ 整页生图（视觉上限）/ PPTX（单向交付快照）；翻转统一动词；**转换即技能**红线；manifest + content-hash 公共地基；防幻觉三硬规则 | 2026-09-21 上下兼容两轮设计讨论（M1 已实现，T23） |
 | `page-render-mode.md` | 子技能 A：整页生图烙入模式——与插画模式的边界（页内槽位 vs 整页）、源层保留结构（契约 v7）、HTML 样张锚 + 确定性指令编译、代表页审批闸门、stale 重烙 | 同上（M2 已实现，T24） |
