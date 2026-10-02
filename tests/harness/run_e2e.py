@@ -723,7 +723,7 @@ def test_annotation_e2e(browser):
         # 导出：postMessage payload + 剪贴板文本
         n_msg0 = page.evaluate(
             "window.__inbox.filter(m => m && m.type === 'pptx-html:annotations').length")
-        page.frame_locator('#ed').locator('#btnExportAnno').click()
+        page.frame_locator('#ed').locator('#btnSendAnno').click()
         page.wait_for_function(
             '(n) => window.__inbox.filter(m => m && m.type === "pptx-html:annotations").length > n',
             arg=n_msg0, timeout=5000)
@@ -2402,6 +2402,16 @@ def test_capacity_check():
            '子进程退出码 %d：%s%s' % (r.returncode, tail,
                                       ('\n' + r.stdout + r.stderr) if r.returncode else ''))
 
+# ---------- 测试 29：编辑器↔Agent bridge v2（P0–P2 自动组） ----------
+
+def test_bridge_check():
+    r = subprocess.run([sys.executable, os.path.join(ROOT, 'tests/harness/r_bridge_check.py')],
+                       capture_output=True, text=True)
+    tail = (r.stdout.strip().splitlines() or [''])[-1]
+    report('T29-bridge', '编辑器↔Agent bridge v2（P0–P2）', r.returncode == 0,
+           '子进程退出码 %d：%s%s' % (r.returncode, tail,
+                                      ('\n' + r.stdout + r.stderr) if r.returncode else ''))
+
 # ---------- 测试 17：图片上传置 state=uploaded（迭代 E / 契约 v5） ----------
 
 def test_image_upload_state(browser):
@@ -2642,6 +2652,7 @@ def main():
             test_tri_view_check()
             test_editable_check()
             test_capacity_check()
+            test_bridge_check()
 
             browser.close()
     finally:

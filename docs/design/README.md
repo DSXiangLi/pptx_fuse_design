@@ -1,7 +1,7 @@
 # 设计文档（docs/design/）
 
-> 本目录承载**已通过调研、等待评审实施**的设计决策。调研依据在 `../research/`（索引：`../research/source-survey.md`），迭代分期在 `../skill-roadmap.md`。
-> 本批文档源于 2026-09-18 对调研结论的五条修订意见 + 两条新增方向，状态：**待评审**。
+> 本目录同时承载待评审设计与已实施模块的持续规格。调研依据在 `../research/`（索引：`../research/source-survey.md`），迭代分期在 `../skill-roadmap.md`。
+> 编辑器↔Agent 桥 v2 截至 2026-10-03 已完成 P0–P3 Linux 自动实现，P4 仅 fault 与单页协议性能完成；真实 fixtures 全回归和 Kimi/Codex、Office/WPS、付费生图仍未验收。其他文档状态以各行说明及对应 progress 为准。
 
 ## 文档地图
 
@@ -25,6 +25,9 @@
 | `editor-tri-view.md` | 编辑器 v3：三态工作台（编辑/对比/导出）、翻面交互（手势/过场 + 背面三态含黑面空态）+ 并排（默认落定）/滑动分割/差异热区（质检层）、stale 闭环、保真分排序 | 同上（M4 已实现，editor.html v3.0 + T26） |
 | `handover-tri-form.md` | **session 交接文档**：三形态翻转设计的进度快照 + 阅读顺序 + 已定决策快照 + M1–M4 任务规划 + 遗留待澄清点——下个 session 从这里读起 | 2026-09-21 设计闭环交接 |
 | `pptx-export-editable.md` | 子技能 C：可编辑 PPTX 导出（原生元素轨）——渲染真相 × 契约标记路线（真实分行文本框 wrap=square / 原生 chart XML / 信息图 grpSp 分组 / 复杂视觉烙图兜底 / 字体内嵌 embeddedFontLst）；双轨导出（deck.pptx 可编辑轨主交付 + deck-vector.pptx/deck.pdf 保真轨）；ppt-master 资产借用清单 | 2026-09-22 用户意见（SVG 轨不可编辑≈PDF）+ ppt-master v6.6.0 调研（**C1–C3 已实现**，T25/T27 全绿） |
+| `editor-agent-bridge.md` | 编辑器↔Agent 桥 v2 总览：无 deck 脑暴与已有作品优化；daemon/stdio 代理/页面独立生命周期；官方 SDK、有界等待、SQLite 请求确认、工作副本 CAS 发布 | **P0–P3 Linux 自动落地；P4部分**，完整状态见 `../progress/1002_editor_agent_bridge_plan.md` §11 |
+| `editor-agent-bridge-protocol.md` | 桥 v2 公共契约：五 MCP 工具、23个公开HTTP路由/7事件、两级凭证、UUID/服务 seq、attempt 隔离、显式 retry/validation/receipt、错误与限额 | 已实现公共契约；真实宿主仍未测 |
+| `editor-agent-bridge-consistency.md` | 受管 bundle、源/导出 revision、Git 专用 ref、seal/CAS/journal 恢复、草稿与加载代次、路径安全与容量 | 核心/fault 自动已覆盖；真实大deck与全失败矩阵未全量验收，见 `../test_acceptance/editor-agent-bridge.md` §16 |
 
 ## 决策速览
 

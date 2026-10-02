@@ -3,9 +3,12 @@
 # 启动即后台跑导出管线（工作目录有 index.html 时）。
 #
 # 用法：
-#   tools/start-webui.sh [deck目录]      # 默认当前目录
-#   tools/start-webui.sh tests/decks/cmb-retail-v2
+#   tools/start-webui.sh [deck目录] [--deck REL|--new [REL]] [--no-browser]
+#   tools/start-webui.sh tests/decks/cmb-retail-v2 --deck index.html
 #
-# 等价命令：python3 tools/edit.py <deck目录> --convert
+# 等价命令：python3 tools/edit.py <deck目录> --convert [其余参数]
 cd "$(dirname "$0")/.." || exit 1
-exec python3 tools/edit.py "${1:-.}" --convert
+if [[ $# -eq 0 ]]; then
+  set -- .
+fi
+exec python3 tools/edit.py "$@" --convert

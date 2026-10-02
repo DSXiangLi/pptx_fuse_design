@@ -16,6 +16,9 @@
 | `projects/open-design.md` | 单 HTML deck + 桌面编辑器：骨架 SLOT 逐字复制 + 编辑桥七轮实测迭代全记录 |
 | `projects/slide-paipai.md` | 一套内容双后端渲染（PIL 页图 + python-pptx 原生对象）：统一绘制 API + 后端替换、wrap=square 单段策略、表格边框 XML 顺序坑 |
 | `projects/tencent-pptx.md` | SlideDSL（受限 JSX）→ slidep 编译原生 OOXML：量化密度门禁 + DESIGN/STORY 双文档契约 + 风格两层分离与三态路由 |
+| `projects/cowart.md` | Codex 原生画布 widget：MCP Apps 嵌入对话 + 消息注入 + 磁盘单源轮询回写 |
+| `projects/deepseek-harness.md` | dsh 插件体系：单进程 Cordis + React slot 自定义对话 UI + rpcId 可应答推送 |
+| `agent-webui-bridge.md` | **agent↔webui 综合**：两个核心操作（呈现/回收）+ 框架无关的"原生最小协议"构想 + **阻塞式 MCP 工具方案**（2026-10-02 用户提议，当前推荐方向；待评审） |
 | `optimal-solution.md` | **综合判断**：以七条最优标准为标尺的逐条辩证结论 + 现状差距表 |
 | `sota-visual-languages.md` | **枚举规范**：SOTA 视觉的可衍生性判定 + 枚举项法定结构 + 三级验收标准 |
 
@@ -34,6 +37,8 @@
 | demo1（2026-09-20 补，用户提供） | omelette 系设计-交付框架的长滚动落地页 | 一方向一文件手工定制 + image-slot Web Component + sidecar 持久化 + 13 组 bespoke 动效 | 密度解剖（`demo1-density-analysis.md`）、框架对比（`demo1-framework-comparison.md`：reframe 裁剪/sidecar 模式/hover 反色可学；运行时拆字等五项收敛同构） |
 | slide-paipai（2026-09-24 补，用户提供） | 同一内容 → 1920×1080 页图 + 原生可编辑 PPTX 双产物 | 统一绘制 API + monkey-patch 后端替换；PIL 确定性排版（原子 token 断行/last_y 流式定位）；python-pptx 手写 XML 兜底 | 数字原子化断行基线、wrap=square 单段策略的外部印证、表格边框 XML 顺序、柱图 1.28× 头部余量等数值纪律 |
 | tencent-pptx（2026-09-24 补，用户提供） | SlideDSL（受限 JSX）→ slidep CLI 编译原生 PPTX | DESIGN/STORY 双文档契约 + 页级 lint/upsert 原子提交 + 风格结构层/常量层分离与三态路由 | 量化密度门禁（填充率/留白/兄弟卡对齐）、anti_pattern 负向封禁、目录↔扉页逐字一致契约、风格预览卡纪律 |
+| Cowart（2026-09-30 补，用户桌面） | Codex 原生 tldraw 画布 widget（MCP Apps 单文件 HTML 嵌入对话） | 网页操作编译成结构化用户消息注入对话 + agent 经 MCP 工具写盘 + widget 轮询刷新；插件打包层跨框架、widget 层仅 Codex 系 | 前端确定性编译 prompt 骨架（mention/来源声明/几何约束/Required tool call）、磁盘单源 + hash 刷新、双轨客户端抽象 |
+| deepseek-harness（2026-09-30 补，用户桌面） | 单进程 agent harness（Cordis 插件树 + React slot webui） | 插件双半（host/client）+ 42 slot 席位自定义对话 UI + 信封四象限 rpcId 可应答推送；无 iframe、不支持 MCP Apps | rpcId 应答关联、intent 换肤（通用答案 schema + 专用呈现）、allowlist 事件转发、"Model-visible means logged" |
 
 ## 二、关键发现（按主题归并）
 

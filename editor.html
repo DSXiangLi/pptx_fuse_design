@@ -672,6 +672,25 @@
   .dl-menu button{text-align:left;border:0;background:transparent;border-radius:10px;padding:8px 12px;box-shadow:none}
   .dl-menu button:hover{background:var(--accent-soft);transform:none}
   .dl-menu button[hidden]{display:none}
+
+  /* Bridge v2：只存在于编辑器 chrome，不进入 deck srcdoc/序列化产物 */
+  .bridge-bar{display:none;align-items:center;gap:8px;min-height:34px;padding:6px 14px;
+    background:#efe7d7;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted)}
+  .bridge-bar.show{display:flex}.bridge-dot{width:8px;height:8px;border-radius:50%;background:#9b927f}
+  .bridge-bar[data-state="online"] .bridge-dot{background:var(--ok)}
+  .bridge-bar[data-state="working"] .bridge-dot{background:var(--accent)}
+  .bridge-bar[data-state="error"] .bridge-dot{background:#b64c38}
+  .bridge-bar b{color:var(--text);font-weight:650}.bridge-bar .spacer{flex:1}
+  .bridge-bar button{font-size:11px;padding:3px 10px}.bridge-bar .bridge-notice{max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bridge-tasks{display:none;position:fixed;right:18px;bottom:42px;z-index:80;width:min(390px,calc(100vw - 36px));
+    max-height:48vh;overflow:auto;padding:10px;background:rgba(253,250,243,.98);border:1px solid var(--border);
+    border-radius:18px;box-shadow:var(--shadow-lift)}
+  .bridge-tasks.show{display:block}.bridge-task{padding:9px 10px;border-bottom:1px solid #eee5d5;font-size:11px}
+  .bridge-task:last-child{border-bottom:0}.bridge-task-head{display:flex;align-items:center;gap:7px}.bridge-task-head b{font-family:"SF Mono","Menlo",monospace}
+  .bridge-task-msg{margin-top:4px;color:var(--muted);line-height:1.5}.bridge-task-actions{display:flex;gap:6px;margin-top:6px}
+  .bridge-task-actions button{font-size:10px;padding:3px 9px}.bridge-pending{color:#9a6a1d}.bridge-working{color:#7c5cbd}
+  .bridge-succeeded{color:var(--ok)}.bridge-failed,.bridge-conflict,.bridge-interrupted{color:#b64c38}
+  .bridge-send{margin-left:8px}.bridge-danger{color:#b64c38}
 </style>
 </head>
 <body>
@@ -704,6 +723,16 @@
   <button id="btnReplaceImg" disabled title="替换当前选中图片（等价手势：选中图片后再点击一次）">替换图片</button>
   <button id="btnHistory" disabled title="未检测到伴随服务：运行 python3 tools/edit.py 启动后可获得 git 版本记录">历史</button>
 </header>
+
+<div class="bridge-bar" id="bridgeBar" data-state="offline">
+  <span class="bridge-dot"></span><b id="bridgeState">Bridge 未连接</b>
+  <span id="bridgeRevision"></span><span class="bridge-notice" id="bridgeNotice"></span>
+  <span class="spacer"></span>
+  <button id="btnBridgeBake" hidden>重烙当前页</button>
+  <button id="btnBridgeIllustrate" hidden>补齐插画</button>
+  <button id="btnBridgeTasks">请求记录</button>
+</div>
+<div class="bridge-tasks" id="bridgeTasks"></div>
 
 <!-- 右侧浮动栏：设计面板 / 需求脑暴入口（v3.1，主流内右缘条，不遮挡舞台） -->
 
@@ -778,7 +807,7 @@
       <div class="anno-panel" id="annoPanel">
         <div class="anno-head">批注清单 <span id="annoCount"></span><span class="spacer"></span><span class="anno-unexp" id="annoUnexp"></span></div>
         <div class="anno-items" id="annoItems"></div>
-        <div class="anno-foot"><button class="primary" id="btnExportAnno" disabled>导出批注指令</button></div>
+        <div class="anno-foot"><button id="btnExportAnno" disabled>复制批注指令</button><button class="primary bridge-send" id="btnSendAnno" disabled>发送给 AI</button></div>
       </div>
     </div>
 
@@ -845,8 +874,8 @@
       </section>
     </div>
     <div class="drawer-foot">
-      <button class="primary" id="btnExport">生成修改指令（复制到剪贴板）</button>
-      <p>输出为自然语言指令 + 结构化 JSON，粘贴给 AI coding agent 即可执行。</p>
+      <button id="btnExport">复制修改指令</button><button class="primary bridge-send" id="btnSendDesign">发送给 AI</button>
+      <p>预览/复制不会提交；“发送给 AI”只执行当前环境的一条明确路由。</p>
     </div>
   </aside>
 
@@ -931,14 +960,14 @@
     </div>
     <div id="briefBody"></div>
     <div class="brief-foot">
-      <button class="primary" id="btnBriefGen">生成需求简报</button>
-      <span class="hint">输出 = 简报文本（briefing.md 模板）+ 结构化 JSON；嵌入态同时 postMessage 给宿主。</span>
+      <button class="primary" id="btnBriefGen">预览需求简报</button>
+      <span class="hint">预览不会提交；输出 = 简报文本（briefing.md 模板）+ 结构化 JSON。</span>
     </div>
     <div class="brief-result" id="briefResult" hidden>
       <pre id="briefPreview"></pre>
       <div class="brief-result-bar">
-        <button class="primary" id="btnBriefCopy">复制简报</button>
-        <span class="hint">粘贴给 AI coding agent 即可开始制作。</span>
+        <button id="btnBriefCopy">复制简报</button><button class="primary bridge-send" id="btnBriefSend">发送给 AI</button>
+        <span class="hint">发送时会重新固化当前表单，不复用旧预览。</span>
       </div>
     </div>
   </div>
@@ -2722,10 +2751,21 @@ var state = {
   dirty: false,
   embedded: window.parent !== window,
   fsaa: typeof window.showOpenFilePicker === 'function',
-  /* v1.6 §3：tools/edit.py 伴随服务（探测到才启用版本能力） */
-  backend: null,         // /api/health 响应 {ok, git, gitReady}
-  deckPath: null,        // 后端模式下 deck 的相对路径（来自 ?deck= 参数）
-  gitConsent: null       // 非 git 目录 init 的一次性确认：null 未问 / true / false
+  /* 普通伴随服务兼容态；受管 bridge 的能力只读鉴权 status，不读公共 health 猜测 */
+  backend: null,
+  deckPath: null,
+  gitConsent: null
+};
+
+/* Bridge v2 的状态只活在编辑器父页。任何字段都不得复制进 iframe 或序列化结果。 */
+var bridge = {
+  enabled:false, token:null, sessionId:null, clientId:null, bound:false, connected:false,
+  instanceId:null, phase:null, loadedRevision:null, latestServerRevision:null,
+  exportRevision:null, targetPath:null, loadEpoch:0, editGeneration:0, annotationGeneration:0,
+  saveInFlight:false, pendingAssetWrites:0, pendingRemoteChange:null, lastAppliedEventId:0,
+  heartbeatTimer:null, heartbeatInFlight:false, sseAbort:null, sseBackoff:0, stopped:false,
+  intents:{}, formDirty:false, draftPending:false, capabilities:{local_convert:false,git_ready:false},
+  saveChain:Promise.resolve(), manifestEpoch:0, assetBlobs:{}, lastNotice:''
 };
 
 var frame = document.getElementById('deckFrame');
@@ -2780,9 +2820,14 @@ $('warnClose').addEventListener('click', hideWarn);
    脏状态
    ============================================================ */
 function setDirty(d){
-  if (state.dirty === d) return;
+  if (d) bridge.editGeneration++;
+  if (state.dirty === d){
+    if (bridge.enabled) bridgeScheduleDraft();
+    return;
+  }
   state.dirty = d;
   renderDirty();
+  if (bridge.enabled) bridgeScheduleDraft();
   if (state.embedded){
     try { window.parent.postMessage({ type:'pptx-html:dirty', dirty:d }, '*'); } catch(e){}
   }
@@ -2799,7 +2844,7 @@ function renderDirty(){
   }
 }
 window.addEventListener('beforeunload', function(e){
-  if (state.dirty){ e.preventDefault(); e.returnValue = ''; }
+  if (state.dirty || (bridge.enabled && bridgeHasDraftRisk())){ e.preventDefault(); e.returnValue = ''; }
 });
 
 /* ============================================================
@@ -2913,22 +2958,27 @@ function openHtml(text, name, handle, assetsUrl, deckPath, opts){
   /* 伴随服务路径只认打开来源：FSAA/拖拽/嵌入加载的文件路径未知，不能误用旧 deckPath */
   state.deckPath = deckPath || null;
   selEl = null; editEl = null; hoverEl = null; registry = [];
-  /* 批注仅存会话（§10.5）：换文件即清空 */
+  /* 普通换文件清批注；bridge 远端采用前已完成双层草稿保护，可显式保留并重定位。 */
   if (marquee) cancelMarquee();
   pendingAnno = null;
   $('annoMask').classList.remove('show');
-  annotations = []; annoSeq = 0; annoUnexported = false;
+  if (!opts.preserveDraft){
+    annotations = []; annoSeq = 0; annoUnexported = false;
+  }
   renderAnnoList();
 
+  var openedEpoch = bridge.enabled ? bridge.loadEpoch : 0;
   frame.onload = function(){
+    if (bridge.enabled && openedEpoch !== bridge.loadEpoch) return;
     try { initEditLayer(); }
     catch(e){ console.error('[editor] 编辑层初始化失败', e); toast('编辑层初始化失败，请查看控制台'); }
     refreshExport();   /* v3.0：装载后读取 export/ 产物（三通道） */
+    if (opts.onReady) opts.onReady();
   };
   frame.srcdoc = text;
 
   state.loaded = true;
-  setDirty(false); state.dirty = false; renderDirty();
+  state.dirty = false; renderDirty();
   $('emptyState').classList.add('hidden');
   $('btnSave').disabled = false;
   updateSaveButton();
@@ -3041,6 +3091,7 @@ function initEditLayer(){
   d.head.appendChild(style);
 
   buildRegistry(d);
+  rebindAnnotationsAfterLoad();
   wireGestures(d);
   wireSlideStatus(d);
   /* v2.1（契约 v6）：冻结交互动效层——骨架 v5 的 pointer tracker 摘除、
@@ -3376,6 +3427,12 @@ function resolveByRef(slideId, path){
   }
   return cur;
 }
+function rebindAnnotationsAfterLoad(){
+  annotations.forEach(function(a){a.targets.forEach(function(t){
+    var el=resolveByRef(t.slide,t.path);t.status=!el?'missing':(excerptOf(el)===t.excerpt?'matched':'changed');t.el=el;
+  });});
+  rebuildAnnoMarks();renderAnnoList();
+}
 
 /* ---------- 框选（§10.1）：选框注入 iframe 文档，坐标同在 iframe 坐标系 ---------- */
 function wireMarquee(d){
@@ -3449,7 +3506,7 @@ function rebuildAnnoMarks(){
   Array.prototype.forEach.call(d.querySelectorAll('.anno-badge'), function(b){ b.remove(); });
   Array.prototype.forEach.call(d.querySelectorAll('.anno-hit'), function(el){ el.classList.remove('anno-hit'); });
   var mark = function(el, num){
-    if (!el.isConnected) return;
+    if (!el || !el.isConnected) return;
     el.classList.add('anno-hit');
     var slide = el.closest('.slide');
     if (!slide) return;
@@ -3534,6 +3591,7 @@ $('annoSubmit').addEventListener('click', function(){
   });
   pendingAnno = null;
   annoUnexported = true;
+  bridge.annotationGeneration++; bridgeScheduleDraft();
   closeAnnoModal();
   rebuildAnnoMarks();
   renderAnnoList();
@@ -3554,6 +3612,7 @@ function renderAnnoList(){
   $('annoCount').textContent = annotations.length ? '（' + annotations.length + '）' : '';
   $('annoUnexp').textContent = annoUnexported && annotations.length ? '未导出' : '';
   $('btnExportAnno').disabled = !annotations.length;
+  $('btnSendAnno').disabled = !annotations.length;
   if (!annotations.length){
     var empty = document.createElement('div');
     empty.className = 'empty';
@@ -3578,6 +3637,7 @@ function renderAnnoList(){
       e.stopPropagation();
       annotations.splice(annotations.indexOf(a), 1);
       annoUnexported = true;
+      bridge.annotationGeneration++; bridgeScheduleDraft();
       rebuildAnnoMarks();
       renderAnnoList();
     });
@@ -3588,13 +3648,13 @@ function renderAnnoList(){
 }
 function locateAnnotation(a){
   var d = doc(); if (!d) return;
-  var first = a.targets.filter(function(t){ return t.el.isConnected; })[0];
+  var first = a.targets.filter(function(t){ return t.el && t.el.isConnected; })[0];
   if (!first) return;
   var slot = first.el.closest('.slide-slot');
   var deck = d.querySelector('.deck');
   if (slot && deck) deck.scrollTo({ top: slot.offsetTop, behavior: 'auto' });
   a.targets.forEach(function(t){
-    if (!t.el.isConnected) return;
+    if (!t.el || !t.el.isConnected) return;
     t.el.classList.remove('anno-flash');
     void t.el.offsetWidth;   /* 重启动画 */
     t.el.classList.add('anno-flash');
@@ -3616,7 +3676,7 @@ function buildAnnoExport(){
   annotations.forEach(function(a){
     var targets = a.targets.map(function(t){
       /* excerpt 以导出时刻重新抓取为准（§10.5）；抓不到/已变更则标注 */
-      var cur = t.el.isConnected ? t.el : resolveByRef(t.slide, t.path);
+      var cur = t.el && t.el.isConnected ? t.el : resolveByRef(t.slide, t.path);
       var excerpt = cur ? excerptOf(cur) : t.excerpt;
       var out = { slide: t.slide, path: t.path, tag: t.tag, excerpt: excerpt };
       if (!cur) out.target_missing = true;
@@ -3646,14 +3706,15 @@ $('btnExportAnno').addEventListener('click', async function(){
   if (!annotations.length) return;
   var out = buildAnnoExport();
   var ok = await copyText(out.text);
-  if (state.embedded){
-    try { window.parent.postMessage({ type: 'pptx-html:annotations', payload: out.payload }, '*'); }
-    catch(e){}
-  }
-  annoUnexported = false;
-  renderAnnoList();
-  toast(ok ? '批注指令已复制到剪贴板' + (state.embedded ? '，并已发送宿主' : '')
-           : '复制失败，请检查剪贴板权限');
+  toast(ok ? '批注指令已复制（尚未提交）' : '复制失败，请检查剪贴板权限');
+});
+$('btnSendAnno').addEventListener('click', async function(){
+  if (!annotations.length) return;
+  var out=buildAnnoExport();
+  try{
+    await bridgeSend('anno.submitted',out.payload,{type:'pptx-html:annotations',payload:out.payload},out.text);
+    annoUnexported=false;bridge.annotationGeneration++;renderAnnoList();bridgeScheduleDraft();
+  }catch(e){toast('批注发送失败：'+e.message);}
 });
 
 async function writeFileToHandle(handle, content){
@@ -3664,41 +3725,19 @@ async function writeFileToHandle(handle, content){
 
 async function replaceImage(img){
   if (!state.fsaa){
-    toast('当前浏览器不支持文件系统访问（需要 Chrome / Edge），无法替换图片。');
+    toast('当前浏览器不支持文件选择能力，无法替换图片。');
     return;
   }
-  var picked;
+  var picked,file;
   try {
     var handles = await window.showOpenFilePicker({
       types: [{ description:'图片文件', accept:{ 'image/*': ['.png','.jpg','.jpeg','.gif','.webp','.svg','.avif'] } }],
       multiple: false
     });
-    picked = handles[0];
-  } catch(e){ return; }   /* 用户取消 */
+    picked = handles[0]; file = await picked.getFile();
+  } catch(e){ return; }
 
-  /* assets/ 目录句柄：首次替换时引导授权；拒绝则中止，绝不退化 base64（契约硬规则） */
-  if (!state.assetsHandle){
-    toast('请选择该幻灯片的 assets 目录，用于写入新图片');
-    try {
-      state.assetsHandle = await window.showDirectoryPicker({ mode:'readwrite' });
-    } catch(e){
-      toast('未获得 assets 目录授权，已取消本次图片替换。');
-      return;
-    }
-    try {
-      if (await state.assetsHandle.requestPermission({ mode:'readwrite' }) !== 'granted'){
-        state.assetsHandle = null;
-        toast('assets 目录未授予写入权限，已取消本次图片替换。');
-        return;
-      }
-    } catch(e){ /* 部分环境不支持再询问，选择目录时已授权，忽略 */ }
-  }
-
-  var file;
-  try { file = await picked.getFile(); }
-  catch(e){ toast('读取图片失败：' + e.message); return; }
-
-  var curSrc = (img.getAttribute('src') || '').split('?')[0];
+  var curSrc = (img.getAttribute('data-editor-cache-orig') || img.getAttribute('src') || '').split('?')[0];
   var dir = curSrc.indexOf('/') >= 0 ? curSrc.slice(0, curSrc.lastIndexOf('/') + 1) : 'assets/';
   var curName = curSrc.split('/').pop() || 'image.png';
   var dot = curName.lastIndexOf('.');
@@ -3706,28 +3745,50 @@ async function replaceImage(img){
   var curExt = dot > 0 ? curName.slice(dot + 1).toLowerCase() : '';
   var newExt = (file.name.split('.').pop() || '').toLowerCase();
 
+  if (bridge.enabled && !state.embedded){
+    if (['png','jpg','jpeg','gif','webp'].indexOf(newExt)<0){toast('受管工作区只允许 PNG/JPEG/GIF/WebP；SVG/AVIF 不会旁路写入。');return;}
+    if (file.size>32*1024*1024){toast('图片超过 32MiB，未上传；请选择更小文件或下载草稿后处理。');return;}
+    var nextName=newExt===curExt?curName:(base+'.'+newExt), rel='assets/'+nextName;
+    bridge.pendingAssetWrites++;bridge.assetBlobs[rel]=file;bridgeScheduleDraft();
+    try{
+      var dataUrl=await new Promise(function(resolve,reject){var fr=new FileReader();fr.onload=function(){resolve(fr.result);};fr.onerror=function(){reject(fr.error||new Error('图片读取失败'));};fr.readAsDataURL(file);});
+      var data64=String(dataUrl).split(',',2)[1]||'';
+      if(JSON.stringify({session_id:bridge.sessionId,path:rel,data_base64:data64,base_revision:bridge.loadedRevision}).length>48*1024*1024)throw new Error('编码后的上传请求超过 48MiB');
+      var receipt=await bridgeFetch('/api/bridge/asset',{method:'POST',body:JSON.stringify({session_id:bridge.sessionId,path:rel,data_base64:data64,base_revision:bridge.loadedRevision})});
+      bridge.latestServerRevision=receipt.revision;bridge.loadedRevision=receipt.revision;
+      img.removeAttribute('data-editor-cache-orig');img.setAttribute('src',rel+'?v='+Date.now());img.setAttribute('data-image-state','uploaded');
+      setDirty(true);invalidateThumbOf(img);$('sbMsg').textContent='资产已更新，页面引用尚待保存';
+      delete bridge.assetBlobs[rel];bridge.pendingAssetWrites--;bridgeScheduleDraft();
+      var htmlSaved=await saveDeck();
+      if(!htmlSaved){showWarn('资产已更新，但页面 HTML 尚未保存；当前 DOM 和草稿已保留。');return;}
+      toast('图片资产与页面引用均已取得保存回执');return;
+    }catch(e){
+      bridge.pendingAssetWrites=Math.max(0,bridge.pendingAssetWrites-1);bridgeScheduleDraft();
+      showWarn('图片上传未完成：'+e.message+'。文件仍保留在本地草稿中。');return;
+    }
+  }
+
+  /* 非 bridge 路径沿用 FSAA：先授权 assets/，再写入并由普通保存持久化 HTML。 */
+  if (!state.assetsHandle){
+    toast('请选择该幻灯片的 assets 目录，用于写入新图片');
+    try { state.assetsHandle = await window.showDirectoryPicker({ mode:'readwrite' }); }
+    catch(e){ toast('未获得 assets 目录授权，已取消本次图片替换。'); return; }
+    try {
+      if (await state.assetsHandle.requestPermission({ mode:'readwrite' }) !== 'granted'){
+        state.assetsHandle = null; toast('assets 目录未授予写入权限，已取消本次图片替换。'); return;
+      }
+    } catch(e){}
+  }
   try {
     if (newExt === curExt){
-      /* 同名覆盖优先：src 不变，会话内用 ?v= 破缓存（序列化时剥离） */
-      var h1 = await state.assetsHandle.getFileHandle(curName, { create:true });
-      await writeFileToHandle(h1, file);
-      img.setAttribute('src', curSrc + '?v=' + Date.now());
-      toast('已覆盖 assets/' + curName + '，保存后生效');
+      var h1 = await state.assetsHandle.getFileHandle(curName, { create:true }); await writeFileToHandle(h1, file);
+      img.setAttribute('src', curSrc + '?v=' + Date.now()); toast('已覆盖 assets/' + curName + '，保存后生效');
     } else {
-      var newName = base + '.' + newExt;
-      var h2 = await state.assetsHandle.getFileHandle(newName, { create:true });
-      await writeFileToHandle(h2, file);
-      img.setAttribute('src', dir + newName);
-      toast('已写入 assets/' + newName + ' 并更新引用，保存后生效');
+      var newName = base + '.' + newExt; var h2 = await state.assetsHandle.getFileHandle(newName, { create:true }); await writeFileToHandle(h2, file);
+      img.setAttribute('src', dir + newName); toast('已写入 assets/' + newName + ' 并更新引用，保存后生效');
     }
-    /* 契约 v5：上传成功置 uploaded，保留 data-image-slot / data-image-intent */
-    img.setAttribute('data-image-state', 'uploaded');
-    setDirty(true);
-    invalidateThumbOf(img);
-    $('sbMsg').textContent = '有未保存的图片引用变更';
-  } catch(e){
-    toast('写入图片失败：' + e.message);
-  }
+    img.setAttribute('data-image-state', 'uploaded');setDirty(true);invalidateThumbOf(img);$('sbMsg').textContent = '有未保存的图片引用变更';
+  } catch(e){ toast('写入图片失败：' + e.message); }
 }
 
 /* ============================================================
@@ -3792,6 +3853,10 @@ async function serializeClean(){
   Array.prototype.forEach.call(clone.querySelectorAll('[data-editor-blob-orig]'), function(n){
     n.setAttribute('src', n.getAttribute('data-editor-blob-orig'));
     n.removeAttribute('data-editor-blob-orig');
+  });
+  Array.prototype.forEach.call(clone.querySelectorAll('[data-editor-cache-orig]'), function(n){
+    n.setAttribute('src', n.getAttribute('data-editor-cache-orig'));
+    n.removeAttribute('data-editor-cache-orig');
   });
 
   /* 3. 框架运行时状态归位：html 上的 --slide-scale 与整个 class 属性
@@ -3875,7 +3940,8 @@ async function serializeClean(){
 
 function updateSaveButton(){
   var btn = $('btnSave');
-  if (!state.fsaa && !state.embedded){
+  if(bridge.enabled&&!state.embedded){btn.textContent='保存到工作区';btn.title='经 Bridge CAS 保存并等待 receipt';}
+  else if (!state.fsaa && !state.embedded){
     btn.textContent = '保存下载';
     btn.title = '当前浏览器不支持文件系统访问，修改将以下载方式保存为文件';
   } else {
@@ -3884,13 +3950,51 @@ function updateSaveButton(){
   }
 }
 
-async function saveDeck(){
+async function saveDeck(bridgeQueued){
   if (!state.loaded) return false;
+  if(bridge.enabled&&!state.embedded&&!bridgeQueued){
+    var queued=bridge.saveChain.then(function(){return saveDeck(true);},function(){return saveDeck(true);});
+    bridge.saveChain=queued.then(function(){},function(){});
+    return queued;
+  }
   if (editEl) commitEdit();
   if (srcEdit) closeSrcEdit();   /* v3.0：源层编辑态在保存前收起（覆盖层 class 随净化剔除） */
+  var saveGeneration=bridge.editGeneration, saveEpoch=bridge.loadEpoch, saveSession=bridge.sessionId;
   var text;
   try { text = await serializeClean(); }
   catch(e){ toast('序列化失败：' + e.message); return false; }
+  var saveHashes=lastSaveHashes ? Object.assign({},lastSaveHashes) : null;
+
+  /* 受管 bridge 保存必须由服务 receipt 确认；失败绝不旁路覆盖原目标。 */
+  if (bridge.enabled && !state.embedded){
+    var operation=async function(){
+      bridge.saveInFlight=true;bridgeScheduleDraft();bridgeRenderState('working','正在保存快照','');
+      try{
+        var body={session_id:bridge.sessionId,path:state.deckPath,html:text,base_revision:bridge.loadedRevision};
+        if(!bridge.capabilities.git_ready){
+          var consent=await askConfirm('初始化 Git 保护？','首次受管保存需要先建立可回滚保护基线。','初始化并保存');
+          if(!consent)throw new Error('未确认 Git 初始化，工作区未保存');
+          body.init=true;
+        }
+        var res=await bridgeFetch('/api/save',{method:'POST',body:JSON.stringify(body)});
+        bridge.latestServerRevision=res.revision;bridge.capabilities.git_ready=!!res.gitReady||bridge.capabilities.git_ready;
+        if(saveSession===bridge.sessionId&&saveEpoch===bridge.loadEpoch)bridge.loadedRevision=res.revision;
+        if(saveSession===bridge.sessionId&&saveEpoch===bridge.loadEpoch&&saveGeneration===bridge.editGeneration){
+          lastSaveHashes=saveHashes;setDirty(false);$('sbMsg').textContent='';applySavedHashes();
+          toast('已保存并取得回执 '+res.receipt_id);
+        }else{
+          $('sbMsg').textContent='上一份快照已保存，当前还有新修改';setDirty(true);
+          toast('上一份快照已保存；继续输入的内容仍未保存');
+        }
+        if($('histDrawer').classList.contains('open'))loadVersions();return true;
+      }catch(e){
+        bridgeRenderState('error','受管保存失败',e.message);
+        showWarn('受管工作区保存失败：'+e.message+'。不会降级覆盖原目标。','下载副本（未发布）',function(){bridgeDownloadHtml(text);});
+        return false;
+      }finally{bridge.saveInFlight=false;bridgeScheduleDraft();}
+    };
+    return operation();
+  }
 
   /* 嵌入态：保存一律交给宿主 postMessage（§8）。嵌入加载没有文件句柄，
      FSAA 在此语境只能另存/下载；且宿主权限策略拦截时 FSAA 会被静默吞掉，
@@ -4174,7 +4278,12 @@ async function copyText(text){
 
 $('btnExport').addEventListener('click', async function(){
   var ok = await copyText(buildIntentExport());
-  toast(ok ? '修改指令已复制到剪贴板' : '复制失败，请检查浏览器剪贴板权限');
+  toast(ok ? '修改指令已复制（尚未提交）' : '复制失败，请检查浏览器剪贴板权限');
+});
+$('btnSendDesign').addEventListener('click', async function(){
+  var text=buildIntentExport(),payload;
+  try{payload=bridgePayloadJsonFromText(text);await bridgeSend('design.submitted',payload,{type:'pptx-html:design',payload:payload},text);bridge.formDirty=false;bridgeScheduleDraft();}
+  catch(e){toast('设计意图发送失败：'+e.message);}
 });
 
 $('btnPanel').addEventListener('click', function(){
@@ -4535,18 +4644,19 @@ $('btnBriefGen').addEventListener('click', function(){
   briefLast = buildBriefExport();
   $('briefPreview').textContent = briefLast.text;
   $('briefResult').hidden = false;
-  /* 嵌入态：简报交给宿主（沿用 §8 postMessage 协议风格） */
-  if (state.embedded){
-    try { window.parent.postMessage({ type:'pptx-html:brief', text: briefLast.text, json: briefLast.json }, '*'); }
-    catch(e){}
-  }
-  toast(state.embedded ? '简报已生成，并已发送宿主' : '简报已生成');
+  toast('简报预览已生成（尚未提交）');
   $('briefResult').scrollIntoView({ behavior:'smooth', block:'nearest' });
 });
 $('btnBriefCopy').addEventListener('click', async function(){
   if (!briefLast) return;
   var ok = await copyText(briefLast.text);
-  toast(ok ? '需求简报已复制到剪贴板' : '复制失败，请检查浏览器剪贴板权限');
+  toast(ok ? '需求简报已复制（尚未提交）' : '复制失败，请检查浏览器剪贴板权限');
+});
+$('btnBriefSend').addEventListener('click', async function(){
+  var current=buildBriefExport();
+  briefLast=current;$('briefPreview').textContent=current.text;$('briefResult').hidden=false;
+  try{await bridgeSend('brief.submitted',{text:current.text,json:current.json},{type:'pptx-html:brief',text:current.text,json:current.json},current.text);bridge.formDirty=false;bridgeScheduleDraft();}
+  catch(e){toast('需求简报发送失败：'+e.message);}
 });
 
 /* ============================================================
@@ -5648,111 +5758,51 @@ $('dlMenu').addEventListener('click', function(){ $('dlMenu').hidden = true; });
 /* 「重新翻转」只表达意图：嵌入态发 export-intent，其余复制技能命令——
    转换发生与否由宿主侧 AI 工作流决定（转换即技能红线） */
 function reFlip(slideIds){
-  if (state.embedded){
-    try {
-      window.parent.postMessage({ type:'pptx-html:export-intent', action:'re-export',
-                                  slideIds: slideIds || null }, '*');
-    } catch(e){}
-    toast('已向宿主发送重新翻转请求');
-    return;
-  }
-  var cmd = 'python3 skills/html-pptx/scripts/export-pptx.py ' +
-            (state.deckPath || '<deck>/index.html') + ' --force';
-  copyText(cmd).then(function(ok){
-    toast(ok ? '编辑器不发起转换——翻转命令已复制，请交给 AI coding agent 执行'
-             : '请让 AI 重新翻转（运行技能 export-pptx.py）');
-  });
+  var cmd='python3 skills/html-pptx/scripts/export-pptx.py '+(state.deckPath||'<deck>/index.html')+' --force --track both';
+  bridgeSend('convert.requested',{formats:['pptx','vector','pdf'],scope:'all'},
+    {type:'pptx-html:export-intent',action:'re-export',slideIds:slideIds||null},cmd).catch(function(e){toast('翻转请求失败：'+e.message);});
 }
 
-/* 一键转换导出（v3.1）：转换逻辑只在技能脚本里（export-pptx.py），编辑器按环境
-   三通道分发——嵌入态→宿主 export-intent；伴随服务且其以 --convert 启动→代为触发
-   脚本子进程（edit.py 不含任何转换实现，异步任务制 + 状态轮询）；都没有→复制命令。 */
+/* 一键转换仅选择一条路由：宿主 → L2 bridge intent → opt-in 本地转换 → 复制。 */
 var converting = false;
 var convertPollTimer = null;
 function pollConvertStatus(){
   if (convertPollTimer) return;
-  convertPollTimer = setInterval(function(){
-    fetch('api/convert-status', { cache:'no-store' })
-      .then(function(r){ return r.json().catch(function(){ return null; }); })
-      .then(function(j){
-        if (!j) return;
-        if (j.status === 'running') return;   /* 继续等 */
-        clearInterval(convertPollTimer); convertPollTimer = null;
-        converting = false;
-        var btn = $('btnConvert');
-        btn.disabled = false; btn.textContent = '一键转换导出';
-        if (j.status === 'done'){
-          toast('转换完成：export/ 已更新（deck.pptx / deck-vector.pptx / deck.pdf / 逐页 SVG·PNG）');
-          refreshExport();
-        } else if (j.status === 'failed'){
-          toast('转换失败：' + (j.tail || '请查看伴随服务控制台').toString().slice(0, 200));
-        }
-      })
-      .catch(function(){
-        clearInterval(convertPollTimer); convertPollTimer = null;
-        converting = false;
-        $('btnConvert').disabled = false; $('btnConvert').textContent = '一键转换导出';
-      });
-  }, 5000);
+  convertPollTimer=setInterval(async function(){
+    try{
+      var j=bridge.enabled
+        ? await bridgeFetch('/api/convert-status?session_id='+encodeURIComponent(bridge.sessionId))
+        : await fetch('api/convert-status',{cache:'no-store'}).then(function(r){return r.json();});
+      if(j.status==='running')return;
+      clearInterval(convertPollTimer);convertPollTimer=null;converting=false;$('btnConvert').disabled=false;$('btnConvert').textContent='一键转换导出';
+      if(j.status==='done'){toast('本地转换已完成，正在重新读取产物');if(bridge.enabled)bridgeForceExport({__eventId:Date.now(),export_revision:null});else triRefresh();}
+      else if(j.status==='failed')toast('转换失败：'+String(j.tail||'请查看服务状态').slice(0,200));
+    }catch(e){clearInterval(convertPollTimer);convertPollTimer=null;converting=false;$('btnConvert').disabled=false;$('btnConvert').textContent='一键转换导出';toast('转换状态读取失败：'+e.message);}
+  },5000);
 }
-function convertDeck(){
-  if (converting || !state.loaded) return;
-  if (state.embedded){
-    try {
-      window.parent.postMessage({ type:'pptx-html:export-intent', action:'re-export',
-                                  slideIds: null, formats: ['pptx','svg','png','pdf'] }, '*');
-    } catch(e){}
-    toast('已向宿主发送一键转换请求（PPTX / SVG / PNG / PDF）');
-    return;
+async function convertDeck(){
+  if(converting||!state.loaded)return;
+  var host={type:'pptx-html:export-intent',action:'re-export',slideIds:null,formats:['pptx','svg','png','pdf']};
+  if(state.embedded){window.parent.postMessage(host,'*');toast('已向宿主发送一键转换请求');return;}
+  if(bridge.enabled){
+    try{await bridgeSubmitIntent('convert.requested',{formats:['pptx','vector','pdf'],scope:'all'});toast('转换请求已进入 Agent 队列');}catch(e){toast('转换请求失败：'+e.message);}return;
   }
-  if (state.backend && state.backend.convert && state.deckPath){
-    converting = true;
-    var btn = $('btnConvert');
-    btn.disabled = true; btn.textContent = '转换中…（管线约 1–5 分钟）';
-    fetch('api/convert', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: state.deckPath })
-    }).then(function(r){ return r.json().catch(function(){ return null; }); })
-      .then(function(j){
-        if (j && j.ok){
-          /* 异步任务制：启动成功（或复用运行中的任务）→ 轮询状态 */
-          pollConvertStatus();
-        } else {
-          converting = false;
-          btn.disabled = false; btn.textContent = '一键转换导出';
-          toast('转换失败：' + ((j && (j.error || j.tail)) || '请查看伴随服务控制台'));
-        }
-      })
-      .catch(function(){
-        converting = false;
-        btn.disabled = false; btn.textContent = '一键转换导出';
-        toast('转换请求失败：伴随服务不可达');
-      });
-    return;
+  if(state.backend&&state.backend.convert&&state.deckPath){
+    converting=true;$('btnConvert').disabled=true;$('btnConvert').textContent='转换执行中…';
+    try{
+      var j=await fetch('api/convert',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:state.deckPath})}).then(function(r){return r.json();});
+      if(!j.ok)throw new Error((j.error&&j.error.message)||j.error||'启动失败');pollConvertStatus();
+    }catch(e){converting=false;$('btnConvert').disabled=false;$('btnConvert').textContent='一键转换导出';toast('转换请求失败：'+e.message);}return;
   }
-  var cmd = 'python3 skills/html-pptx/scripts/export-pptx.py ' +
-            (state.deckPath || '<deck>/index.html') + ' --force';
-  copyText(cmd).then(function(ok){
-    toast(ok ? '转换命令已复制——交给 AI coding agent 执行，或以 python3 tools/edit.py --convert 启动伴随服务后即可一键转换'
-             : '请运行技能 export-pptx.py 完成转换');
-  });
+  var cmd='python3 skills/html-pptx/scripts/export-pptx.py '+(state.deckPath||'<deck>/index.html')+' --force --track both';
+  copyText(cmd).then(function(ok){toast(ok?'转换命令已复制':'请运行技能 export-pptx.py 完成转换');});
 }
 $('btnConvert').addEventListener('click', convertDeck);
-/* 打开编辑器时若伴随服务正在转换（--convert 启动即转），接续显示进度 */
 function resumeConvertIfRunning(){
-  if (!state.backend || !state.backend.convert) return;
-  fetch('api/convert-status', { cache:'no-store' })
-    .then(function(r){ return r.json().catch(function(){ return null; }); })
-    .then(function(j){
-      if (j && j.status === 'running'){
-        converting = true;
-        var btn = $('btnConvert');
-        btn.disabled = true; btn.textContent = '转换中…（管线约 1–5 分钟）';
-        toast('检测到伴随服务正在转换当前 deck，完成后自动刷新产物');
-        pollConvertStatus();
-      }
-    })
-    .catch(function(){});
+  if(!state.backend||!state.backend.convert||bridge.enabled)return;
+  fetch('api/convert-status',{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
+    if(j&&j.status==='running'){converting=true;$('btnConvert').disabled=true;$('btnConvert').textContent='转换执行中…';pollConvertStatus();}
+  }).catch(function(){});
 }
 
 /* 三形态视图统一重渲染（装载 / 刷新 / 保存 / 切视图后调用） */
@@ -5765,6 +5815,392 @@ function renderTriViews(){
   updateTriChrome();
 }
 
+/* ============================================================
+   Bridge v2 浏览器运行时：鉴权、SSE、草稿、请求与加载代次
+   ============================================================ */
+function bridgeUuid(){
+  if (crypto.randomUUID) return crypto.randomUUID();
+  var a = new Uint8Array(16); crypto.getRandomValues(a); a[6] = (a[6] & 15) | 64; a[8] = (a[8] & 63) | 128;
+  return Array.prototype.map.call(a, function(x,i){ return ([4,6,8,10].indexOf(i)>=0?'-':'') + ('0'+x.toString(16)).slice(-2); }).join('');
+}
+function bridgeParseLaunch(){
+  if (state.embedded) return;
+  var p = new URLSearchParams(location.hash.slice(1));
+  var token = p.get('brt'), sid = p.get('session');
+  if (token && sid){
+    sessionStorage.setItem('pptx-html:bridge-token', token);
+    sessionStorage.setItem('pptx-html:bridge-session', sid);
+    history.replaceState(null, '', location.pathname + location.search);
+  } else {
+    token = sessionStorage.getItem('pptx-html:bridge-token');
+    sid = sessionStorage.getItem('pptx-html:bridge-session');
+  }
+  if (!token || !sid) return;
+  bridge.enabled = true; bridge.token = token; bridge.sessionId = sid;
+  var ck = 'pptx-html:bridge-client:' + sid;
+  bridge.clientId = sessionStorage.getItem(ck) || bridgeUuid();
+  sessionStorage.setItem(ck, bridge.clientId);
+  var ek = 'pptx-html:bridge-event:' + sid;
+  bridge.lastAppliedEventId = Math.max(0, +(sessionStorage.getItem(ek) || 0) || 0);
+  $('bridgeBar').classList.add('show');
+}
+function bridgeErrorMessage(j, fallback){
+  return j && j.error ? (j.error.message || j.error.code || fallback) : fallback;
+}
+async function bridgeFetch(path, options){
+  options = options || {};
+  var headers = new Headers(options.headers || {});
+  headers.set('Authorization', 'Bearer ' + bridge.token);
+  if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  var r;
+  try { r = await fetch(path, Object.assign({}, options, {headers:headers, cache:options.cache || 'no-store'})); }
+  catch(e){ bridge.connected = false; bridgeRenderState('error', 'Bridge 连接失败', e.message); throw e; }
+  var ct = r.headers.get('content-type') || '', j = null;
+  if (ct.indexOf('application/json') >= 0) j = await r.json().catch(function(){ return null; });
+  if (!r.ok || (j && j.ok === false)){
+    var err = new Error(bridgeErrorMessage(j, 'HTTP ' + r.status));
+    err.code = j && j.error && j.error.code; err.status = r.status; err.details = j && j.error && j.error.details;
+    if (r.status === 401 || r.status === 403){ bridge.connected = false; bridgeRenderState('error', 'Bridge 凭证失效', err.message); }
+    throw err;
+  }
+  return j === null ? r : j;
+}
+function bridgeRenderState(kind, label, notice){
+  if (!bridge.enabled) return;
+  $('bridgeBar').dataset.state = kind || 'online';
+  $('bridgeState').textContent = label || 'Bridge 已连接';
+  $('bridgeRevision').textContent = bridge.loadedRevision ? bridge.loadedRevision.slice(0, 19) : (bridge.phase === 'briefing' ? '等待首份 deck' : '');
+  $('bridgeNotice').textContent = notice || bridge.lastNotice || '';
+  $('btnBridgeBake').hidden = !state.loaded;
+  $('btnBridgeIllustrate').hidden = !state.loaded;
+}
+function bridgeAnnotations(){
+  return annotations.length ? buildAnnoExport().payload.annotations : [];
+}
+function bridgeHasFormDraft(){ return !!bridge.formDirty; }
+function bridgeHasIntentRisk(){
+  return Object.keys(bridge.intents).some(function(id){ return ['pending','processing','submitting','unconfirmed','retrying'].indexOf(bridge.intents[id].status) >= 0; });
+}
+function bridgeHasDraftRisk(){
+  return !!(state.dirty || editEl || annoUnexported || bridgeHasFormDraft() || bridgeHasIntentRisk() || bridge.saveInFlight || bridge.pendingAssetWrites || bridge.draftPending);
+}
+function bridgeAutoReloadRisk(){
+  return !!(state.dirty || editEl || annoUnexported || bridgeHasFormDraft() || bridge.saveInFlight || bridge.pendingAssetWrites);
+}
+function bridgeHeartbeatBody(){
+  return {protocol_version:2,role:'browser',session_id:bridge.sessionId,client_id:bridge.clientId,
+    dirty:!!state.dirty,active_edit:!!editEl,draft_pending:bridgeHasDraftRisk(),
+    revision:bridge.loadedRevision,last_event_id:bridge.lastAppliedEventId};
+}
+async function bridgeHeartbeat(){
+  if (!bridge.enabled || bridge.heartbeatInFlight || bridge.stopped) return;
+  bridge.heartbeatInFlight = true;
+  try {
+    await bridgeFetch('/api/bridge/heartbeat', {method:'POST',body:JSON.stringify(bridgeHeartbeatBody())});
+    bridge.bound = true; bridge.connected = true;
+  } finally { bridge.heartbeatInFlight = false; }
+}
+function bridgeOpenDb(){
+  return new Promise(function(resolve,reject){
+    if (!window.indexedDB){ reject(new Error('当前浏览器不支持 IndexedDB')); return; }
+    var req = indexedDB.open('pptx-html-bridge-v2', 1);
+    req.onupgradeneeded = function(){ var db=req.result; if (!db.objectStoreNames.contains('drafts')) db.createObjectStore('drafts',{keyPath:'key'}); };
+    req.onsuccess=function(){ resolve(req.result); }; req.onerror=function(){ reject(req.error || new Error('IndexedDB 打开失败')); };
+  });
+}
+async function bridgeIdbPut(value){
+  var db=await bridgeOpenDb();
+  return new Promise(function(resolve,reject){
+    var tx=db.transaction('drafts','readwrite'); tx.objectStore('drafts').put(value);
+    tx.oncomplete=function(){db.close();resolve(value);}; tx.onerror=function(){db.close();reject(tx.error || new Error('IndexedDB 写入失败'));};
+  });
+}
+async function bridgeIdbGet(){
+  var db=await bridgeOpenDb(), key=bridge.sessionId+':'+bridge.clientId;
+  return new Promise(function(resolve,reject){
+    var tx=db.transaction('drafts','readonly'), req=tx.objectStore('drafts').get(key);
+    req.onsuccess=function(){db.close();resolve(req.result||null);}; req.onerror=function(){db.close();reject(req.error);};
+  });
+}
+function bridgeIntentMetadata(){
+  return Object.keys(bridge.intents).map(function(id){
+    var x=bridge.intents[id]; return {id:x.id,seq:x.seq||null,type:x.type,status:x.status,attempt:x.attempt||1,base_revision:x.base_revision||null,retry_id:x.retry_id||null,request:x.request||null};
+  });
+}
+async function bridgeDraftSnapshot(){
+  var html = '';
+  if (state.loaded) html = await serializeClean();
+  return {key:bridge.sessionId+':'+bridge.clientId,session_id:bridge.sessionId,client_id:bridge.clientId,
+    html:html,annotations:bridgeAnnotations(),pending_intents:bridgeIntentMetadata(),
+    forms:{brief:JSON.parse(JSON.stringify(briefAnswers)),design:JSON.parse(JSON.stringify(answers))},
+    base_revision:bridge.loadedRevision,epoch:bridge.loadEpoch,edit_generation:bridge.editGeneration,
+    annotation_generation:bridge.annotationGeneration,asset_blobs:bridge.assetBlobs,created_at:new Date().toISOString()};
+}
+async function bridgePersistDraft(serverToo){
+  if (!bridge.enabled) return null;
+  bridge.draftPending = true; bridgeRenderState('working','正在保护草稿','');
+  try {
+    var snap=await bridgeDraftSnapshot(); await bridgeIdbPut(snap);
+    if (serverToo && bridge.bound){
+      var j=await bridgeFetch('/api/bridge/draft',{method:'POST',body:JSON.stringify({session_id:bridge.sessionId,client_id:bridge.clientId,html:snap.html,annotations:snap.annotations,base_revision:snap.base_revision})});
+      snap.server_draft_id=j.draft_id; await bridgeIdbPut(snap);
+    }
+    bridge.draftPending=false; bridgeRenderState('online','草稿已保护',''); return snap;
+  } catch(e){
+    bridge.draftPending=true; bridgeRenderState('error','草稿保护失败',e.message);
+    showWarn('无法保护当前草稿：'+e.message+'。为避免丢失，页面不会自动载入远端版本。','下载草稿',bridgeDownloadDraft);
+    throw e;
+  }
+}
+function bridgeScheduleDraft(){
+  if (!bridge.enabled) return;
+  clearTimeout(bridgeScheduleDraft.timer);
+  bridgeScheduleDraft.timer=setTimeout(function(){ bridgePersistDraft(false).catch(function(){}); },500);
+}
+function bridgeDownloadBlob(blob,name){
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href);},5000);
+}
+function bridgeDownloadHtml(text){
+  bridgeDownloadBlob(new Blob([text],{type:'text/html;charset=utf-8'}),state.fileName||'deck.html');
+  toast('HTML 副本已下载，但未发布到受管工作区');
+}
+async function bridgeDownloadDraft(){
+  try {
+    var snap=await bridgeDraftSnapshot();bridgeDownloadBlob(new Blob([JSON.stringify(snap,null,2)],{type:'application/json'}),'pptx-html-draft-'+bridge.sessionId+'.json');
+    toast('草稿副本已下载（未发布到工作区）');
+  } catch(e){ toast('草稿导出失败：'+e.message); }
+}
+async function bridgeRestoreDraft(snap){
+  if(!snap)return;
+  if(snap.html){
+    var rel=state.deckPath||bridgeManagedPath(null),epoch=++bridge.loadEpoch;
+    await new Promise(function(resolve){openHtml(snap.html,rel,null,rel.slice(0,rel.lastIndexOf('/')+1),rel,{preserveDraft:false,onReady:resolve});});
+    if(epoch!==bridge.loadEpoch)return;
+    annotations=(snap.annotations||[]).map(function(a,i){return {num:i+1,id:a.id,note:a.note,created_at:a.created_at,targets:(a.targets||[]).map(function(t){return {el:resolveByRef(t.slide,t.path),slide:t.slide,path:t.path,tag:t.tag,excerpt:t.excerpt};})};});
+    annoSeq=annotations.length;annoUnexported=annotations.length>0;rebuildAnnoMarks();renderAnnoList();
+    bridge.loadedRevision=snap.base_revision;bridge.editGeneration=Math.max(bridge.editGeneration,snap.edit_generation||0)+1;setDirty(true);
+  }
+  if(snap.forms){if(snap.forms.brief)Object.assign(briefAnswers,snap.forms.brief);if(snap.forms.design)Object.assign(answers,snap.forms.design);bridge.formDirty=true;}
+  (snap.pending_intents||[]).forEach(function(x){if(!bridge.intents[x.id])bridge.intents[x.id]=x;});bridgeRenderTasks();
+  toast('本地草稿已恢复；保存时仍会按原 base revision 做冲突检查');
+}
+function bridgeRememberEvent(id){
+  if (!id || id<=bridge.lastAppliedEventId) return;
+  bridge.lastAppliedEventId=id; sessionStorage.setItem('pptx-html:bridge-event:'+bridge.sessionId,String(id));
+}
+function bridgeCapturePosition(){
+  return {slideId:triPages[curSlideIdx]&&triPages[curSlideIdx].slideId,view:view,toc:$('toc').classList.contains('open'),scroll:(doc()&&doc().querySelector('.deck')&&doc().querySelector('.deck').scrollTop)||0};
+}
+function bridgeRestorePosition(pos){
+  if (!pos) return;
+  if (pos.view && ['edit','export','compare'].indexOf(pos.view)>=0){view=pos.view;applyView();}
+  $('toc').classList.toggle('open',!!pos.toc);syncTocChrome();
+  var d=doc(), deck=d&&d.querySelector('.deck');if(!deck)return;
+  var slide=pos.slideId&&d.querySelector('section.slide[data-slide-id="'+CSS.escape(pos.slideId)+'"]');
+  var slot=slide&&(slide.closest('.slide-slot')||slide);deck.scrollTop=slot?slot.offsetTop:Math.min(pos.scroll,deck.scrollHeight-deck.clientHeight);
+}
+function bridgeManagedPath(hint){
+  if (hint && typeof hint==='string' && hint.indexOf('/')!==0 && hint.indexOf('..')<0) return hint;
+  var q=new URLSearchParams(location.search).get('deck'); if(q)return q;
+  if (state.deckPath) return state.deckPath;
+  if (bridge.resourcePath) return bridge.resourcePath;
+  var abs=bridge.targetPath||''; return abs.split('/').pop() || 'index.html';
+}
+async function bridgeLoadDeck(path,revision,preserve){
+  var sid=bridge.sessionId, epoch=++bridge.loadEpoch, rel=bridgeManagedPath(path), pos=bridgeCapturePosition();
+  var url=rel+(rel.indexOf('?')>=0?'&':'?')+'__bridge_rev='+encodeURIComponent(revision||Date.now());
+  var r=await bridgeFetch(url,{cache:'no-store'}); if(!(r instanceof Response)||!r.ok)throw new Error('读取受管 deck 失败');
+  var text=await r.text(); if(sid!==bridge.sessionId||epoch!==bridge.loadEpoch)return false;
+  await new Promise(function(resolve){openHtml(text,rel,null,rel.slice(0,rel.lastIndexOf('/')+1),rel,{preserveDraft:!!preserve,onReady:resolve});});
+  if(sid!==bridge.sessionId||epoch!==bridge.loadEpoch)return false;
+  bridge.loadedRevision=revision;bridge.latestServerRevision=revision;state.deckPath=rel;bridgeRestorePosition(pos);bridgeRenderState('online','Bridge 已同步','');return true;
+}
+async function bridgeHandleDeckChanged(data){
+  if (!data||data.session_id!==bridge.sessionId)return;
+  bridge.latestServerRevision=data.revision;
+  if (bridgeAutoReloadRisk()){
+    try{await bridgePersistDraft(true);}catch(e){return;}
+    bridge.pendingRemoteChange=data;bridgeRememberEvent(data.__eventId||0);bridgeRenderState('working','远端版本待处理','当前输入已保护，点击“载入远端”决定覆盖当前画布');
+    showWarn('工作区已有新版本，当前输入已保护，未自动覆盖。','载入远端',function(){bridgeApplyPendingRemote();});return;
+  }
+  await bridgeLoadDeck(data.path,data.revision,true);
+}
+async function bridgeApplyPendingRemote(){
+  var data=bridge.pendingRemoteChange;if(!data)return;
+  try{await bridgePersistDraft(true);bridge.pendingRemoteChange=null;await bridgeLoadDeck(data.path,data.revision,true);hideWarn();}
+  catch(e){toast('载入远端版本失败：'+e.message);}
+}
+async function bridgeForceExport(data){
+  var epoch=++bridge.manifestEpoch, sid=bridge.sessionId;
+  triManifest=null;triMissing={};triStatus='loading';renderTriViews();
+  if(!triBaseUrl)return;
+  try{
+    var url=triBaseUrl+'manifest.json?__bridge_event='+encodeURIComponent(data.__eventId||Date.now());
+    var r=await bridgeFetch(url,{cache:'no-store'}),j=r instanceof Response?await r.json():r;
+    if(sid!==bridge.sessionId||epoch!==bridge.manifestEpoch)return;
+    triManifest=j&&j.pages?j:null;triStatus=triManifest?'ready':'none';bridge.exportRevision=data.export_revision||null;buildTriPages();renderTriViews();
+  }catch(e){if(epoch===bridge.manifestEpoch){triManifest=null;triStatus='none';renderTriViews();bridgeRenderState('error','产物读取失败',e.message);}}
+}
+function bridgeRefreshAssets(data){
+  var d=doc();if(!d)return;
+  Array.prototype.forEach.call(d.querySelectorAll('img[src]'),function(img){
+    var original=img.getAttribute('data-editor-cache-orig')||img.getAttribute('src');
+    if(!img.hasAttribute('data-editor-cache-orig'))img.setAttribute('data-editor-cache-orig',original);
+    var clean=original.replace(/([?&])__bridge_asset=[^&]*/g,'$1').replace(/[?&]$/,'');
+    img.setAttribute('src',clean+(clean.indexOf('?')>=0?'&':'?')+'__bridge_asset='+encodeURIComponent(data.__eventId||Date.now()));
+  });
+  buildToc();buildTriPages();triPages.forEach(function(p){p.stale=true;});renderTriViews();
+}
+function bridgeMergeIntent(item){
+  var old=bridge.intents[item.id];if(old&&old.attempt>item.attempt)return;
+  bridge.intents[item.id]=Object.assign({},old||{},item);bridgeRenderTasks();bridgeScheduleDraft();
+}
+function bridgeRenderTasks(){
+  var box=$('bridgeTasks');box.innerHTML='';var rows=Object.keys(bridge.intents).map(function(k){return bridge.intents[k];}).sort(function(a,b){return (a.seq||0)-(b.seq||0);});
+  if(!rows.length){var e=document.createElement('div');e.className='bridge-task';e.textContent='暂无请求记录';box.appendChild(e);return;}
+  rows.forEach(function(x){
+    var row=document.createElement('div');row.className='bridge-task';
+    var head=document.createElement('div');head.className='bridge-task-head';var name=document.createElement('b');name.textContent=x.type||'intent';
+    var st=document.createElement('span');st.className='bridge-'+x.status;st.textContent=x.status+(x.attempt?' · attempt '+x.attempt:'');head.appendChild(name);head.appendChild(st);row.appendChild(head);
+    var msg=document.createElement('div');msg.className='bridge-task-msg';msg.textContent=(x.error&&x.error.message)||(x.result_summary&&x.result_summary.message)||('seq '+(x.seq||'待确认'));row.appendChild(msg);
+    if(['failed','conflict','interrupted'].indexOf(x.status)>=0||x.status==='pending'||x.status==='unconfirmed'){
+      var acts=document.createElement('div');acts.className='bridge-task-actions';
+      if(x.status==='pending'){var c=document.createElement('button');c.textContent='取消';c.onclick=function(){bridgeCancelIntent(x.id);};acts.appendChild(c);}
+      if(x.status==='unconfirmed'&&x.request){var u=document.createElement('button');u.textContent='重发确认';u.onclick=function(){bridgeResendIntent(x);};acts.appendChild(u);}
+      if(['failed','conflict','interrupted'].indexOf(x.status)>=0){var r=document.createElement('button');r.textContent='从当前版本重建';r.onclick=function(){bridgeRetryIntent(x);};acts.appendChild(r);}
+      row.appendChild(acts);
+    }
+    box.appendChild(row);
+  });
+}
+async function bridgeRecoverIntents(){
+  var cursor=0,merged={};
+  while(true){
+    var j=await bridgeFetch('/api/intents/query',{method:'POST',body:JSON.stringify({session_id:bridge.sessionId,cursor:cursor,limit:100})});
+    (j.items||[]).forEach(function(x){var old=merged[x.id];if(!old||x.attempt>=old.attempt)merged[x.id]=x;});
+    if(!j.has_more)break;cursor=j.next_cursor;
+  }
+  bridge.intents=merged;bridgeRenderTasks();
+}
+async function bridgeStatusAndRecover(){
+  var st=await bridgeFetch('/api/bridge/status',{method:'POST',body:JSON.stringify({session_id:bridge.sessionId})});
+  bridge.phase=st.phase;bridge.latestServerRevision=st.revision;bridge.exportRevision=st.export_revision;bridge.targetPath=st.target_path;bridge.resourcePath=st.resource_path||null;bridge.capabilities=st.capabilities||bridge.capabilities;
+  state.backend={ok:true,bridge:true,gitReady:!!bridge.capabilities.git_ready,convert:!!bridge.capabilities.local_convert};
+  var E=st.latest_event_id||0;await bridgeRecoverIntents();
+  if(st.deck_path&&!state.loaded)await bridgeLoadDeck(null,st.revision,false);
+  if(!st.deck_path&&!state.loaded){openBrief();bridgeRenderState(st.agent_state==='working'?'working':'online','等待创作内容','请完成需求脑暴后明确发送给 AI');}
+  else bridgeRenderState(st.agent_state==='working'?'working':'online','Bridge '+st.agent_state,'');
+  bridge.lastAppliedEventId=E;sessionStorage.setItem('pptx-html:bridge-event:'+bridge.sessionId,String(E));updateHistoryBtn();
+}
+async function bridgeApplyEvent(evt){
+  var data=evt.data||{};data.__eventId=evt.id;
+  if(data.session_id&&data.session_id!==bridge.sessionId)return true;
+  if(evt.type==='deck-changed')await bridgeHandleDeckChanged(data);
+  else if(evt.type==='export-refreshed')await bridgeForceExport(data);
+  else if(evt.type==='assets-changed')bridgeRefreshAssets(data);
+  else if(evt.type==='intent-status')bridgeMergeIntent({id:data.intent_id,status:data.status,attempt:data.attempt});
+  else if(evt.type==='notice'){bridge.lastNotice=data.message||'';bridgeRenderState(data.level==='error'?'error':'working','Agent 更新',bridge.lastNotice);}
+  else if(evt.type==='resync-required'){await bridgeStatusAndRecover();}
+  else if(evt.type==='server-stop'){bridge.stopped=true;bridge.connected=false;bridgeRenderState('error','Bridge 已停止','请通过合法启动入口重新连接');if(bridge.sseAbort)bridge.sseAbort.abort();}
+  return true;
+}
+function BridgeSSEParser(onEvent,onError){this.buffer='';this.onEvent=onEvent;this.onError=onError;}
+BridgeSSEParser.prototype.push=function(text){
+  this.buffer+=text;var m;
+  while((m=/(\r\n\r\n|\n\n|\r\r)/.exec(this.buffer))){
+    var block=this.buffer.slice(0,m.index).replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+    this.buffer=this.buffer.slice(m.index+m[0].length);this.parse(block);
+  }
+};
+BridgeSSEParser.prototype.parse=function(block){
+  if(!block||block.charAt(0)===':')return;var id=null,type='message',data=[];
+  block.split('\n').forEach(function(line){if(line.charAt(0)===':')return;var p=line.indexOf(':'),k=p<0?line:line.slice(0,p),v=p<0?'':line.slice(p+1).replace(/^ /,'');if(k==='id')id=v;if(k==='event')type=v;if(k==='data')data.push(v);});
+  if(!data.length)return;
+  try{this.onEvent({id:id&&/^\d+$/.test(id)?+id:null,type:type,data:JSON.parse(data.join('\n'))});}catch(e){this.onError(e,block);}
+};
+window.BridgeSSEParser=BridgeSSEParser;
+async function bridgeConnectSSE(){
+  if(!bridge.enabled||!bridge.bound||bridge.stopped)return;
+  if(bridge.sseAbort)bridge.sseAbort.abort();var ctl=new AbortController();bridge.sseAbort=ctl;
+  try{
+    var r=await bridgeFetch('/api/events?session_id='+encodeURIComponent(bridge.sessionId)+'&after='+bridge.lastAppliedEventId,{signal:ctl.signal});
+    if(!(r instanceof Response)||!r.body)throw new Error('SSE 响应不可读');
+    bridge.sseBackoff=0;var reader=r.body.getReader(),dec=new TextDecoder('utf-8'),chain=Promise.resolve();
+    var parser=new BridgeSSEParser(function(evt){
+      if(evt.id&&evt.id<=bridge.lastAppliedEventId)return;
+      chain=chain.then(function(){return bridgeApplyEvent(evt);}).then(function(ok){if(ok&&evt.id)bridgeRememberEvent(evt.id);}).catch(function(e){bridgeRenderState('error','事件处理失败',e.message);});
+    },function(e){bridgeRenderState('error','SSE 数据错误',e.message);});
+    while(true){var part=await reader.read();if(part.done)break;parser.push(dec.decode(part.value,{stream:true}));}
+    parser.push(dec.decode());await chain;
+    if(!ctl.signal.aborted)throw new Error('SSE 连接结束');
+  }catch(e){
+    if(ctl.signal.aborted||bridge.stopped)return;
+    var waits=[1000,2000,4000,8000,16000,30000],wait=waits[Math.min(bridge.sseBackoff++,waits.length-1)];
+    bridgeRenderState('error','Bridge 正在重连',e.message);setTimeout(bridgeConnectSSE,wait);
+  }
+}
+function bridgePayloadJsonFromText(text){
+  var m=/```json\s*([\s\S]*?)\s*```/.exec(text);if(!m)throw new Error('结构化 JSON 缺失');return JSON.parse(m[1]);
+}
+async function bridgeSubmitIntent(type,payload){
+  if(!bridge.enabled)throw new Error('Bridge 未连接');
+  if(type!=='brief.submitted'&&!state.loaded)throw new Error('当前还没有可操作的 deck');
+  if(type!=='brief.submitted'&&state.dirty){var saved=await saveDeck();if(!saved)throw new Error('请先成功保存当前修改');}
+  var id=bridgeUuid(),body={protocol_version:2,intent_id:id,session_id:bridge.sessionId,type:type,base_revision:bridge.loadedRevision,payload:payload,client_ts:new Date().toISOString()};
+  var local={id:id,type:type,status:'submitting',attempt:1,base_revision:bridge.loadedRevision,request:body};bridge.intents[id]=local;
+  try{await bridgeIdbPut(Object.assign(await bridgeDraftSnapshot(),{pending_submit:body}));}
+  catch(e){bridgeRenderState('error','请求尚未可靠提交','本地持久化失败：'+e.message);throw e;}
+  bridgeRenderTasks();
+  var j,lastError;
+  for(var n=0;n<3;n++){
+    try{j=await bridgeFetch('/api/intent',{method:'POST',body:JSON.stringify(body)});break;}
+    catch(e){lastError=e;if(e.status)break;if(n<2)await new Promise(function(resolve){setTimeout(resolve,(n+1)*1000);});}
+  }
+  if(!j){local.status='unconfirmed';bridgeRenderTasks();throw lastError||new Error('提交结果未知');}
+  bridgeMergeIntent({id:id,seq:j.seq,type:type,status:j.status,attempt:1,base_revision:body.base_revision});
+  bridge.formDirty=false;bridgeRenderState('working','请求已记录','seq '+j.seq+' · '+type);return j;
+}
+async function bridgeResendIntent(item){
+  if(!item.request)return;
+  item.status='submitting';bridgeRenderTasks();
+  try{var j=await bridgeFetch('/api/intent',{method:'POST',body:JSON.stringify(item.request)});bridgeMergeIntent({id:item.id,seq:j.seq,type:item.type,status:j.status,attempt:item.attempt,base_revision:item.base_revision,request:item.request});}
+  catch(e){item.status='unconfirmed';bridgeRenderTasks();toast('重发确认失败：'+e.message);}
+}
+async function bridgeCancelIntent(id){
+  try{var j=await bridgeFetch('/api/intent/cancel',{method:'POST',body:JSON.stringify({session_id:bridge.sessionId,intent_id:id})});bridgeMergeIntent({id:id,status:j.status});}
+  catch(e){toast('取消失败：'+e.message);}
+}
+async function bridgeRetryIntent(item){
+  var ok=await askConfirm('从当前版本重建？','旧副本会保留；未知的外部操作可能重复产生费用。','确认重建');if(!ok)return;
+  var retryId=item.retry_id||bridgeUuid();item.retry_id=retryId;item.status='retrying';bridgeRenderTasks();bridgeScheduleDraft();
+  try{var j=await bridgeFetch('/api/intent/retry',{method:'POST',body:JSON.stringify({session_id:bridge.sessionId,intent_id:item.id,retry_id:retryId,expected_attempt:item.attempt,mode:'rebuild',base_revision:bridge.latestServerRevision,confirmed:true})});bridgeMergeIntent({id:item.id,type:item.type,status:j.status,attempt:j.attempt,base_revision:j.base_revision,retry_id:retryId});}
+  catch(e){item.status='interrupted';bridgeRenderTasks();toast('重试失败：'+e.message);}
+}
+async function bridgeSend(type,payload,embeddedMessage,fallbackText){
+  if(state.embedded){window.parent.postMessage(embeddedMessage,'*');if(fallbackText)await copyText(fallbackText);toast('已发送宿主');return {route:'embedded'};}
+  if(bridge.enabled){var j=await bridgeSubmitIntent(type,payload);toast('请求已记录 · seq '+j.seq);return {route:'bridge',result:j};}
+  var ok=await copyText(fallbackText||JSON.stringify(payload,null,2));toast(ok?'指令已复制，请交给 AI coding agent':'复制失败');return {route:'copy'};
+}
+async function bridgeInitialise(){
+  bridgeParseLaunch();if(!bridge.enabled)return false;
+  try{
+    await bridgeHeartbeat();await bridgeStatusAndRecover();
+    bridge.heartbeatTimer=setInterval(function(){bridgeHeartbeat().catch(function(){});},15000);
+    bridgeConnectSSE();
+    bridgeIdbGet().then(function(s){
+      if(!s)return;
+      if(s.pending_intents&&s.pending_intents.length){s.pending_intents.forEach(function(x){if(!bridge.intents[x.id])bridge.intents[x.id]=x;});bridgeRenderTasks();}
+      if(s.html||s.annotation_generation||s.forms){showWarn('检测到此标签页的本地草稿。恢复后仍会按原版本执行 CAS，不会覆盖较新的工作区。','恢复本地草稿',function(){bridgeRestoreDraft(s).then(hideWarn).catch(function(e){toast('草稿恢复失败：'+e.message);});});}
+    }).catch(function(e){bridgeRenderState('error','本地草稿不可用',e.message);});
+    return true;
+  }catch(e){bridgeRenderState('error','Bridge 初始化失败',e.message);return false;}
+}
+$('btnBridgeTasks').addEventListener('click',function(){$('bridgeTasks').classList.toggle('show');bridgeRenderTasks();});
+$('btnBridgeBake').addEventListener('click',function(){var p=triPages[curSlideIdx];if(!p)return;bridgeSend('bake.requested',{slide_ids:[p.slideId]},{type:'pptx-html:export-intent',action:'re-export',slideIds:[p.slideId]},'请重新烙入页面 '+p.slideId);});
+$('btnBridgeIllustrate').addEventListener('click',function(){
+  var slots=[],d=doc();if(d)Array.prototype.forEach.call(d.querySelectorAll('[data-image-slot][data-image-state="placeholder"]'),function(x){var s=x.getAttribute('data-image-slot');if(s&&slots.indexOf(s)<0)slots.push(s);});
+  bridgeSend('illustrate.requested',{slots:slots},{type:'pptx-html:illustrate-intent',slots:slots},'请按插画模式补齐待生成图片槽位');
+});
 
 /* ============================================================
    本地伴随服务（v1.6 §3，tools/edit.py）
@@ -5773,12 +6209,13 @@ function renderTriViews(){
    嵌入态保存仍走 postMessage，版本能力由宿主决定，与本服务无关。
    ============================================================ */
 function probeBackend(){
+  if(bridge.enabled){updateHistoryBtn();return;}
   fetch('api/health', { cache: 'no-store' })
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(j){
-      if (j && j.ok) state.backend = j;
+      if (j && j.ok && ('gitReady' in j || 'convert' in j)) state.backend = j;
       updateHistoryBtn();
-      resumeConvertIfRunning();   /* v3.1：--convert 启动即转时，编辑器打开接续显示进度 */
+      resumeConvertIfRunning();
     })
     .catch(function(){ updateHistoryBtn(); });
 }
@@ -5866,9 +6303,14 @@ async function loadVersions(){
   loading.className = 'ver-empty'; loading.textContent = '加载中…';
   box.appendChild(loading);
   try {
-    var r = await fetch('api/versions?path=' + encodeURIComponent(state.deckPath), { cache: 'no-store' });
-    var j = await r.json();
-    if (!r.ok || !j.ok) throw new Error((j && j.error) || ('HTTP ' + r.status));
+    var j;
+    if(bridge.enabled){
+      j=await bridgeFetch('/api/versions?session_id='+encodeURIComponent(bridge.sessionId)+'&path='+encodeURIComponent(state.deckPath));
+    }else{
+      var r = await fetch('api/versions?path=' + encodeURIComponent(state.deckPath), { cache: 'no-store' });
+      j = await r.json();
+      if (!r.ok || !j.ok) throw new Error(bridgeErrorMessage(j,'HTTP '+r.status));
+    }
     renderVersions(j.versions || []);
   } catch(e){
     box.innerHTML = '';
@@ -5905,23 +6347,19 @@ function renderVersions(versions){
   });
 }
 async function rollbackTo(hash){
-  var ok = await askConfirm('回滚到此版本？',
-    '回滚前会自动提交当前未提交状态（pre-rollback），之后还可以再回滚回来。', '回滚');
+  var ok = await askConfirm('回滚到此版本？','当前浏览器草稿会先被保护；回滚作为一次新发布记录，可再回滚回来。','回滚');
   if (!ok) return;
   try {
-    var r = await fetch('api/rollback', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: state.deckPath, hash: hash })
-    });
-    var j = await r.json();
-    if (!r.ok || !j.ok) throw new Error((j && j.error) || ('HTTP ' + r.status));
-    toast('已回滚到此版本' + (j.preRollback ? '（当前状态已保护提交 ' + j.preRollback + '）' : ''));
-    /* 回滚改变的是磁盘文件：重新加载让 iframe 与文件重新一致 */
-    var rt = await fetch(state.deckPath + '?v=' + Date.now(), { cache: 'no-store' });
-    if (!rt.ok) throw new Error('重新加载失败 HTTP ' + rt.status);
-    openHtml(await rt.text(), state.fileName, null,
-             state.deckPath.slice(0, state.deckPath.lastIndexOf('/') + 1), state.deckPath);
-    loadVersions();
+    if(bridge.enabled){
+      await bridgePersistDraft(true);
+      var j=await bridgeFetch('/api/rollback',{method:'POST',body:JSON.stringify({session_id:bridge.sessionId,path:state.deckPath,hash:hash,base_revision:bridge.latestServerRevision})});
+      bridge.latestServerRevision=j.revision;await bridgeLoadDeck(state.deckPath,j.revision,true);toast('已回滚并取得回执 '+j.receipt_id);loadVersions();return;
+    }
+    var r = await fetch('api/rollback', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:state.deckPath,hash:hash})});
+    var old = await r.json();if(!r.ok||!old.ok)throw new Error(bridgeErrorMessage(old,'HTTP '+r.status));
+    toast('已回滚到此版本'+(old.preRollback?'（当前状态已保护提交 '+old.preRollback+'）':''));
+    var rt=await fetch(state.deckPath+'?v='+Date.now(),{cache:'no-store'});if(!rt.ok)throw new Error('重新加载失败 HTTP '+rt.status);
+    openHtml(await rt.text(),state.fileName,null,state.deckPath.slice(0,state.deckPath.lastIndexOf('/')+1),state.deckPath);loadVersions();
   } catch(e){ toast('回滚失败：' + e.message); }
 }
 
@@ -5953,15 +6391,25 @@ window.addEventListener('message', async function(e){
 /* ============================================================
    启动
    ============================================================ */
+bridgeParseLaunch();
 renderPanel();
 updateSaveButton();
 renderDirty();
-probeBackend();
-maybeOpenDeckParam();   /* v3.0：?deck= 不再依赖伴随服务，任意 http.server 下均可经 URL 载入 */
+['drawer','briefOverlay'].forEach(function(id){
+  $(id).addEventListener('input',function(){bridge.formDirty=true;bridgeScheduleDraft();});
+  $(id).addEventListener('change',function(){bridge.formDirty=true;bridgeScheduleDraft();});
+  $(id).addEventListener('click',function(e){if(e.target.closest('.opt,.theme-card,.variants i,.chip')){bridge.formDirty=true;bridgeScheduleDraft();}});
+});
+if(bridge.enabled){
+  bridgeInitialise();
+}else{
+  probeBackend();
+  maybeOpenDeckParam();   /* 普通 http.server 仍可经 ?deck= 载入 */
+}
 /* 目录侧栏默认态：独立打开默认展开，嵌入态默认收起（宽度敏感，§2） */
 $('toc').classList.toggle('open', !state.embedded);
 syncTocChrome();
-if (!state.fsaa && !state.embedded){
+if (!state.fsaa && !state.embedded && !bridge.enabled){
   showWarn('当前浏览器不支持文件系统访问（File System Access API）：文字编辑可用，保存将降级为下载导出，图片替换不可用。推荐使用 Chrome / Edge。');
 }
 </script>
