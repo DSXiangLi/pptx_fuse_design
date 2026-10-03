@@ -1128,36 +1128,94 @@ def test_toc_nav(browser):
     finally:
         ctx.close()
 
-# ---------- 测试 12：伴随服务 git 版本（v1.6 §3） ----------
+# ---------- 测试 12：Bridge v2 手动 daemon、版本与回滚 ----------
 
 GIT_PORT = PORT + 2
 
-def api_post(base, path, body):
-    req = urllib.request.Request(base + path, data=json.dumps(body).encode('utf-8'),
-                                 headers={'Content-Type': 'application/json'})
-    return json.loads(urllib.request.urlopen(req, timeout=10).read().decode('utf-8'))
 
-def git_log(workdir):
-    r = subprocess.run(['git', 'log', '--format=%H%x1f%s'], cwd=workdir,
-                       capture_output=True, text=True)
-    return [l.split('\x1f') for l in r.stdout.splitlines() if l.strip()]
+def bridge_request(base, path, body=None, bearer=None, origin=None):
+    headers = {}
+    data = None
+    if bearer:
+        headers['Authorization'] = 'Bearer ' + bearer
+        if body is None:
+            headers['Sec-Fetch-Site'] = 'same-origin'
+    if origin is not None:
+        headers['Origin'] = origin
+    if body is not None:
+        data = json.dumps(body, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+        headers['Content-Type'] = 'application/json'
+    req = urllib.request.Request(base + path, data=data, headers=headers,
+                                 method='POST' if body is not None else 'GET')
+    try:
+        response = urllib.request.urlopen(req, timeout=10)
+        return response.status, json.loads(response.read().decode('utf-8'))
+    except urllib.error.HTTPError as exc:
+        return exc.code, json.loads(exc.read().decode('utf-8'))
+
+
+def start_manual_bridge(workdir):
+    proc = subprocess.Popen([
+        sys.executable, os.path.join(ROOT, 'tools/edit.py'), workdir,
+        '--deck', 'index.html', '--port', str(GIT_PORT), '--no-browser'],
+        cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    discovery_path = os.path.join(workdir, '.pptx-html', 'serve.json')
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        if os.path.isfile(discovery_path):
+            discovery = json.loads(open(discovery_path, encoding='utf-8').read())
+            code, boot = bridge_request(discovery['origin'], '/api/bridge/bootstrap',
+                                        {'mode': 'deck', 'path': 'index.html'},
+                                        discovery['management_token'])
+            if code == 200:
+                return proc, discovery, boot['url']
+        if proc.poll() is not None:
+            break
+        time.sleep(0.05)
+    if proc.poll() is None:
+        proc.terminate()
+        proc.wait(timeout=5)
+    raise RuntimeError('手动 Bridge daemon 未就绪')
+
+
+def stop_manual_bridge(proc, discovery):
+    if proc is None:
+        return
+    if proc.poll() is None and discovery:
+        bridge_request(discovery['origin'], '/api/bridge/stop', {'reason': 'cli-stop'},
+                       discovery['management_token'])
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.terminate()
+            proc.wait(timeout=5)
+
+
+def copy_git_fixture(workdir):
+    shutil.copy(os.path.join(ROOT, 'tests/decks/tech-ikb/index.html'),
+                os.path.join(workdir, 'index.html'))
+    shutil.copytree(os.path.join(ROOT, 'tests/decks/tech-ikb/assets'),
+                    os.path.join(workdir, 'assets'))
+
 
 def test_git_versions(browser):
-    """harness 自 spawn tools/edit.py（临时目录隔离，结束后清理）：
-    无后端时历史置灰；路径穿越拒绝；非仓库保存不提交、init 确认后提交；
-    UI 保存两次 → git 两条提交；磁盘制造未提交改动后回滚到第一版 →
-    文件还原 + pre-rollback 保护提交。"""
+    """Bridge v2 手动入口回归：bootstrap/browser bearer、CAS receipt、专用
+    refs/snapshot 与历史 UI；所有 Git 与 deck 写入只发生在临时目录。"""
     problems = []
     tmp = tempfile.mkdtemp(prefix='pptx-e2e-git-')
-    srv = None
-    base = 'http://127.0.0.1:%d' % GIT_PORT
+    probe_dir = os.path.join(tmp, 'probe')
+    flow_dir = os.path.join(tmp, 'flow')
+    os.makedirs(probe_dir)
+    os.makedirs(flow_dir)
+    probe_srv = flow_srv = None
+    probe_discovery = flow_discovery = None
     try:
-        # (a) 无后端：历史按钮置灰 + tooltip 提示启动方式
+        # (a) 无后端仍保留静态编辑器降级。
         ctx0, page0 = fresh_page(browser)
         try:
             page0.goto(BASE + '/editor.html')
             page0.wait_for_function('() => window.state !== undefined')
-            page0.wait_for_timeout(800)   # 等 /api/health 探测落定（404）
+            page0.wait_for_timeout(800)
             hb = page0.evaluate("""({
               dis: document.getElementById('btnHistory').disabled,
               title: document.getElementById('btnHistory').title,
@@ -1167,63 +1225,66 @@ def test_git_versions(browser):
         finally:
             ctx0.close()
 
-        # (b) 起伴随服务：工作目录 = 临时目录（deck 拷入，非 git 仓库）
-        shutil.copy(os.path.join(ROOT, 'tests/decks/tech-ikb/index.html'),
-                    os.path.join(tmp, 'index.html'))
-        shutil.copytree(os.path.join(ROOT, 'tests/decks/tech-ikb/assets'),
-                        os.path.join(tmp, 'assets'))
-        srv = subprocess.Popen([sys.executable, os.path.join(ROOT, 'tools/edit.py'), tmp,
-                                '--port', str(GIT_PORT), '--no-browser'],
-                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        health = None
-        for _ in range(50):
-            try:
-                health = json.loads(urllib.request.urlopen(base + '/api/health', timeout=1).read())
-                break
-            except Exception:
-                time.sleep(0.2)
-        if not health or not health.get('ok'):
-            report('T12-git', '伴随服务 git 版本', False, '伴随服务未就绪')
-            return
-        if health.get('gitReady'):
-            problems.append('临时目录不应是 git 仓库，gitReady=%r' % health.get('gitReady'))
+        # (b) 安全与非 Git 首存确认使用独立临时 daemon，避免失败尝试影响主流程版本数。
+        copy_git_fixture(probe_dir)
+        probe_srv, probe_discovery, probe_boot = start_manual_bridge(probe_dir)
+        probe_base = probe_discovery['origin']
+        probe_ctx, probe_page = fresh_page(browser)
+        try:
+            probe_page.goto(probe_boot)
+            probe_page.wait_for_function(
+                '() => window.bridge && bridge.enabled && bridge.sessionId && bridge.token && '
+                'window.state && state.loaded && window.registry.length > 0', timeout=10000)
+            auth = probe_page.evaluate('({sid:bridge.sessionId,token:bridge.token,rev:bridge.loadedRevision})')
+            src = open(os.path.join(probe_dir, 'index.html'), encoding='utf-8').read()
+            valid = {'session_id': auth['sid'], 'path': 'index.html', 'html': src,
+                     'base_revision': auth['rev']}
 
-        # (c) 路径穿越必须被拒绝
-        for bad in ['../evil.html', '/etc/passwd', 'a/../../evil.html']:
-            try:
-                api_post(base, '/api/save', {'path': bad, 'html': 'x'})
-                problems.append('路径穿越未被拒绝：%s' % bad)
-            except urllib.error.HTTPError as e:
-                if e.code != 400:
-                    problems.append('穿越路径 %r 响应码=%d，期望 400' % (bad, e.code))
+            code, body = bridge_request(probe_base, '/api/save', valid, origin=probe_base)
+            if code not in (401, 403):
+                problems.append('未鉴权写请求响应=%d %r，期望拒绝' % (code, body))
 
-        # (d) 非仓库保存：只写文件不提交；init:true（模拟 UI 确认）后提交
-        src = open(os.path.join(tmp, 'index.html'), encoding='utf-8').read()
-        r1 = api_post(base, '/api/save', {'path': 'index.html', 'html': src})
-        if not r1.get('ok') or r1.get('committed'):
-            problems.append('非仓库保存应只写文件不提交：%r' % r1)
-        r2 = api_post(base, '/api/save', {'path': 'index.html', 'html': src, 'init': True})
-        if not r2.get('committed') or not r2.get('hash'):
-            problems.append('init 后保存未产生提交：%r' % r2)
-        if len(git_log(tmp)) != 1:
-            problems.append('init 后提交数=%d，期望 1' % len(git_log(tmp)))
+            for bad in ['../evil.html', '/etc/passwd', 'a/../../evil.html']:
+                request = dict(valid)
+                request['path'] = bad
+                code, body = bridge_request(probe_base, '/api/save', request,
+                                            auth['token'], probe_base)
+                if code != 403 or body.get('error', {}).get('code') != 'PATH_DENIED':
+                    problems.append('合法鉴权后的穿越路径 %r 响应异常：%d %r' %
+                                    (bad, code, body))
 
-        # (e) UI 端到端：?deck= 打开 → 编辑保存两次 → 各产生一个版本
+            code, body = bridge_request(probe_base, '/api/save', valid,
+                                        auth['token'], probe_base)
+            if code != 409 or body.get('error', {}).get('code') != 'GIT_INIT_REQUIRED':
+                problems.append('非 Git 首存未要求显式 init：%d %r' % (code, body))
+            if not os.path.isfile(os.path.join(probe_dir, 'index.html')) or \
+                    open(os.path.join(probe_dir, 'index.html'), encoding='utf-8').read() != src:
+                problems.append('拒绝非 Git 首存时改写了目标文件')
+        finally:
+            probe_ctx.close()
+            stop_manual_bridge(probe_srv, probe_discovery)
+            probe_srv = None
+
+        # (c) 主流程必须由真实手动 daemon 的 bootstrap URL 进入，不再使用 ?deck= 直开。
+        copy_git_fixture(flow_dir)
+        flow_srv, flow_discovery, flow_boot = start_manual_bridge(flow_dir)
+        base = flow_discovery['origin']
         ctx, page = fresh_page(browser)
         try:
-            page.goto(base + '/editor.html?deck=index.html')
+            page.goto(flow_boot)
             page.wait_for_function(
-                '() => window.state && window.state.loaded && window.registry.length > 0',
-                timeout=10000)
+                '() => window.bridge && bridge.enabled && bridge.sessionId && bridge.token && '
+                'window.state && state.loaded && window.registry.length > 0', timeout=10000)
             page.wait_for_timeout(400)
-            if page.evaluate('!!(window.state.backend && window.state.backend.gitReady)') is not True:
-                problems.append('编辑器未探测到后端 gitReady')
-            if page.evaluate("document.getElementById('btnHistory').disabled"):
-                problems.append('后端模式下历史按钮仍置灰')
+            bridge_state = page.evaluate("""({sid:bridge.sessionId,token:bridge.token,
+              rev:bridge.loadedRevision,gitReady:bridge.capabilities.git_ready,
+              hash:location.hash,historyDisabled:document.getElementById('btnHistory').disabled})""")
+            if bridge_state['hash']:
+                problems.append('bootstrap bearer 未从地址 fragment 清除')
+            if bridge_state['gitReady'] or bridge_state['historyDisabled']:
+                problems.append('bootstrap 后端/历史状态异常：%r' % bridge_state)
 
-            def edit_h1_and_save(text):
-                # 保存后 selEl 仍是 h1：此时单击即进编辑，再单击会把光标收拢到
-                # 点击位置（typing 变成插入而非替换）。先点 deck 空白处清选中态。
+            def edit_h1(text):
                 page.frame_locator('#deckFrame').locator('body').click(position={'x': 8, 'y': 6})
                 page.wait_for_timeout(150)
                 h1 = page.frame_locator('#deckFrame').locator(
@@ -1231,60 +1292,138 @@ def test_git_versions(browser):
                 h1.click(); h1.click()
                 page.keyboard.type(text)
                 page.keyboard.press('Control+Enter')
-                page.locator('#btnSave').click()
-                page.wait_for_function('() => window.state.dirty === false', timeout=8000)
 
-            edit_h1_and_save('版本一标题')
-            edit_h1_and_save('版本二标题')
-            log = git_log(tmp)
-            if len(log) != 3:
-                problems.append('两次保存后提交数=%d，期望 3（含 init 首存）' % len(log))
-            if not all(m.startswith('edit: ') for _, m in log):
-                problems.append('提交 message 异常：%r' % [m for _, m in log])
+            def save_ui(confirm_init=False):
+                with page.expect_response(
+                        lambda r: r.url == base + '/api/save' and r.request.method == 'POST',
+                        timeout=10000) as response_info:
+                    page.locator('#btnSave').click()
+                    if confirm_init:
+                        page.locator('#confirmMask.show #confirmOk').click()
+                result = response_info.value.json()
+                page.wait_for_function('() => window.state.dirty === false', timeout=10000)
+                return result
 
-            # (f) 磁盘制造未提交改动 → UI 回滚到"版本一" → 文件还原 + pre-rollback 保护
-            with open(os.path.join(tmp, 'index.html'), 'a', encoding='utf-8') as f:
-                f.write('\n<!-- unsaved-change -->\n')
-            versions = json.loads(urllib.request.urlopen(
-                base + '/api/versions?path=index.html', timeout=5).read().decode('utf-8'))
-            vlist = versions.get('versions', [])
-            if len(vlist) != 3:
-                problems.append('版本列表=%d，期望 3' % len(vlist))
-            target = vlist[1]['hash']   # 时间倒序：[版本二, 版本一, init 首存]
+            edit_h1('版本一标题')
+            save1 = save_ui(confirm_init=True)
+            if not (save1.get('receipt_id') and save1.get('snapshot_id') and save1.get('gitReady')):
+                problems.append('UI 首存缺少 Bridge v2 receipt/snapshot：%r' % save1)
+            if subprocess.run(['git', 'rev-parse', '--verify', 'HEAD'], cwd=flow_dir,
+                              capture_output=True).returncode == 0:
+                problems.append('Bridge 首存不应创建或移动用户 HEAD')
+            if os.path.exists(os.path.join(flow_dir, '.git', 'index')):
+                problems.append('Bridge 首存不应创建用户真实 index')
 
+            # 建立并暂存用户自己的状态；后续保存和回滚必须保持 HEAD/index 字节不变。
+            open(os.path.join(flow_dir, 'owner.txt'), 'w', encoding='utf-8').write('owner\n')
+            subprocess.run(['git', 'add', 'owner.txt'], cwd=flow_dir, check=True)
+            subprocess.run(['git', '-c', 'user.name=T12 Owner', '-c',
+                            'user.email=t12@example.invalid', 'commit', '-m', 'owner head'],
+                           cwd=flow_dir, check=True, capture_output=True)
+            open(os.path.join(flow_dir, 'staged.txt'), 'w', encoding='utf-8').write('staged\n')
+            subprocess.run(['git', 'add', 'staged.txt'], cwd=flow_dir, check=True)
+            head_before = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=flow_dir).strip()
+            index_before = open(os.path.join(flow_dir, '.git', 'index'), 'rb').read()
+
+            edit_h1('版本二标题')
+            save2 = save_ui()
+            if not save2.get('receipt_id') or save2.get('receipt_id') == save1.get('receipt_id'):
+                problems.append('UI 第二次保存未产生独立 receipt：%r' % save2)
+            head_after = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=flow_dir).strip()
+            index_after = open(os.path.join(flow_dir, '.git', 'index'), 'rb').read()
+            if head_after != head_before or index_after != index_before:
+                problems.append('Bridge 保存修改了用户 HEAD 或真实 index')
+
+            sid = bridge_state['sid']
+            token = bridge_state['token']
+            code, versions = bridge_request(
+                base, '/api/versions?session_id=%s&path=index.html' % sid, bearer=token)
+            vlist = versions.get('versions', []) if code == 200 else []
+            save_versions = [v for v in vlist if v.get('message') == 'save']
+            snapshot_ids = {v.get('snapshot_id') for v in save_versions}
+            if code != 200 or len(save_versions) != 2:
+                problems.append('Bridge v2 版本列表异常：%d %r' % (code, versions))
+            if not {save1.get('snapshot_id'), save2.get('snapshot_id')} <= snapshot_ids:
+                problems.append('两次 UI 保存 receipt 对应版本不可枚举：%r' % vlist)
+
+            # (d) 保留浏览器未保存字节为 draft，再通过历史 UI + revision CAS 回滚首版。
+            edit_h1('外部未保存字节')
             page.locator('#btnHistory').click()
-            page.wait_for_selector('.ver-item', timeout=5000)
-            if page.locator('.ver-item').count() != 3:
-                problems.append('历史面板行数=%d，期望 3' % page.locator('.ver-item').count())
-            page.locator('.ver-item[data-hash="%s"] .ver-rollback' % target).click()
-            page.locator('#confirmOk').click()
-            page.wait_for_function("""() => window.state.loaded && window.frame.contentDocument &&
-              !!window.frame.contentDocument.querySelector('[data-slide-id="cover"] h1') &&
-              window.frame.contentDocument.querySelector('[data-slide-id="cover"] h1')
-                .textContent.includes('版本一标题')""", timeout=10000)
-            disk = open(os.path.join(tmp, 'index.html'), encoding='utf-8').read()
-            if '版本一标题' not in disk or '版本二标题' in disk:
-                problems.append('回滚后文件内容未还原到版本一')
-            if 'unsaved-change' in disk:
-                problems.append('回滚后磁盘残留未提交改动（应被版本内容覆盖）')
-            msgs = [m for _, m in git_log(tmp)]
-            if not any(m.startswith('pre-rollback: ') for m in msgs):
-                problems.append('缺少 pre-rollback 保护提交：%r' % msgs)
-            if len(msgs) != 4:
-                problems.append('回滚后提交数=%d，期望 4（3 + pre-rollback）' % len(msgs))
+            try:
+                page.wait_for_selector('.ver-item', timeout=5000)
+            except Exception:
+                pass
+            history_error = page.locator('#histList .ver-empty').all_text_contents()
+            if not history_error:
+                legacy = page.evaluate("""() => {
+                  renderVersions([{hash:'abcdef1234567890',message:'legacy',time:'old'}]);
+                  const row=document.querySelector('.ver-item');
+                  return row && row.dataset.versionId;
+                }""")
+                if legacy != 'abcdef1234567890':
+                    problems.append('旧 versions hash schema 未安全回退：%r' % legacy)
+                page.evaluate('() => loadVersions()')
+            target = save1['snapshot_id']
+            row = page.locator('.ver-item[data-version-id="%s"]' % target)
+            rolled = None
+            if history_error or row.count() != 1:
+                problems.append('历史 UI 未使用 snapshot_id 枚举 Bridge v2 版本：errors=%r rows=%d' %
+                                (history_error, page.locator('.ver-item').count()))
+                # 继续验证服务端回滚、draft 与专用 ref，不让 UI 单点失败遮蔽其余断言。
+                page.evaluate('() => bridgePersistDraft(true)')
+                code, rolled = bridge_request(base, '/api/rollback', {
+                    'session_id': sid, 'path': 'index.html', 'hash': target,
+                    'base_revision': save2['revision']}, token, base)
+                if code != 200:
+                    problems.append('合法 browser bearer 的 CAS 回滚失败：%d %r' % (code, rolled))
+            else:
+                with page.expect_response(
+                        lambda r: r.url == base + '/api/rollback' and r.request.method == 'POST',
+                        timeout=10000) as rollback_info:
+                    row.locator('.ver-rollback').click()
+                    page.locator('#confirmMask.show #confirmOk').click()
+                rolled = rollback_info.value.json()
+                page.wait_for_function("""() => {
+                  const d=window.frame && window.frame.contentDocument;
+                  const h=d && d.querySelector('[data-slide-id="cover"] h1');
+                  return !!(window.state.loaded && h && h.textContent.includes('版本一标题'));
+                }""", timeout=10000)
+            if not rolled or not rolled.get('receipt_id') or rolled.get('revision') != save1.get('revision'):
+                problems.append('回滚 receipt/revision 异常：%r' % rolled)
+
+            disk = open(os.path.join(flow_dir, 'index.html'), encoding='utf-8').read()
+            if '版本一标题' not in disk or '版本二标题' in disk or '外部未保存字节' in disk:
+                problems.append('回滚后目标未恢复首存版本')
+            code, drafts = bridge_request(
+                base, '/api/bridge/drafts?session_id=%s' % sid, bearer=token)
+            if code != 200 or not drafts.get('items'):
+                problems.append('回滚前未保护浏览器未保存 draft：%d %r' % (code, drafts))
+            else:
+                draft_id = drafts['items'][0]['id']
+                code, draft = bridge_request(base, '/api/bridge/draft?id=' + draft_id,
+                                             bearer=token)
+                if code != 200 or '外部未保存字节' not in draft.get('html', ''):
+                    problems.append('pre-rollback draft 未保留外部未保存字节：%d %r' %
+                                    (code, draft))
+
+            code, after_versions = bridge_request(
+                base, '/api/versions?session_id=%s&path=index.html' % sid, bearer=token)
+            messages = [v.get('message') for v in after_versions.get('versions', [])]
+            if code != 200 or 'pre-rollback' not in messages or 'rollback' not in messages:
+                problems.append('回滚未保留 pre-rollback/rollback 快照版本：%r' % after_versions)
+            if subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=flow_dir).strip() != head_before or \
+                    open(os.path.join(flow_dir, '.git', 'index'), 'rb').read() != index_before:
+                problems.append('Bridge 回滚修改了用户 HEAD 或真实 index')
         finally:
             ctx.close()
 
-        report('T12-git', '伴随服务 git 版本', not problems,
+        report('T12-git', 'Bridge v2 版本与回滚', not problems,
                '；'.join(problems) if problems else
-               '无后端历史置灰；穿越拒绝；init 确认后提交；两次保存两版本；回滚还原+pre-rollback 保护')
+               '无后端降级；未鉴权/穿越拒绝；显式 init；bootstrap UI 双保存 receipt；'
+               '专用 ref 不污染 HEAD/index；CAS 回滚保留 draft 与 pre-rollback 快照；历史 UI 可用')
     finally:
-        if srv:
-            srv.terminate()
-            try:
-                srv.wait(timeout=5)
-            except Exception:
-                srv.kill()
+        stop_manual_bridge(flow_srv, flow_discovery)
+        stop_manual_bridge(probe_srv, probe_discovery)
         shutil.rmtree(tmp, ignore_errors=True)
 
 

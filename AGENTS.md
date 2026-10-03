@@ -2,7 +2,7 @@
 
 ## 当前专项：编辑器↔Agent 桥 v2（2026-10-03）
 
-P0–P3 Linux 自动实现已落地，P4 已完成 fault 与单页协议性能；真实 `bake-mix`/54页 `cmb-retail` fixtures 缺失，完整 `run_e2e.py`/`o_tri_view` 仍 BLOCKED，真实 Kimi/Codex、Office/WPS 和付费生图未测，不得宣称全量通过。**重启会话先读 `docs/progress/1003_editor_agent_bridge_handover.md`**；设计入口 `docs/design/editor-agent-bridge.md`，公共契约 `editor-agent-bridge-protocol.md`，恢复与安全 `editor-agent-bridge-consistency.md`，外部使用 `docs/howto/editor-agent-bridge.md`；实施和验收实录分别见 `docs/progress/1002_editor_agent_bridge_plan.md` §11 与 `docs/test_acceptance/editor-agent-bridge.md` §16。实际架构为：`editor.html` v3.2 浏览器端、`tools/edit.py` v2 CLI/daemon 入口、标准库 `tools/bridge_core.py`、官方 SDK stdio 薄代理 `tools/bridge_mcp.py`；SQLite 是状态真相，attempt 独立副本、validation、revision CAS、publication journal、快照和 Git 专用 ref 负责受控发布。官方 `mcp` 依赖仅代理需要，手动 daemon 仍标准库。测试只操作临时工作区，禁止为验证改写真实 deck 或提交用户仓库。
+P0–P3 Linux 自动实现已落地，P4 已完成 fault、单页协议性能和完整历史回归：25 个标准 deck 已齐备，`run_e2e.py` 55/55、`o_tri_view` 均通过，且 fixtures 测试前后 806 entries/789020265 bytes 零变化。PERF-03 真正 Bridge 真实大 deck 事件→可编辑 UI、54页×10倍素材与 PERF-04/05/06 完整样本仍 BLOCKED；真实 Kimi/Codex、Office/WPS、付费生图和硬件掉电仍 NOT_RUN，不得将现有自动绿灯宣称为 P4 全量通过。**重启会话先读 `docs/progress/1003_editor_agent_bridge_handover.md`**；设计入口 `docs/design/editor-agent-bridge.md`，公共契约 `editor-agent-bridge-protocol.md`，恢复与安全 `editor-agent-bridge-consistency.md`，外部使用 `docs/howto/editor-agent-bridge.md`；实施和验收实录分别见 `docs/progress/1002_editor_agent_bridge_plan.md` §11 与 `docs/test_acceptance/editor-agent-bridge.md` §16。实际架构为：`editor.html` v3.2 浏览器端、`tools/edit.py` v2 CLI/daemon 入口、标准库 `tools/bridge_core.py`、官方 SDK stdio 薄代理 `tools/bridge_mcp.py`；SQLite 是状态真相，attempt 独立副本、validation、revision CAS、publication journal、快照和 Git 专用 ref 负责受控发布。官方 `mcp` 依赖仅代理需要，手动 daemon 仍标准库。测试只操作临时工作区，禁止为验证改写真实 deck 或提交用户仓库。
 
 ## 项目定位（基调）
 

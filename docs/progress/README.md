@@ -4,8 +4,9 @@
 
 ## 最近更新
 
-- 2026-10-03 · [1003_editor_agent_bridge_handover.md](1003_editor_agent_bridge_handover.md) — 编辑器↔Agent Bridge v2 完整交接：原始目标、冻结边界、已完成实现与证据、工作区状态、P4 fixture 恢复/全回归/真实宿主/人工验收的详细续作计划
-- 2026-10-03 · [1002_editor_agent_bridge_plan.md](1002_editor_agent_bridge_plan.md) — 编辑器↔Agent 桥 v2：P0–P3 Linux 自动实现落地，核心 unittest 21/21、默认 r_bridge 六组通过；P4 fault 与单页性能通过，真实 fixtures 全回归及 Kimi/Codex、Office/WPS、付费生图仍未测
+- 2026-10-03 · [1003_editor_agent_bridge_handover.md](1003_editor_agent_bridge_handover.md) — 编辑器↔Agent Bridge v2 完整交接：25 个标准 deck 已可信恢复且测试前后零变化，完整 `run_e2e` 55/55 与 `o_tri_view` 通过；P4 真实规模、完整性能样本及人工验收继续待办
+- 2026-10-03 · [1002_editor_agent_bridge_plan.md](1002_editor_agent_bridge_plan.md) — 编辑器↔Agent 桥 v2：P0–P3 Linux 自动实现落地；P4 fault、单页性能和完整历史回归通过，T12 已迁移到 Bridge v2 并修复 `snapshot_id` 历史回滚；真实规模及人工项未完成
+
 - 2026-10-01 · [1001_e12_business_brutalism.md](1001_e12_business_brutalism.md) — E12 商务粗野入库（第 21 套主题，cmb-retail-v3 实证回灌，sync-themes/T18/k_brief 全绿）+ cmb-retail-v3 两轮施工（五色章节色相系统 + 正文页新粗野丰富化）+ theme-sampler 21 主题差异样张（同一业务页 × 21 主题逐主题布局）
 - 2026-09-30 · [0930_editor_v31_cmb_v2.md](0930_editor_v31_cmb_v2.md) — 编辑器 v3.1（主导航收敛为编辑/批注/导出、目录侧栏常驻+拖拽排序+拖宽+一键收起、右侧浮动栏、一键转换 opt-in 触发器、organic 视觉重设计；T4 投影污染与 curSlideIdx 漂移两坑）+ cmb-retail-v2 设计升级 deck（E4 包豪斯原色红、内容逐字不变、门禁全绿）；54/54 E2E PASS
 - 2026-09-24 · [0924_editable_overlap_fix.md](0924_editable_overlap_fix.md) — 可编辑轨文字重叠归因（行距口径/框高零冗余/字体未随档/无出厂回验）+ 五层加固方案（字体随档默认化/行高基线校准/松配合/几何自净/LO 回验逐页降级），目标 <1%
@@ -25,8 +26,8 @@
 
 | 日期 | 文档 | 摘要 |
 |---|---|---|
-| 2026-10-03 | [1003_editor_agent_bridge_handover](1003_editor_agent_bridge_handover.md) | Bridge v2 完整交接入口：目标、实现、证据、工作区状态和 P4 续作验收步骤 |
-| 2026-10-03 | [1002_editor_agent_bridge_plan](1002_editor_agent_bridge_plan.md) | 桥 v2 P0–P3 Linux 自动落地；21/21 unittest、默认 r_bridge 六组；P4 fault/单页性能完成，真实 fixtures 与人工项未完成 |
+| 2026-10-03 | [1003_editor_agent_bridge_handover](1003_editor_agent_bridge_handover.md) | Bridge v2 完整交接入口：25 deck 可信恢复、完整回归 55/55、fixture 零污染；P4 真实规模/性能与人工项续作 |
+| 2026-10-03 | [1002_editor_agent_bridge_plan](1002_editor_agent_bridge_plan.md) | 桥 v2 P0–P3 Linux 自动落地；P4 fault/单页性能/完整历史回归通过，T12 Bridge v2 历史回滚修复；真实规模与人工项未完成 |
 | 2026-10-01 | [1001_e12_business_brutalism](1001_e12_business_brutalism.md) | E12 商务粗野入库（第 21 套主题）+ cmb-retail-v3（五色章节色相 + 正文页丰富化，门禁全绿）+ theme-sampler 21 主题差异样张 |
 | 2026-09-30 | [0930_editor_v31_cmb_v2](0930_editor_v31_cmb_v2.md) | 编辑器 v3.1（交互收敛+organic 视觉+/api/convert opt-in）+ cmb-retail-v2 E4 包豪斯设计升级版；54/54 E2E PASS |
 | 2026-09-24 | [0924_editable_overlap_fix](0924_editable_overlap_fix.md) | 可编辑轨重叠归因与五层加固方案（cmb-retail 54 页基准暴露，tencent-pptx/slide-paipai 调研佐证） |

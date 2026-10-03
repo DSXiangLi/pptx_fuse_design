@@ -282,8 +282,8 @@ intent POST 的完整 JSON body≤2MiB；payload 按递归对象键排序、数�
 | GET /api/bridge/drafts?session_id=... | 浏览器 | 当前 session 最近50条草稿元数据，含创建 client；不返完整正文 |
 | GET /api/bridge/draft?id=... | 浏览器 | 当前 session 草稿内容；恢复创建新草稿，不覆盖另一 client 原记录 |
 | POST /api/save | 浏览器/管理 | path/html/init 加 session_id/base_revision → §7.4 A类 receipt |
-| GET /api/versions?path=... | 浏览器/管理 | 受管范围内版本，不列其他项目 |
-| POST /api/rollback | 浏览器/管理 | path/hash 加 session_id/base_revision → §7.4 A类 receipt |
+| GET /api/versions?session_id=...&path=... | 浏览器/管理 | 受管范围内版本；`snapshot_id` 为稳定回滚标识，`hash` 为可空 Git commit 展示值；不列其他项目 |
+| POST /api/rollback | 浏览器/管理 | path/hash 加 session_id/base_revision，其中 `hash` 承载所选 `snapshot_id`（兼容旧 Git hash）→ §7.4 A类 receipt |
 | POST /api/bridge/asset | 浏览器 | session_id/base_revision/path/data_base64 → §7.4 A类 receipt；仅 assets 允许格式 |
 | POST /api/convert | 浏览器/管理 | 仅显式 --convert，本地执行与 Agent 任务互斥 |
 | GET /api/convert-status | 浏览器/管理 | 当前受管转换状态 |

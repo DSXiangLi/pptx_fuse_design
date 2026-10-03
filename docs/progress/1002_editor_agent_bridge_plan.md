@@ -1,6 +1,6 @@
 # 编辑器↔Agent 桥 v2：分阶段执行计划
 
-> 2026-10-03 · 状态：P0–P3 Linux 自动实现已落地；P4 已完成故障组与单页协议性能测量，真实 fixture 全回归和人工环境仍未完成。本文保留原计划并在 §8.2、§11 登记真实结果；未列为 PASS 的项目不得推定通过。未提交 Git。
+> 2026-10-03 · 状态：P0–P3 Linux 自动实现已落地；P4 已完成故障组、单页协议性能和完整历史回归。25 个标准 deck 已恢复并完成原字节核验，`run_e2e.py` 55/55 与 `o_tri_view` 通过；真实 Bridge 大 deck/10倍素材性能、完整性能样本和人工环境仍未完成。本文保留原计划并在 §8.2、§11 登记真实结果；未列为 PASS 的项目不得推定通过。未提交 Git。
 > 规范：[协议与状态机](../design/editor-agent-bridge-protocol.md)（下文简称“协议”）；配套：[一致性与安全](../design/editor-agent-bridge-consistency.md)、[测试验收计划](../test_acceptance/editor-agent-bridge.md)、[外部使用指南](../howto/editor-agent-bridge.md)。协议优先；旧总览的页面 seq / after_seq 隐式确认语义不得沿用。
 
 ## 1. 目标、现状与不做什么
@@ -23,12 +23,15 @@
 
 - 生产实现已存在：`tools/bridge_core.py`、`tools/bridge_mcp.py`、`tools/edit.py` v2、`editor.html` v3.2；`skills/html-pptx/SKILL.md` 已写入五工具循环和 validation 纪律。
 - 本机自动环境：Linux arm64、Python 3.13.11、官方 `mcp` SDK 1.28.0、Git 2.20.1；Playwright UI 组实跑通过。SDK通过不代表真实 Kimi/Codex 宿主通过。
-- 核心命令 `python3 -m unittest discover -s tests/harness -p 'test_bridge_core.py' -v` 于 2026-10-03 实跑 **21/21 PASS**。
-- `python3 tests/harness/r_bridge_check.py` 默认组实跑 **transport、sdk、http/security、ui、integration、fault 全部 PASS**；默认组不包含 performance。
-- `r_bridge_check.py --group performance` 的已有报告为单页临时 deck 协议测量，六项已执行阈值 PASS；真实 `bake-mix`、54 页 `cmb-retail` 和 10 倍素材 fixture 在当前工作树不可用，因此 PERF-03/CNS-08 及标准全回归为 BLOCKED，而不是 PASS。
-- `tests/harness/run_e2e.py` 已接入 `T29-bridge`；本次已实际尝试全入口，但启动即因缺少 `tests/decks/tech-ikb/index.html` 阻断；`o_tri_view_check.py` 也因缺少 `tests/decks/bake-mix` 阻断。不得用定向 bridge 绿灯冒称全项目回归通过。
-- 尚未执行：真实 Kimi、Codex MCP 宿主；54 页与 bake-mix 真实技能产物；Office/WPS；真实付费生图；硬件掉电耐久性。
-- 已修正实现回归点：open/status 返回 `resource_path`，前端优先使用该相对路径；MCP `ValidationEvidence.export_source_revision` 为可省略/`null` 时不会向 daemon 发送非法 null 字段。
+- 核心命令 `python3 -m unittest tests.harness.test_bridge_core -v` 于 2026-10-03 实跑 **21/21 PASS，5.894s**。
+- `python3 tests/harness/r_bridge_check.py` 默认组实跑 **transport、sdk、http/security、ui、integration、fault 全部 PASS，20.846s**；默认组不包含 performance。
+- `python3 tests/harness/k_brief_check.py` 实跑 **ALL PASS，2.483s**；`python3 tests/harness/o_tri_view_check.py` 实跑 **ALL PASS，107.329s**。
+- 完整枚举得到 25 个标准 deck：原有 7 个可用，其中 `cmb-retail` 实际存在但被 `.gitignore` 隐藏；其余 18 个缺失目录从可信 Git 删除前统一快照 `dd5d87940f9463a3b60972f0c9b288195a2264d5` 按原字节恢复，共 47 个文件，Git blob 核验 missing=0、mismatch=0。`cmb-retail` 对删除前 `5fdd8c723e26594e7334080ba2c06cdf5e5733c1` 的 100 个历史受控文件核验 missing=0、mismatch=0。
+- 恢复后 fixtures 基线为 **806 entries / 789020265 bytes**；所有测试后复核 added=0、removed=0、changed=0。
+- 首次完整 `run_e2e.py` 真实失败于 T12 的旧 v1.6 匿名 `/api/save` 预期；迁移到手动 daemon + bootstrap/browser bearer 后又检出历史 UI 把可空 `v.hash` 当稳定身份。现已改为 `snapshot_id || hash`，Git commit hash 只作可选显示，rollback 传稳定 id，并保留旧 schema fallback。修复后完整回归 **55项、55 PASS、0 FAIL，约860s**，T1–T29 全通过。
+- `r_bridge_check.py --group performance` 的已有报告仍只是单页临时 deck 协议测量。PERF-03 真正 Bridge 真实大 deck 事件→可编辑 UI、54 页×10倍素材与 PERF-04/05/06 完整样本仍 BLOCKED；不得把 `run_e2e` 中 `cmb-retail` T1 或导出子测试冒称 P4-C 完成。
+- 尚未执行：真实 Kimi、Codex MCP 宿主；Office/WPS；真实付费生图；硬件掉电耐久性。
+- 已修正实现回归点：open/status 返回 `resource_path`，前端优先使用该相对路径；MCP `ValidationEvidence.export_source_revision` 为可省略/`null` 时不会向 daemon 发送非法 null 字段；历史 UI 按 Bridge v2 `snapshot_id` 回滚并兼容旧 `hash` schema。
 
 ### 2.2 本轮定稿的公共约束
 
@@ -52,11 +55,11 @@
 | `tools/bridge_core.py` | SQLite 状态机、目录单 deck、认领/lease、revision、attempt 副本、publication journal、恢复、Git 专用 ref、23 个公开协议路由及内部 stop 路由 |
 | `tools/bridge_mcp.py` | 官方 MCP SDK stdio 薄代理，恰好五工具；代理持有 management token 并独立心跳 |
 | `tools/start-webui.sh` | 透传手动目标参数并附加 `--convert`，仍只触发技能转换 |
-| `editor.html` | v3.2 bridge token 绑定、鉴权 fetch、SSE、请求列表/retry/cancel、IndexedDB/服务草稿、CAS 保存/资产/回滚、加载代次和强制产物刷新 |
+| `editor.html` | v3.2 bridge token 绑定、鉴权 fetch、SSE、请求列表/retry/cancel、IndexedDB/服务草稿、CAS 保存/资产/回滚、加载代次和强制产物刷新；历史 UI 以 `snapshot_id` 为稳定回滚标识，旧 schema 回退 `hash` |
 | `skills/html-pptx/SKILL.md` | 五工具协作循环、六 intent 映射、work_path 单向写入、真实 validation、恢复与结束纪律 |
 | `tests/harness/test_bridge_core.py` | 21 个标准库 unittest，覆盖状态机、安全、幂等、Git 隔离与 publication 恢复 |
 | `tests/harness/r_bridge_check.py` | transport/sdk/http/ui/fault/security/integration/performance 选择器；默认组不含 performance |
-| `tests/harness/run_e2e.py` | 已接入 `T29-bridge` 子进程；本次已尝试全入口并被缺失真实 fixture 阻断 |
+| `tests/harness/run_e2e.py` | `T29-bridge` 子进程与 T1–T28 全部保留；T12 已迁移为真实手动 daemon + bootstrap/browser bearer/CAS/receipt/snapshot 历史回滚；完整入口 55/55 PASS |
 | `docs/howto/editor-agent-bridge.md` | 外部安装、配置、手动启动、五工具循环、安全、恢复和错误指南 |
 
 实现保持单 daemon、单 SQLite 真相、无 Web 框架、无第二套状态存储。转换所有权仍在技能。
@@ -193,27 +196,30 @@ P0 只证明官方 SDK 的真实 stdio、取消、并发和有界等待可用；
 1. `r_bridge_check.py` 已纳入 `run_e2e.py` 的 `T29-bridge`，沿用子进程退出码判定；核心 unittest 可独立运行。
 2. 新 HTTP harness 已覆盖受限鉴权、匿名 401、Host/Origin、静态隔离、bootstrap、intent 幂等/query、草稿、资产和回滚主路径。
 3. fault 组已覆盖 publication 注入矩阵、响应丢失、双消费者/daemon、SSE 过期游标和 schema 迁移；进程崩溃模拟不等于硬件掉电认证。
-4. performance 已完成单页协议基线；真实 fixture 的事件到可编辑 UI、54 页/10 倍素材、冷启动分布和 30 分钟资源稳定性仍待测。
-5. 标准 `run_e2e.py` 全入口、Kimi/Codex 人工、Office/WPS 与真实生图仍未完成，因此总体验收保持“部分完成”。
-6. 文档已按 2026-10-03 实现回扫；任何 git commit/push 仍需用户另行授权。
+4. 25 个标准 deck 已完整恢复并核验，标准 `run_e2e.py` 55/55 与独立 `o_tri_view` 均通过；fixtures 测试前后 806 entries / 789020265 bytes，added=0、removed=0、changed=0。
+5. performance 已完成单页协议基线；PERF-03 真正 Bridge 真实大 deck 事件→可编辑 UI、54页×10倍素材、PERF-04/05/06 完整样本仍待测。`run_e2e` 中的 `cmb-retail` T1/导出子测试不等于这些规模验收。
+6. Kimi/Codex 人工、Office/WPS、真实生图和硬件掉电仍未执行，因此总体验收保持“部分完成”。任何 git commit/push 仍需用户另行授权。
 
 ### 8.1 命令与本次结果
 
 ```bash
-# 2026-10-03：退出码 0，Ran 21 tests，OK
-python3 -m unittest discover -s tests/harness -p 'test_bridge_core.py' -v
+# 2026-10-03：退出码 0，Ran 21 tests，OK；5.894s
+python3 -m unittest tests.harness.test_bridge_core -v
 
-# 2026-10-03：退出码 0；默认组选中 fault,http,integration,sdk,transport,ui
+# 2026-10-03：退出码 0；默认组选中 fault,http,integration,sdk,transport,ui；20.846s
 python3 tests/harness/r_bridge_check.py
 
-# 2026-10-03 已尝试；缺 tests/decks/tech-ikb/index.html，BLOCKED
-python3 tests/harness/run_e2e.py
+# 2026-10-03：ALL PASS；2.483s
+python3 tests/harness/k_brief_check.py
 
-# 2026-10-03 已尝试；缺 tests/decks/bake-mix，BLOCKED
+# 2026-10-03：ALL PASS；107.329s
 python3 tests/harness/o_tri_view_check.py
+
+# 2026-10-03：55项、55 PASS、0 FAIL；约860s
+python3 tests/harness/run_e2e.py
 ```
 
-`r_bridge_check.py` 已实现 `--group transport|sdk|http|ui|fault|security|integration|performance`。无参数默认运行 `transport,sdk,http,ui,fault,integration`；`security` 与 `http` 共用实现入口，`performance` 必须显式选择。技能命令由 harness 以 subprocess 和副本绝对路径调用。
+`r_bridge_check.py` 已实现 `--group transport|sdk|http|ui|fault|security|integration|performance`。无参数默认运行 `transport,sdk,http,ui,fault,integration`；`security` 与 `http` 共用实现入口，`performance` 必须显式选择。技能命令由 harness 以 subprocess 和副本绝对路径调用。完整回归首次运行在 T12 暴露旧 v1.6 匿名保存测试与 Bridge v2 冲突；迁移 T12 后继续发现并修复历史 UI 的 `snapshot_id` 消费错误，最终全量通过。
 
 ### 8.2 阶段状态登记
 
@@ -221,9 +227,9 @@ python3 tests/harness/o_tri_view_check.py
 |---|---|---|
 | P0 | **完成（Linux 自动）** | 官方 SDK initialize/list/call、schema、有界等待、并发和 100 次取消通过；未替代真实宿主 |
 | P1 | **完成（Linux 自动）** | 核心 unittest 21/21；五工具 stdio、HTTP/安全、CAS/receipt、journal/fault、revision CLI 通过 |
-| P2 | **完成（Linux 自动）** | Playwright 无 deck 首次加载、保存世代、dirty 草稿保护、导出强刷、SSE 解析、fragment 清理通过 |
-| P3 | **完成（确定性自动范围）** | SKILL 桥契约检查 + 真实 MCP/HTTP 无 deck claim、独立 work_path、validation、complete/receipt 重放通过；真实 bake-mix/cmb-retail 产物未测 |
-| P4 | **部分完成** | fault 与单页 performance 已执行；全 `run_e2e`、真实 fixture 规模、完整性能样本和人工组未完成 |
+| P2 | **完成（Linux 自动）** | Playwright 无 deck、保存世代、dirty 草稿保护、SSE、fragment 清理及手动 bootstrap 历史 UI/CAS 回滚通过 |
+| P3 | **完成（确定性自动范围）** | SKILL 桥契约检查 + 真实 MCP/HTTP 无 deck claim、独立 work_path、validation、complete/receipt 重放通过；不代表真正 Bridge 54页 convert 场景完成 |
+| P4 | **部分完成** | fault、单页 performance、25 deck 完整 `run_e2e` 55/55、独立 `o_tri_view` 与 fixture 零变化核验通过；真实 Bridge 大 deck/10倍素材、完整性能样本和人工组未完成 |
 | Kimi/Codex 真实宿主与模型成本 | **未测** | 不以 SDK client 结果替代；成本未知，不估成零 |
 
 ## 9. 方案风险提示（自审）
@@ -275,13 +281,26 @@ python3 tests/harness/o_tri_view_check.py
 
 | 命令 | 结果 | 说明 |
 |---|---|---|
-| `python3 -m unittest tests.harness.test_bridge_core -v` | PASS，21/21，9.943s | 最终代码复跑；状态机、revision、幂等、Git 隔离、publication 恢复、安全/迁移 |
-| `python3 tests/harness/r_bridge_check.py` | PASS，退出码0，40.834s | 最终代码复跑；默认组 transport、sdk、http、ui、fault、integration；`security` 复用 http 入口；活动 SSE 下 stop 无关闭竞态；不含 performance |
-| `python3 tests/harness/r_bridge_check.py --group performance` | 已有 PASS 报告 | 报告时间 2026-10-02T19:30:23Z；仅 1 页 456B 临时 deck，不是实 deck 规模认证 |
-| `python3 tests/harness/run_e2e.py` | BLOCKED / 已尝试 | 启动即缺 `tests/decks/tech-ikb/index.html`；当前工作树还缺 `bake-mix`、`cmb-retail` 等真实 fixture，不能形成全链路通过证据 |
-| `python3 tests/harness/o_tri_view_check.py` | BLOCKED / 已尝试 | 缺 `tests/decks/bake-mix`，不能验证既有三态工作台真实导出链 |
+| `python3 -m unittest tests.harness.test_bridge_core -v` | PASS，21/21，5.894s | 状态机、revision、幂等、Git 隔离、publication 恢复、安全/迁移 |
+| `python3 tests/harness/r_bridge_check.py` | PASS，退出码0，20.846s | 默认组 transport、sdk、http、ui、fault、integration；`security` 复用 http 入口；不含 performance |
+| `python3 tests/harness/k_brief_check.py` | ALL PASS，2.483s | 需求脑暴 UI 回归 |
+| `python3 tests/harness/o_tri_view_check.py` | ALL PASS，107.329s | 真实 `bake-mix` 副本上的三态工作台与导出链 |
+| `python3 tests/harness/run_e2e.py` | PASS，55/55，退出码0，约860s | T1–T29 全通过；含恢复后的 25 个标准 deck、T12 Bridge v2 手动 daemon 历史回滚及 T29 bridge 默认组 |
 
-### 11.2 单页性能实测
+### 11.2 fixture 恢复与零污染证据
+
+- 完整枚举 25 个标准 deck；恢复前原有 7 个可用，其中 `cmb-retail` 实际存在但被 `.gitignore` 隐藏。
+- 18 个缺失目录从可信 Git 删除前统一快照 `dd5d87940f9463a3b60972f0c9b288195a2264d5` 原字节恢复，共 47 个文件；Git blob 核验 missing=0、mismatch=0。
+- `cmb-retail` 对删除前 `5fdd8c723e26594e7334080ba2c06cdf5e5733c1` 的 100 个历史受控文件核验 missing=0、mismatch=0。
+- 恢复后的全 fixtures 基线为 806 entries / 789020265 bytes；所有测试后复核 added=0、removed=0、changed=0。
+
+### 11.3 T12 真实回归与修复
+
+首次完整回归在 `tests/harness/run_e2e.py` T12 暴露旧 v1.6 测试仍发送无鉴权 `/api/save`，与 Bridge v2 的 bootstrap/browser bearer、session/base_revision、专用 ref、snapshot 和 receipt 协议冲突。T12 已迁移为真实手动 daemon + bootstrap 浏览器流程，并保留或强化无后端降级、匿名写拒绝、鉴权后路径穿越拒绝、非 Git 显式 init、两次 UI 保存 receipt/版本、HEAD/index 零污染、未保存 draft、revision CAS 回滚及 pre-rollback 快照断言。
+
+迁移后继续检出 `editor.html` 历史 UI 将可空 Git commit `v.hash` 当稳定身份并调用 `slice()`。现改为优先 `snapshot_id`、旧 schema 缺字段时回退 `hash`；commit hash 仅作可选显示，rollback 传稳定版本 id。定向 T12 与最终完整回归均通过，生产鉴权和 CAS 未放松。
+
+### 11.4 单页性能实测
 
 环境：Linux 5.4.96 arm64、Python 3.13.11、MCP SDK 1.28.0、Git 2.20.1、8 CPU；采样时系统 load average 约 15.98/15.87/15.32。原始样本在忽略目录 `tests/harness/results/bridge/metrics.json`。
 
@@ -296,9 +315,9 @@ python3 tests/harness/o_tri_view_check.py
 
 资源快照：RSS 24.867→32.949MiB（+8.082MiB），FD 9→9。该有界运行未覆盖 30 分钟空闲和 100 轮完整连接/断开，不能据此宣称 PERF-06 完成。
 
-### 11.3 已知阻断与未测
+### 11.5 已知阻断与未测
 
-- **BLOCKED**：PERF-03 真实事件→可编辑 UI 规模；CNS-08 的 54 页 10 倍素材；`bake-mix`/`cmb-retail` 真实技能和导出链；完整 `run_e2e.py`/`o_tri_view`。
-- **部分样本**：PERF-04 计划的 25s×20、120s×3 未满足；PERF-05 冷启动20次、PERF-06 30分钟稳定性未跑。
-- **未测**：真实 Kimi、Codex；真实模型调用与10分钟成本；Office/WPS；真实付费生图；硬件掉电。
-- **结论边界**：P0–P3 的 Linux 自动实现范围完成，P4 仅故障与单页性能部分完成；不声称完整全量通过。
+- **BLOCKED**：PERF-03 真正 Bridge 真实大 deck 事件→可编辑 UI；CNS-08 的 54 页×10倍素材。完整 `run_e2e.py` 与独立 `o_tri_view` 已通过，不再列为阻断。
+- **部分样本**：PERF-04 计划的 25s×20、120s×3 未满足；PERF-05 冷启动20次、PERF-06 30分钟稳定性与完整100轮连接/断开未跑。
+- **NOT_RUN**：真实 Kimi、Codex MCP 宿主；真实模型调用与10分钟成本；Office/WPS；真实付费生图；硬件掉电。
+- **结论边界**：P0–P3 的 Linux 自动实现范围完成；P4 的 fault、单页 performance 和完整历史回归通过，但真正 Bridge 大 deck/10倍素材、完整性能样本及人工环境未完成，仍只能判定部分完成。不得把 `run_e2e` 中 `cmb-retail` T1/导出子测试冒称完整54页 Bridge convert/P4-C。

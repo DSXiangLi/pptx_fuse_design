@@ -1,8 +1,8 @@
 # 编辑器↔Agent 桥 v2：测试与验收计划
 
-> 2026-10-03 · 状态：保留完整验收计划；P0–P3 Linux 自动范围已执行，P4 的 fault 与单页 performance 已执行，真实 fixtures/全回归和 L3 人工项仍未完成。顶部状态不替代末尾逐项执行记录，未列为 PASS 的项目均保持 BLOCKED/NOT_RUN。
+> 2026-10-03 · 状态：保留完整验收计划；P0–P3 Linux 自动范围已执行，P4 的 fault、单页 performance 和完整历史回归已执行。25 个标准 deck 已恢复并完成原字节核验，`run_e2e.py` 55/55 与 `o_tri_view` 通过；真正 Bridge 大 deck/10倍素材性能、完整性能样本和 L3 人工项仍未完成。顶部状态不替代末尾逐项执行记录，未列为 PASS 的项目均保持 BLOCKED/NOT_RUN。
 > 唯一协议依据：[editor-agent-bridge-protocol.md](../design/editor-agent-bridge-protocol.md)；恢复与安全细则：[editor-agent-bridge-consistency.md](../design/editor-agent-bridge-consistency.md)；执行顺序与结果：[P0–P4 计划](../progress/1002_editor_agent_bridge_plan.md)。不得用旧总览的 after_seq 隐式确认规则覆盖本计划。
-> `test_bridge_core.py`、`r_bridge_check.py` 与 `T29-bridge` 已存在；实际命令、结果、性能分位数和阻断项见 §16。真实 Kimi/Codex、Office/WPS、付费生图和缺失 fixture 不得由自动绿灯代替。
+> `test_bridge_core.py`、`r_bridge_check.py` 与 `T29-bridge` 已存在；实际命令、结果、性能分位数和阻断项见 §16。真实 Kimi/Codex、Office/WPS、付费生图及未执行的大规模 Bridge 场景不得由自动绿灯代替。
 
 ## 1. 验收边界与总判定
 
@@ -157,8 +157,8 @@
 | HTTP-13 | GET `/api/bridge/drafts?session_id=...` | 最多最近 50 条元数据，不返完整 HTML；无草稿为空；跨任务不列出 |
 | HTTP-14 | GET `/api/bridge/draft?id=...` | 当前 session 经鉴权读取完整备份；随机/他任务 ID 不能取内容；静态路径不可取 |
 | HTTP-15 | POST `/api/save` | 既有 path/html/init 加 session/base_revision，保存 receipt 与事实事件；旧匿名 401；CAS 409；不进 B 队列 |
-| HTTP-16 | GET `/api/versions?path=...` | 仅受管版本；现有历史 UI 可用；父仓库/他项目/未登记文件不得枚举 |
-| HTTP-17 | POST `/api/rollback` | path/hash+session/base_revision，新 revision/snapshot；回滚前保护；冲突不覆盖；不回滚无关文件 |
+| HTTP-16 | GET `/api/versions?session_id=...&path=...` | browser bearer；仅受管版本；`snapshot_id` 为稳定回滚标识，`hash` 是可空 Git commit 展示值；历史 UI 支持 Bridge v2，并对旧 schema 缺 `snapshot_id` 时回退 `hash`；父仓库/他项目/未登记文件不得枚举 |
+| HTTP-17 | POST `/api/rollback` | path/hash+session/base_revision，其中 `hash` 字段承载版本稳定 id（Bridge v2 为 `snapshot_id`）；新 revision/snapshot；回滚前保护；冲突不覆盖；不回滚无关文件 |
 | HTTP-18 | POST `/api/bridge/asset` | assets 白名单格式+合法 base64，CAS 更新；路径穿越/伪格式/过大体拒绝；画布与缩略图刷新 |
 | HTTP-19 | POST `/api/convert` | 仅显式 --convert 可用；本地转换与 Agent 任务互斥；无开关明确不可用，不后台偷转 |
 | HTTP-20 | GET `/api/convert-status` | 仅当前受管转换状态；失败/完成如实、无转换不能伪running；未经鉴权不可读 |
@@ -543,22 +543,32 @@ CNS 条目中已有自动覆盖的部分按 §16 登记；未被当前 21 个 un
 
 | 层/阶段 | 命令或组 | 结果 | 证据边界 |
 |---|---|---|---|
-| L0 / P1 | `python3 -m unittest tests.harness.test_bridge_core -v` | **PASS 21/21**，9.943s，退出码0 | 最终代码复跑；状态机、revision、attempt、receipt、Git隔离、journal恢复、安全与迁移；不代表UI/宿主 |
+| L0 / P1 | `python3 -m unittest tests.harness.test_bridge_core -v` | **PASS 21/21**，5.894s，退出码0 | 状态机、revision、attempt、receipt、Git隔离、journal恢复、安全与迁移；不代表UI/宿主 |
 | L1 / P0 | r_bridge `transport` | **PASS** | 官方SDK initialize/list/call、bounds、并发、100取消；不代表Kimi/Codex |
 | L1 / P1 | r_bridge `sdk` | **PASS** | 生产stdio恰好五工具，open/await/status/close主链 |
 | L1 / P1 | r_bridge `http`/`security` | **PASS** | daemon鉴权、browser绑定、intent幂等/query、Host/Origin、静态隔离；`security` 选择器复用同组实现 |
 | L2 / P2 | r_bridge `ui` | **PASS** | Playwright 无deck首次加载、保存回执世代、保存中继续输入、dirty保护、导出强刷、SSE parser、fragment清理 |
 | L2 / P3 | r_bridge `integration` | **PASS** | SKILL契约 + 真实MCP/HTTP确定性无deck claim、独立work_path、revision CLI、validation publish、receipt重放、bounded reattach |
 | L0/L1 / P4 | r_bridge `fault` | **PASS** | 9个定向unittest + 真实HTTP SSE过期游标resync；publication断点每点重复、响应丢失、双consumer/daemon、第三方字节、迁移 |
-| P4 | `python3 tests/harness/r_bridge_check.py` 默认组 | **PASS**，40.834s，退出码0 | 最终代码复跑；选择 `fault,http,integration,sdk,transport,ui`，含活动 SSE 下正常 stop；**默认不含 performance** |
-| P4 | `python3 tests/harness/run_e2e.py` | **BLOCKED / 已尝试** | 启动即缺 `tests/decks/tech-ikb/index.html`；当前工作树还缺真实 `bake-mix`、`cmb-retail` fixture，不能形成全量证据 |
-| P4 | `python3 tests/harness/o_tri_view_check.py` | **BLOCKED / 已尝试** | 缺 `tests/decks/bake-mix`，既有三态工作台真实导出链无完整证据 |
+| P4 | `python3 tests/harness/r_bridge_check.py` 默认组 | **PASS**，20.846s，退出码0 | 选择 `fault,http,integration,sdk,transport,ui`；**默认不含 performance** |
+| L2 / P2 | `python3 tests/harness/k_brief_check.py` | **ALL PASS**，2.483s | 需求脑暴 UI 回归 |
+| L2 / P2/M4 | `python3 tests/harness/o_tri_view_check.py` | **ALL PASS**，107.329s | `bake-mix` 副本上的三态工作台、stale 闭环和既有导出链；不等于 Bridge 真实大 deck 性能 |
+| P4 历史回归 | `python3 tests/harness/run_e2e.py` | **PASS 55/55**，退出码0，约860s | T1–T29 全通过；包含 25 个标准 deck、T12 手动 daemon 历史回滚和 T29 bridge 默认组；不等于 PERF-03/CNS-08 |
 
-本轮实现回归还包含三项已验证修正：open/status 返回 `resource_path`，前端不再从绝对 `target_path` 猜 basename；MCP `ValidationEvidence.export_source_revision` 未提供时省略字段，不向 daemon 发送会被拒绝的 `null`；正常 stop 先断开并回收活动 HTTP/SSE 请求线程，再关闭 SQLite，消除 closed-database/BrokenPipe 关闭竞态。
+本轮实现回归包含四项已验证修正：open/status 返回 `resource_path`，前端不再从绝对 `target_path` 猜 basename；MCP `ValidationEvidence.export_source_revision` 未提供时省略字段，不向 daemon 发送会被拒绝的 `null`；正常 stop 先断开并回收活动 HTTP/SSE 请求线程，再关闭 SQLite；历史 UI 使用 `snapshot_id` 作为 Bridge v2 稳定回滚身份、可空 commit `hash` 仅显示，并保留旧 schema fallback。
+
+T12 首次完整执行真实暴露旧 v1.6 匿名 `/api/save` 与 Bridge v2 冲突。迁移后的 T12 使用真实手动 daemon、bootstrap/browser bearer、session/base_revision 和 `/api/versions?session_id=...&path=...`，覆盖匿名写拒绝、鉴权后路径穿越拒绝、非 Git 显式 init、两次 UI 保存 receipt/snapshot、用户 HEAD/index 零污染、未保存 draft、revision CAS 回滚及 pre-rollback 保护版本；修复历史 UI 消费错误后定向与全量均 PASS。
 
 协议索引：[23个公开HTTP路由](../design/editor-agent-bridge-protocol.md#72-路由表)、[7种SSE业务事件](../design/editor-agent-bridge-protocol.md#8-sse-事件)。实现的 `POST /api/bridge/stop` 仅供本机管理 CLI，不计入23个外部协议路由。
 
-### 16.2 performance 实测
+### 16.2 fixture 来源与零污染证据
+
+- 完整枚举 25 个标准 deck；恢复前原有 7 个可用，其中 `cmb-retail` 实际存在但被 `.gitignore` 隐藏。
+- 18 个缺失目录从可信 Git 删除前统一快照 `dd5d87940f9463a3b60972f0c9b288195a2264d5` 原字节恢复，共 47 个文件；Git blob 核验 missing=0、mismatch=0。
+- `cmb-retail` 对删除前 `5fdd8c723e26594e7334080ba2c06cdf5e5733c1` 的 100 个历史受控文件核验 missing=0、mismatch=0。
+- 恢复后的 fixtures 基线为 806 entries / 789020265 bytes；所有测试后 added=0、removed=0、changed=0。
+
+### 16.3 performance 实测
 
 已有报告：`tests/harness/results/bridge/metrics.json`（gitignore 内测试产物），生成于 2026-10-02T19:30:23Z。环境为 Linux 5.4.96 arm64、Python 3.13.11、MCP SDK 1.28.0、Git 2.20.1、8 CPU；fixture 仅 1 页/456B 临时 deck，采样时负载较高。
 
@@ -573,9 +583,9 @@ CNS 条目中已有自动覆盖的部分按 §16 登记；未被当前 21 个 un
 
 资源快照：RSS 24.867→32.949MiB（增长8.082MiB），FD 9→9。该结果不是30分钟稳定性或真实大 deck 认证。
 
-### 16.3 BLOCKED / NOT_RUN
+### 16.4 BLOCKED / NOT_RUN
 
-- **BLOCKED**：PERF-03 的 `bake-mix`/`cmb-retail` 事件到可编辑页面规模；CNS-08 54页×10倍素材；真实 skill 双轨导出与完整 `run_e2e`/`o_tri_view`。
+- **BLOCKED**：PERF-03 真正 Bridge `bake-mix`/54页 `cmb-retail` 事件→可编辑 UI；CNS-08 54页×10倍素材。完整 `run_e2e` 与独立 `o_tri_view` 已通过，不再列为阻断。
 - **样本不足**：PERF-04 原计划25s×20、120s×3；PERF-05 20次冷启动；PERF-06 30分钟空闲和完整100轮连接/断开。
-- **NOT_RUN**：真实 Kimi、Codex MCP 宿主；10分钟模型成本；真实54页/bake-mix链路；Office/WPS；真实付费生图；硬件掉电。
-- **总判定**：P0–P3 Linux 自动范围通过，P4部分通过；不声称完整全量验收通过。
+- **NOT_RUN**：真实 Kimi、Codex MCP 宿主；10分钟模型成本；Office/WPS；真实付费生图；硬件掉电。
+- **总判定**：P0–P3 Linux 自动范围通过；P4 的 fault、单页 performance 和完整历史回归通过，但真实 Bridge 大 deck/10倍素材、完整性能样本及人工环境未完成，仍为部分通过。不得把 `run_e2e` 中 `cmb-retail` T1/导出子测试冒称完整54页 Bridge convert/P4-C。

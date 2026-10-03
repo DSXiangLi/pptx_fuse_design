@@ -122,7 +122,7 @@ revision 是内容地址，不是递增序号：A→B→A 可以回到同一个�
 
 快照与 Git 有不同职责：快照为事务恢复提供明确的新旧字节，Git 为用户历史提供可核验版本。不能仅凭 Git 存在便删除未完成 journal 依赖的恢复字节。快照不存 bearer、浏览器凭证、管理发现文件、任意工作目录外资料。
 
-`/api/versions` 只列该 session 登记的快照/保护 commit，不遍历父仓库的其他项目历史。回滚只接受该 session 版本表内的完整 hash，不能使用任意可解析 Git commit 来读取未受管文件。迁移旧版本时仅显式导入该目标受管路径；旧 commit 不包含的字体/导出不能伪造存在，标注历史范围不足，不默认作为完整 bundle 回滚点。
+`/api/versions?session_id=...&path=...` 只列该 session 登记的快照/保护 commit，不遍历父仓库的其他项目历史。每项的 `snapshot_id` 是稳定回滚标识，`hash` 只是可空的 Git commit 展示值；回滚请求的 `hash` 字段可承载该 session 版本表内的 `snapshot_id`，并兼容旧 Git hash，但不能使用任意可解析 Git commit 来读取未受管文件。迁移旧版本时仅显式导入该目标受管路径；旧 commit 不包含的字体/导出不能伪造存在，标注历史范围不足，不默认作为完整 bundle 回滚点。
 
 ### 4.3 回滚是新发布，不是 Git reset
 

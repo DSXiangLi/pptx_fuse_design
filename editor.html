@@ -6203,10 +6203,10 @@ $('btnBridgeIllustrate').addEventListener('click',function(){
 });
 
 /* ============================================================
-   本地伴随服务（v1.6 §3，tools/edit.py）
-   编辑器保持单文件纯静态：加载时探测同源 /api/health，探测到才启用
-   "保存即版本 + 历史回滚"；探测不到（普通静态服务 / file://）维持现状。
-   嵌入态保存仍走 postMessage，版本能力由宿主决定，与本服务无关。
+   本地版本历史（Bridge v2；保留旧 companion schema 降级）
+   Bridge 模式使用 browser bearer、session/path 和 revision CAS；无 Bridge 时
+   仍探测旧同源 companion API。普通静态服务 / file:// 维持原有降级路径，
+   嵌入态保存仍走 postMessage，版本能力由宿主决定。
    ============================================================ */
 function probeBackend(){
   if(bridge.enabled){updateHistoryBtn();return;}
@@ -6329,33 +6329,38 @@ function renderVersions(versions){
     return;
   }
   versions.forEach(function(v){
+    /* Bridge v2 以 snapshot_id 为稳定回滚标识；旧 companion 仅有 hash 时回退兼容。
+       git commit hash 可为空，只用于辅助显示，不能承担版本身份。 */
+    var versionId = v.snapshot_id || v.hash;
+    if (!versionId) throw new Error('版本记录缺少 snapshot_id/hash');
     var item = document.createElement('div');
     item.className = 'ver-item';
-    item.dataset.hash = v.hash;
+    item.dataset.versionId = versionId;
     var vm = document.createElement('div'); vm.className = 'vm';
     var vt = document.createElement('div'); vt.className = 'vt'; vt.textContent = v.message;
     var vh = document.createElement('div'); vh.className = 'vh';
-    vh.textContent = v.hash.slice(0, 7) + ' · ' + v.time;
+    var versionLabel = v.hash ? v.hash.slice(0, 7) : ('快照 ' + versionId.slice(0, 12));
+    vh.textContent = versionLabel + ' · ' + v.time;
     vm.appendChild(vt); vm.appendChild(vh);
     var btn = document.createElement('button');
     btn.className = 'ver-rollback';
     btn.textContent = '回滚';
     btn.title = '回滚到此版本（当前未提交状态会先自动提交 pre-rollback）';
-    btn.addEventListener('click', function(){ rollbackTo(v.hash); });
+    btn.addEventListener('click', function(){ rollbackTo(versionId); });
     item.appendChild(vm); item.appendChild(btn);
     box.appendChild(item);
   });
 }
-async function rollbackTo(hash){
+async function rollbackTo(versionId){
   var ok = await askConfirm('回滚到此版本？','当前浏览器草稿会先被保护；回滚作为一次新发布记录，可再回滚回来。','回滚');
   if (!ok) return;
   try {
     if(bridge.enabled){
       await bridgePersistDraft(true);
-      var j=await bridgeFetch('/api/rollback',{method:'POST',body:JSON.stringify({session_id:bridge.sessionId,path:state.deckPath,hash:hash,base_revision:bridge.latestServerRevision})});
+      var j=await bridgeFetch('/api/rollback',{method:'POST',body:JSON.stringify({session_id:bridge.sessionId,path:state.deckPath,hash:versionId,base_revision:bridge.latestServerRevision})});
       bridge.latestServerRevision=j.revision;await bridgeLoadDeck(state.deckPath,j.revision,true);toast('已回滚并取得回执 '+j.receipt_id);loadVersions();return;
     }
-    var r = await fetch('api/rollback', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:state.deckPath,hash:hash})});
+    var r = await fetch('api/rollback', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:state.deckPath,hash:versionId})});
     var old = await r.json();if(!r.ok||!old.ok)throw new Error(bridgeErrorMessage(old,'HTTP '+r.status));
     toast('已回滚到此版本'+(old.preRollback?'（当前状态已保护提交 '+old.preRollback+'）':''));
     var rt=await fetch(state.deckPath+'?v='+Date.now(),{cache:'no-store'});if(!rt.ok)throw new Error('重新加载失败 HTTP '+rt.status);
